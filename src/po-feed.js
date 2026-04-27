@@ -128,17 +128,9 @@ function buildPoFeedXml({ po, sku, skuQty, optionId, carrier = "DT", now }) {
 <FOBInstructions>
 <TransTermsCd Qualifier="01">DDP</TransTermsCd>
 </FOBInstructions>
-<TradePartner RoleCd="SU">
-<TradePartnerName>XXX - SHIRE TEXTILES LTD</TradePartnerName>
-<TradePartnerID Qualifier="93">1100001190</TradePartnerID>
-</TradePartner>
 <TradePartner RoleCd="CA">
 <TradePartnerName>${poCarrier.caName}</TradePartnerName>
 <TradePartnerID Qualifier="93">${poCarrier.caId}</TradePartnerID>
-</TradePartner>
-<TradePartner RoleCd="FA">
-<TradePartnerName>Dummy Factory</TradePartnerName>
-<TradePartnerID Qualifier="93">9999</TradePartnerID>
 </TradePartner>
 <TradePartner RoleCd="FD">
 <TradePartnerName>FC01 Barnsley</TradePartnerName>
@@ -147,10 +139,6 @@ function buildPoFeedXml({ po, sku, skuQty, optionId, carrier = "DT", now }) {
 <TradePartner RoleCd="F1">
 <TradePartnerName>FC01 Barnsley</TradePartnerName>
 <TradePartnerID Qualifier="93">FC01</TradePartnerID>
-</TradePartner>
-<TradePartner RoleCd="SL">
-<TradePartnerName>UNITED KINGDOM</TradePartnerName>
-<TradePartnerID Qualifier="93">UNIUN</TradePartnerID>
 </TradePartner>
 ${lineItems}
 </Order>

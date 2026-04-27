@@ -102,13 +102,6 @@ function buildAsnFeedXml({ asn, po, sku, skuQty, now }) {
           <Date TimeZone="UT" DateTypeCd="579">${date579}</Date>
           <Date TimeZone="UT" DateTypeCd="AG_FRST">${dateAgFrst}</Date>
           <Date TimeZone="UT" DateTypeCd="274">${date274}</Date>
-          <Location LocTypeCd="DE">
-            <LocationID Qualifier="UN">GBBSY</LocationID>
-          </Location>
-          <TradePartner RoleCd="SU">
-            <TradePartnerName>Difuzed - FOB</TradePartnerName>
-            <TradePartnerID Qualifier="93">2002900003</TradePartnerID>
-          </TradePartner>
           <TradePartner RoleCd="FD">
             <TradePartnerName>FC01 Barnsley</TradePartnerName>
             <TradePartnerID Qualifier="93">FC01</TradePartnerID>
@@ -130,10 +123,6 @@ function buildAsnFeedXml({ asn, po, sku, skuQty, now }) {
               <PostalCd />
               <CountryCd>UK</CountryCd>
             </TradePartnerAddress>
-          </TradePartner>
-          <TradePartner RoleCd="SL">
-            <TradePartnerName>PORTUGAL OPORTO</TradePartnerName>
-            <TradePartnerID Qualifier="93">POROP</TradePartnerID>
           </TradePartner>
           <Document DocType="SHIP" Key="${asn}">
             <DocumentID>${asn}</DocumentID>

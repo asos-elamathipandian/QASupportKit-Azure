@@ -67,7 +67,6 @@ function buildAsnPadexXml({ asn, po, sku, skuQty, now }) {
 \t\t<XMLGroup CtrlNumber="${ctrlNumber}" GroupType="BP" IncludedMessages="1">
 \t\t\t<XMLTransaction CtrlNumber="${asn}" TransactionType="BPM-856">
 \t\t\t\t<BpMessage MessageType="856" PurposeCd="20">
-\t\t\t\t\t<Mode>30</Mode>
 \t\t\t\t\t<Reference RefTypeCd="SHTYPE" SourceRefTypeCd="128">ASN</Reference>
 \t\t\t\t\t<Reference RefTypeCd="SACHL" SourceRefTypeCd="128">R</Reference>
 \t\t\t\t\t<Date TimeZone="UT" DateTypeCd="PDX_RCVD">${pdxDate}</Date>
