@@ -1,5 +1,6 @@
 const path = require("path");
 const fs = require("fs/promises");
+const { getCarrierProfile } = require("./carrier-profile");
 
 function pad(number, size = 2) {
   return String(number).padStart(size, "0");
@@ -55,19 +56,21 @@ function formatDateTime(date) {
   ].join("");
 }
 
-function buildBulkStatusXml({ asn, now = new Date() }) {
+function buildBulkStatusXml({ asn, carrier, now = new Date() }) {
+  const carrierProfile = getCarrierProfile(carrier);
   const ctrlNumber = formatCtrlNumber(now);
   const timestamp = formatTimestamp(now);
   const handoverDate = formatDateTime(addSeconds(now, 3));
 
-  return `<XMLBundle>\n<XMLTransmission CtrlNumber="${ctrlNumber}" Receiver="E2ASOS" Sender="DAVIESTN" Timestamp="${timestamp}">\n<XMLGroup CtrlNumber="${ctrlNumber}" GroupType="BP" IncludedMessages="1">\n<XMLTransaction CtrlNumber="${asn}" TransactionType="BPM-BST">\n<BpMessage MessageType="BST">\n<Mode>30</Mode>\n<Status>\n<Date DateTypeCd="HNDOVR" TimeZone="UTC">${handoverDate}</Date>\n</Status>\n<Document DocType="SHIP" Key="${asn}">\n<DocumentID>${asn}</DocumentID>\n</Document>\n</BpMessage>\n</XMLTransaction>\n</XMLGroup>\n</XMLTransmission>\n</XMLBundle>\n`;
+  return `<XMLBundle>\n<XMLTransmission CtrlNumber="${ctrlNumber}" Receiver="E2ASOS" Sender="${carrierProfile.filePrefix}" Timestamp="${timestamp}">\n<XMLGroup CtrlNumber="${ctrlNumber}" GroupType="BP" IncludedMessages="1">\n<XMLTransaction CtrlNumber="${asn}" TransactionType="BPM-BST">\n<BpMessage MessageType="BST">\n<Mode>30</Mode>\n<Status>\n<Date DateTypeCd="HNDOVR" TimeZone="UTC">${handoverDate}</Date>\n</Status>\n<Document DocType="SHIP" Key="${asn}">\n<DocumentID>${asn}</DocumentID>\n</Document>\n</BpMessage>\n</XMLTransaction>\n</XMLGroup>\n</XMLTransmission>\n</XMLBundle>\n`;
 }
 
-async function writeBulkStatusFile({ asn, outputDir }) {
+async function writeBulkStatusFile({ asn, carrier, outputDir }) {
   const now = new Date();
-  const xmlContent = buildBulkStatusXml({ asn, now });
+  const carrierProfile = getCarrierProfile(carrier);
+  const xmlContent = buildBulkStatusXml({ asn, carrier, now });
   const fileTimestamp = formatFileTimestamp(now);
-  const fileName = `DAVIESTN_E2ASOS_BulkStatus_1.0_${fileTimestamp}_${asn}.xml`;
+  const fileName = `${carrierProfile.filePrefix}_E2ASOS_BulkStatus_1.0_${fileTimestamp}_${asn}.xml`;
   const absoluteOutputDir = path.resolve(outputDir);
   const filePath = path.join(absoluteOutputDir, fileName);
 

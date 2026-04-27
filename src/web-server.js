@@ -84,12 +84,12 @@ app.post("/api/generate/vbkcon", async (req, res) => {
 });
 
 app.post("/api/generate/bst", async (req, res) => {
-  const err = validate(req.body, ["asn"]);
+  const err = validate(req.body, ["asn", "carrier"]);
   if (err) return res.status(400).json({ ok: false, error: err });
   try {
-    const { asn } = req.body;
+    const { asn, carrier } = req.body;
     const outputDir = getOutputDir(process.env);
-    const gen = await writeBulkStatusFile({ asn, outputDir });
+    const gen = await writeBulkStatusFile({ asn, carrier, outputDir });
     const remotePath = await upload(gen.filePath);
     res.json({ ok: true, fileName: gen.fileName, uploaded: true, remotePath });
   } catch (e) {
@@ -251,7 +251,7 @@ app.post("/api/generate/all", async (req, res) => {
 
   // 2. BST
   try {
-    const gen = await writeBulkStatusFile({ asn, outputDir });
+    const gen = await writeBulkStatusFile({ asn, carrier, outputDir });
     results.bst = {
       ok: true,
       fileName: gen.fileName,
