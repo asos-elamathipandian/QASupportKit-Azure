@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}Order XML Generator — QASupportKit Azure{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+  <div class="col">
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Dashboard</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('xml.index') }}">XML Generators</a></li>
+        <li class="breadcrumb-item active">Order XML</li>
+      </ol>
+    </nav>
+    <h1 class="h3 fw-bold"><i class="bi bi-cart-check me-2 text-primary"></i>Order XML Generator</h1>
+    <p class="text-muted">Generate an order XML document for fulfilment pipeline testing.</p>
+  </div>
+</div>
+
+<div class="row g-4">
+  <div class="col-lg-6">
+    <div class="card shadow-sm border-0">
+      <div class="card-header bg-white fw-semibold">Input</div>
+      <div class="card-body">
+        <form method="post">
+          <div class="mb-3">
+            <label class="form-label" for="order_id">Order ID</label>
+            <input type="text" class="form-control" id="order_id" name="order_id"
+                   placeholder="e.g. ORD-98765" required />
+          </div>
+          <div class="mb-3">
+            <label class="form-label" for="customer_name">Customer Name</label>
+            <input type="text" class="form-control" id="customer_name" name="customer_name"
+                   placeholder="e.g. Jane Smith" />
+          </div>
+          <div class="mb-3">
+            <label class="form-label" for="delivery_date">Delivery Date</label>
+            <input type="date" class="form-control" id="delivery_date" name="delivery_date" />
+          </div>
+          <div class="mb-3">
+            <label class="form-label" for="order_lines">Order Lines <small class="text-muted">(one per line)</small></label>
+            <textarea class="form-control font-monospace" id="order_lines" name="order_lines" rows="4"
+                      placeholder="SKU-001 x2&#10;SKU-005 x1"></textarea>
+          </div>
+          <div class="d-flex gap-2">
+            <button type="submit" name="generate" class="btn btn-primary">
+              <i class="bi bi-lightning me-1"></i>Generate
+            </button>
+            <button type="submit" name="download" class="btn btn-outline-primary">
+              <i class="bi bi-download me-1"></i>Download XML
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  {% if xml_output %}
+  <div class="col-lg-6">
+    <div class="card shadow-sm border-0">
+      <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <span class="fw-semibold">Generated XML</span>
+        <button class="btn btn-outline-secondary btn-sm" onclick="copyXml()">
+          <i class="bi bi-clipboard me-1"></i>Copy
+        </button>
+      </div>
+      <div class="card-body p-0">
+        <pre id="xmlOutput" class="xml-output m-0 p-3">{{ xml_output }}</pre>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

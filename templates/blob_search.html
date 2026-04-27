@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block title %}Blob Search — QASupportKit Azure{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+  <div class="col">
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Dashboard</a></li>
+        <li class="breadcrumb-item active">Blob Search &amp; Download</li>
+      </ol>
+    </nav>
+    <h1 class="h3 fw-bold"><i class="bi bi-cloud-download me-2 text-info"></i>Blob Search &amp; Download</h1>
+    <p class="text-muted">Search Azure Blob Storage containers and download individual blobs.</p>
+  </div>
+</div>
+
+<div class="row g-4">
+  <!-- Search form -->
+  <div class="col-lg-4">
+    <div class="card shadow-sm border-0">
+      <div class="card-header bg-white fw-semibold">Search</div>
+      <div class="card-body">
+        <form method="post">
+          <div class="mb-3">
+            <label class="form-label" for="conn_str">Connection String</label>
+            <textarea class="form-control font-monospace" id="conn_str" name="conn_str"
+                      rows="3" placeholder="DefaultEndpointsProtocol=https;...">{{ conn_str }}</textarea>
+            <div class="form-text">Leave blank to use <code>AZURE_STORAGE_CONNECTION_STRING</code> env var.</div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label" for="container">Container Name</label>
+            <input type="text" class="form-control" id="container" name="container"
+                   placeholder="my-container" value="{{ container }}" required />
+          </div>
+          <div class="mb-3">
+            <label class="form-label" for="prefix">Prefix Filter <small class="text-muted">(optional)</small></label>
+            <input type="text" class="form-control" id="prefix" name="prefix"
+                   placeholder="2024/06/" value="{{ prefix }}" />
+          </div>
+          <button type="submit" name="search" class="btn btn-info text-white">
+            <i class="bi bi-search me-1"></i>Search
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Results -->
+  <div class="col-lg-8">
+    {% if error %}
+    <div class="alert alert-danger"><i class="bi bi-exclamation-triangle-fill me-2"></i>{{ error }}</div>
+    {% endif %}
+
+    {% if blobs %}
+    <div class="card shadow-sm border-0">
+      <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <span class="fw-semibold">Results <span class="badge bg-info text-white ms-1">{{ blobs | length }}</span></span>
+      </div>
+      <div class="card-body p-0">
+        <ul class="list-group list-group-flush">
+          {% for blob in blobs %}
+          <li class="list-group-item d-flex justify-content-between align-items-center">
+            <span class="font-monospace small text-break">{{ blob }}</span>
+            <form method="post" action="{{ url_for('blob.download') }}" class="ms-2">
+              <input type="hidden" name="conn_str" value="{{ conn_str }}" />
+              <input type="hidden" name="container" value="{{ container }}" />
+              <input type="hidden" name="blob_name" value="{{ blob }}" />
+              <button type="submit" class="btn btn-outline-info btn-sm text-nowrap">
+                <i class="bi bi-download me-1"></i>Download
+              </button>
+            </form>
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+    {% elif request.method == 'POST' and not error %}
+    <div class="alert alert-info">No blobs found.</div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

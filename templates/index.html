@@ -1,0 +1,209 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — QASupportKit Azure{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+  <div class="col">
+    <h1 class="h3 fw-bold"><i class="bi bi-grid-3x3-gap me-2 text-primary"></i>Dashboard</h1>
+    <p class="text-muted">Select a tool below. Features marked <span class="badge bg-secondary"><i class="bi bi-lock-fill me-1"></i>Local Only</span> are disabled on Azure.</p>
+  </div>
+</div>
+
+<!-- ── Enabled features ──────────────────────────────────────────────────── -->
+<h5 class="text-uppercase text-muted small fw-semibold mb-3 letter-spacing-1">
+  <i class="bi bi-check-circle-fill text-success me-1"></i>Available on Azure
+</h5>
+<div class="row g-4 mb-5">
+
+  <!-- ASN XML Generator -->
+  <div class="col-sm-6 col-lg-4">
+    <div class="card h-100 shadow-sm border-0 feature-card">
+      <div class="card-body">
+        <div class="feature-icon bg-primary bg-gradient text-white rounded-3 mb-3">
+          <i class="bi bi-file-earmark-code fs-4"></i>
+        </div>
+        <h5 class="card-title">ASN XML Generator</h5>
+        <p class="card-text text-muted small">Generate Advanced Ship Notice XML files ready for upload or EDI exchange.</p>
+      </div>
+      <div class="card-footer bg-transparent border-0 pb-3">
+        <a href="{{ url_for('xml.generate_asn') }}" class="btn btn-primary btn-sm">
+          <i class="bi bi-arrow-right-circle me-1"></i>Open
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Order XML Generator -->
+  <div class="col-sm-6 col-lg-4">
+    <div class="card h-100 shadow-sm border-0 feature-card">
+      <div class="card-body">
+        <div class="feature-icon bg-primary bg-gradient text-white rounded-3 mb-3">
+          <i class="bi bi-cart-check fs-4"></i>
+        </div>
+        <h5 class="card-title">Order XML Generator</h5>
+        <p class="card-text text-muted small">Build and download order XML documents for testing fulfilment pipelines.</p>
+      </div>
+      <div class="card-footer bg-transparent border-0 pb-3">
+        <a href="{{ url_for('xml.generate_order') }}" class="btn btn-primary btn-sm">
+          <i class="bi bi-arrow-right-circle me-1"></i>Open
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Inventory XML Generator -->
+  <div class="col-sm-6 col-lg-4">
+    <div class="card h-100 shadow-sm border-0 feature-card">
+      <div class="card-body">
+        <div class="feature-icon bg-primary bg-gradient text-white rounded-3 mb-3">
+          <i class="bi bi-box-seam fs-4"></i>
+        </div>
+        <h5 class="card-title">Inventory XML Generator</h5>
+        <p class="card-text text-muted small">Create inventory update XML payloads with SKU-level stock quantities.</p>
+      </div>
+      <div class="card-footer bg-transparent border-0 pb-3">
+        <a href="{{ url_for('xml.generate_inventory') }}" class="btn btn-primary btn-sm">
+          <i class="bi bi-arrow-right-circle me-1"></i>Open
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- SFTP Upload -->
+  <div class="col-sm-6 col-lg-4">
+    <div class="card h-100 shadow-sm border-0 feature-card">
+      <div class="card-body">
+        <div class="feature-icon bg-success bg-gradient text-white rounded-3 mb-3">
+          <i class="bi bi-cloud-upload fs-4"></i>
+        </div>
+        <h5 class="card-title">SFTP Upload</h5>
+        <p class="card-text text-muted small">Upload files directly to a remote SFTP server for EDI or data-exchange testing.</p>
+      </div>
+      <div class="card-footer bg-transparent border-0 pb-3">
+        <a href="{{ url_for('sftp.upload') }}" class="btn btn-success btn-sm">
+          <i class="bi bi-arrow-right-circle me-1"></i>Open
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Blob Search / Download -->
+  <div class="col-sm-6 col-lg-4">
+    <div class="card h-100 shadow-sm border-0 feature-card">
+      <div class="card-body">
+        <div class="feature-icon bg-info bg-gradient text-white rounded-3 mb-3">
+          <i class="bi bi-cloud-download fs-4"></i>
+        </div>
+        <h5 class="card-title">Blob Search &amp; Download</h5>
+        <p class="card-text text-muted small">Search Azure Blob Storage containers by prefix and download individual blobs.</p>
+      </div>
+      <div class="card-footer bg-transparent border-0 pb-3">
+        <a href="{{ url_for('blob.search') }}" class="btn btn-info btn-sm text-white">
+          <i class="bi bi-arrow-right-circle me-1"></i>Open
+        </a>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /row enabled -->
+
+<!-- ── Disabled / Local-Only features ───────────────────────────────────── -->
+<h5 class="text-uppercase text-muted small fw-semibold mb-3">
+  <i class="bi bi-lock-fill text-warning me-1"></i>Local Only — Disabled on Azure
+</h5>
+<div class="row g-4">
+
+  <!-- ASN Lookup -->
+  <div class="col-sm-6 col-lg-3">
+    <div class="card h-100 shadow-sm border-0 feature-card disabled-card">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start mb-2">
+          <div class="feature-icon bg-secondary text-white rounded-3">
+            <i class="bi bi-search fs-4"></i>
+          </div>
+          <span class="badge bg-secondary local-only-badge">
+            <i class="bi bi-lock-fill me-1"></i>Local Only
+          </span>
+        </div>
+        <h5 class="card-title text-muted mt-3">ASN Lookup</h5>
+        <p class="card-text text-muted small">Look up Advanced Ship Notices by shipment ID or reference.</p>
+      </div>
+      <div class="card-footer bg-transparent border-0 pb-3">
+        <button class="btn btn-secondary btn-sm" disabled>
+          <i class="bi bi-lock-fill me-1"></i>Unavailable on Azure
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Carrier Booking -->
+  <div class="col-sm-6 col-lg-3">
+    <div class="card h-100 shadow-sm border-0 feature-card disabled-card">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start mb-2">
+          <div class="feature-icon bg-secondary text-white rounded-3">
+            <i class="bi bi-truck fs-4"></i>
+          </div>
+          <span class="badge bg-secondary local-only-badge">
+            <i class="bi bi-lock-fill me-1"></i>Local Only
+          </span>
+        </div>
+        <h5 class="card-title text-muted mt-3">Carrier Booking</h5>
+        <p class="card-text text-muted small">Submit carrier booking requests to the internal booking API.</p>
+      </div>
+      <div class="card-footer bg-transparent border-0 pb-3">
+        <button class="btn btn-secondary btn-sm" disabled>
+          <i class="bi bi-lock-fill me-1"></i>Unavailable on Azure
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Full SCC Flow -->
+  <div class="col-sm-6 col-lg-3">
+    <div class="card h-100 shadow-sm border-0 feature-card disabled-card">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start mb-2">
+          <div class="feature-icon bg-secondary text-white rounded-3">
+            <i class="bi bi-diagram-3 fs-4"></i>
+          </div>
+          <span class="badge bg-secondary local-only-badge">
+            <i class="bi bi-lock-fill me-1"></i>Local Only
+          </span>
+        </div>
+        <h5 class="card-title text-muted mt-3">Full SCC Flow</h5>
+        <p class="card-text text-muted small">Execute the complete Supply Chain Communication end-to-end workflow.</p>
+      </div>
+      <div class="card-footer bg-transparent border-0 pb-3">
+        <button class="btn btn-secondary btn-sm" disabled>
+          <i class="bi bi-lock-fill me-1"></i>Unavailable on Azure
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADO Email -->
+  <div class="col-sm-6 col-lg-3">
+    <div class="card h-100 shadow-sm border-0 feature-card disabled-card">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start mb-2">
+          <div class="feature-icon bg-secondary text-white rounded-3">
+            <i class="bi bi-envelope-x fs-4"></i>
+          </div>
+          <span class="badge bg-secondary local-only-badge">
+            <i class="bi bi-lock-fill me-1"></i>Local Only
+          </span>
+        </div>
+        <h5 class="card-title text-muted mt-3">ADO Email</h5>
+        <p class="card-text text-muted small">Send automated notification emails via Azure DevOps pipelines.</p>
+      </div>
+      <div class="card-footer bg-transparent border-0 pb-3">
+        <button class="btn btn-secondary btn-sm" disabled>
+          <i class="bi bi-lock-fill me-1"></i>Unavailable on Azure
+        </button>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /row disabled -->
+{% endblock %}

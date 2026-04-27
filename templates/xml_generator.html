@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}XML Generators — QASupportKit Azure{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+  <div class="col">
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Dashboard</a></li>
+        <li class="breadcrumb-item active">XML Generators</li>
+      </ol>
+    </nav>
+    <h1 class="h3 fw-bold"><i class="bi bi-file-earmark-code me-2 text-primary"></i>XML Generators</h1>
+    <p class="text-muted">Choose the XML type you want to generate.</p>
+  </div>
+</div>
+
+<div class="row g-4">
+  <div class="col-sm-6 col-lg-4">
+    <div class="card h-100 shadow-sm border-0 feature-card">
+      <div class="card-body">
+        <div class="feature-icon bg-primary bg-gradient text-white rounded-3 mb-3">
+          <i class="bi bi-file-earmark-code fs-4"></i>
+        </div>
+        <h5 class="card-title">ASN XML</h5>
+        <p class="card-text text-muted small">Advanced Ship Notice XML for EDI / WMS integrations.</p>
+      </div>
+      <div class="card-footer bg-transparent border-0 pb-3">
+        <a href="{{ url_for('xml.generate_asn') }}" class="btn btn-primary btn-sm">Generate</a>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-lg-4">
+    <div class="card h-100 shadow-sm border-0 feature-card">
+      <div class="card-body">
+        <div class="feature-icon bg-primary bg-gradient text-white rounded-3 mb-3">
+          <i class="bi bi-cart-check fs-4"></i>
+        </div>
+        <h5 class="card-title">Order XML</h5>
+        <p class="card-text text-muted small">Order document XML for fulfilment pipeline testing.</p>
+      </div>
+      <div class="card-footer bg-transparent border-0 pb-3">
+        <a href="{{ url_for('xml.generate_order') }}" class="btn btn-primary btn-sm">Generate</a>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-lg-4">
+    <div class="card h-100 shadow-sm border-0 feature-card">
+      <div class="card-body">
+        <div class="feature-icon bg-primary bg-gradient text-white rounded-3 mb-3">
+          <i class="bi bi-box-seam fs-4"></i>
+        </div>
+        <h5 class="card-title">Inventory XML</h5>
+        <p class="card-text text-muted small">Inventory update XML with SKU and stock-level data.</p>
+      </div>
+      <div class="card-footer bg-transparent border-0 pb-3">
+        <a href="{{ url_for('xml.generate_inventory') }}" class="btn btn-primary btn-sm">Generate</a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

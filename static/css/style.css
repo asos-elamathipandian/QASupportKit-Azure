@@ -1,0 +1,63 @@
+/* ═══════════════════════════════════════════════════════
+   QASupportKit-Azure — custom styles
+   ═══════════════════════════════════════════════════════ */
+
+/* Feature icon square */
+.feature-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+}
+
+/* Hover lift for enabled cards */
+.feature-card {
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.feature-card:not(.disabled-card):hover {
+  transform: translateY(-3px);
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.12) !important;
+}
+
+/* ── Disabled / Local-Only cards ─────────────────────── */
+.disabled-card {
+  opacity: 0.65;
+  filter: grayscale(60%);
+  cursor: not-allowed;
+  pointer-events: none;   /* prevent click on the card itself */
+}
+/* Re-enable pointer events on the buttons so `disabled` attr still shows */
+.disabled-card button,
+.disabled-card a {
+  pointer-events: auto;
+}
+
+/* Local Only badge */
+.local-only-badge {
+  font-size: 0.7rem;
+  letter-spacing: 0.03em;
+}
+
+/* Nav dropdown items for local-only */
+.local-only-item {
+  color: #6c757d !important;
+  font-size: 0.9rem;
+  cursor: default;
+}
+
+/* XML output pre block */
+.xml-output {
+  background: #1e1e2e;
+  color: #cdd6f4;
+  font-size: 0.82rem;
+  border-radius: 0 0 0.375rem 0.375rem;
+  max-height: 420px;
+  overflow: auto;
+  white-space: pre;
+}
+
+/* Navbar "disabled" link in Local-Only dropdown toggle */
+.disabled-nav {
+  cursor: default;
+}

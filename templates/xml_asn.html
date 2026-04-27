@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}ASN XML Generator — QASupportKit Azure{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+  <div class="col">
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Dashboard</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('xml.index') }}">XML Generators</a></li>
+        <li class="breadcrumb-item active">ASN XML</li>
+      </ol>
+    </nav>
+    <h1 class="h3 fw-bold"><i class="bi bi-file-earmark-code me-2 text-primary"></i>ASN XML Generator</h1>
+    <p class="text-muted">Fill in the fields below to generate an Advanced Ship Notice XML document.</p>
+  </div>
+</div>
+
+<div class="row g-4">
+  <div class="col-lg-6">
+    <div class="card shadow-sm border-0">
+      <div class="card-header bg-white fw-semibold">Input</div>
+      <div class="card-body">
+        <form method="post">
+          <div class="mb-3">
+            <label class="form-label" for="shipment_id">Shipment ID</label>
+            <input type="text" class="form-control" id="shipment_id" name="shipment_id"
+                   placeholder="e.g. SHP-12345" required />
+          </div>
+          <div class="mb-3">
+            <label class="form-label" for="carrier">Carrier</label>
+            <input type="text" class="form-control" id="carrier" name="carrier"
+                   placeholder="e.g. DHL" />
+          </div>
+          <div class="mb-3">
+            <label class="form-label" for="tracking_number">Tracking Number</label>
+            <input type="text" class="form-control" id="tracking_number" name="tracking_number"
+                   placeholder="e.g. 1Z999AA10123456784" />
+          </div>
+          <div class="mb-3">
+            <label class="form-label" for="ship_date">Ship Date</label>
+            <input type="date" class="form-control" id="ship_date" name="ship_date" />
+          </div>
+          <div class="mb-3">
+            <label class="form-label" for="items">Items <small class="text-muted">(one per line)</small></label>
+            <textarea class="form-control font-monospace" id="items" name="items" rows="4"
+                      placeholder="SKU-001&#10;SKU-002"></textarea>
+          </div>
+          <div class="d-flex gap-2">
+            <button type="submit" name="generate" class="btn btn-primary">
+              <i class="bi bi-lightning me-1"></i>Generate
+            </button>
+            <button type="submit" name="download" class="btn btn-outline-primary">
+              <i class="bi bi-download me-1"></i>Download XML
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  {% if xml_output %}
+  <div class="col-lg-6">
+    <div class="card shadow-sm border-0">
+      <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <span class="fw-semibold">Generated XML</span>
+        <button class="btn btn-outline-secondary btn-sm" onclick="copyXml()">
+          <i class="bi bi-clipboard me-1"></i>Copy
+        </button>
+      </div>
+      <div class="card-body p-0">
+        <pre id="xmlOutput" class="xml-output m-0 p-3">{{ xml_output }}</pre>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
