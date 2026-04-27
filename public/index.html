@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ASOS-E2Open Data ToolKit : ASN/PO/SKU updates, ASN lookups, Carrier Booking, Carrier & WMS Milestones</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f4f6f9;
+      color: #333;
+      min-height: 100vh;
+    }
+
+    header {
+      background: #1a1a2e;
+      color: white;
+      padding: 16px 32px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    }
+    header h1 { font-size: 1.2rem; font-weight: 700; letter-spacing: 0.02em; flex: 1; }
+    .btn-reset-all {
+      background: none;
+      border: 1.5px solid rgba(255,255,255,0.3);
+      color: white;
+      border-radius: 8px;
+      padding: 6px 14px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      cursor: pointer;
+      letter-spacing: 0.03em;
+      transition: background 0.2s, border-color 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn-reset-all:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.6); }
+    header .badge {
+      background: #e94560;
+      color: white;
+      font-size: 0.68rem;
+      padding: 3px 9px;
+      border-radius: 12px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+    }
+    header .badge-cloud {
+      background: #0ea5e9;
+      color: white;
+      font-size: 0.68rem;
+      padding: 3px 9px;
+      border-radius: 12px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+    }
+
+    .container { max-width: 860px; margin: 28px auto; padding: 0 20px; }
+
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 24px 28px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+      margin-bottom: 20px;
+    }
+    .card-title {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #1a1a2e;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      margin-bottom: 18px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid #f0f0f0;
+    }
+
+    /* ── Local-Only Overlay ── */
+    .local-only-card {
+      position: relative;
+      opacity: 0.55;
+      pointer-events: none;
+      user-select: none;
+    }
+    .local-only-badge {
+      position: absolute;
+      top: 14px;
+      right: 16px;
+      background: #f59e0b;
+      color: white;
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 10px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      z-index: 2;
+      pointer-events: auto;
+    }
+
+    /* ── Form ── */
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+    .form-group { display: flex; flex-direction: column; gap: 5px; }
+    .form-group label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    .form-group input,
+    .form-group select {
+      padding: 9px 13px;
+      border: 1.5px solid #e0e0e0;
+      border-radius: 8px;
+      font-size: 0.93rem;
+      color: #333;
+      background: white;
+      transition: border-color 0.2s;
+    }
+    .form-group input:focus,
+    .form-group select:focus { outline: none; border-color: #4361ee; }
+    .form-group input::placeholder { color: #bbb; }
+
+    /* ── Buttons ── */
+    .btn-generate-all {
+      width: 100%;
+      padding: 13px;
+      background: #1a1a2e;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 0.97rem;
+      font-weight: 700;
+      cursor: pointer;
+      letter-spacing: 0.03em;
+      transition: background 0.2s, transform 0.1s;
+      margin-bottom: 16px;
+    }
+    .btn-generate-all:hover { background: #16213e; }
+    .btn-generate-all:active { transform: scale(0.99); }
+    .btn-generate-all:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .individual-buttons {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+    .btn-msg {
+      padding: 11px 8px;
+      border: none;
+      border-radius: 9px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+      color: white;
+      text-align: center;
+      letter-spacing: 0.02em;
+      transition: opacity 0.2s, transform 0.1s;
+    }
+    .btn-msg:hover   { opacity: 0.88; }
+    .btn-msg:active  { transform: scale(0.97); }
+    .btn-msg:disabled { opacity: 0.45; cursor: not-allowed; }
+
+    .btn-vbkcon   { background: #4361ee; }
+    .btn-bst      { background: #27ae60; }
+    .btn-shipment { background: #e67e22; }
+    .btn-fcbkc    { background: #8e44ad; }
+    .btn-rcv      { background: #e94560; }
+    .btn-padex    { background: #16a085; }
+    .btn-feed     { background: #2980b9; }
+    .btn-gpm      { background: #d35400; }
+    .btn-po       { background: #8e44ad; }
+
+    .btn-label-sub {
+      display: block;
+      font-size: 0.68rem;
+      font-weight: 400;
+      opacity: 0.85;
+      margin-top: 2px;
+    }
+
+    /* ── Results ── */
+    #results { display: none; }
+    .results-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid #f0f0f0;
+    }
+    .results-header .card-title { margin: 0; padding: 0; border: none; }
+    .btn-clear {
+      background: none;
+      border: 1.5px solid #ddd;
+      border-radius: 6px;
+      padding: 4px 12px;
+      font-size: 0.78rem;
+      color: #888;
+      cursor: pointer;
+    }
+    .btn-clear:hover { background: #f5f5f5; }
+
+    .result-list { display: flex; flex-direction: column; gap: 9px; }
+
+    .result-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 11px;
+      padding: 11px 15px;
+      border-radius: 8px;
+      font-size: 0.87rem;
+    }
+    .result-item.success { background: #f0fdf4; border-left: 4px solid #22c55e; }
+    .result-item.error   { background: #fef2f2; border-left: 4px solid #ef4444; }
+    .result-item.loading { background: #eff6ff; border-left: 4px solid #3b82f6; }
+
+    .result-icon  { font-size: 1rem; flex-shrink: 0; margin-top: 2px; }
+    .result-body  { flex: 1; min-width: 0; }
+    .result-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #1a1a2e;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 3px;
+    }
+    .result-filename {
+      font-family: "Courier New", monospace;
+      font-size: 0.78rem;
+      color: #444;
+      word-break: break-all;
+    }
+    .result-remote {
+      font-size: 0.73rem;
+      color: #888;
+      margin-top: 2px;
+      word-break: break-all;
+    }
+    .result-error { color: #ef4444; font-weight: 600; font-size: 0.85rem; }
+
+    /* Spinner */
+    .spinner {
+      display: inline-block;
+      width: 14px; height: 14px;
+      border: 2px solid #3b82f6;
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      flex-shrink: 0;
+      margin-top: 3px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Progress steps */
+    .progress-steps {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-top: 4px;
+    }
+    .step {
+      font-size: 0.72rem;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+    }
+    .step.queued   { background: #e0e7ff; color: #4361ee; }
+    .step.active   { background: #dbeafe; color: #1d4ed8; }
+    .step.done     { background: #dcfce7; color: #15803d; }
+    .step.skipped  { background: #f1f5f9; color: #94a3b8; }
+    .step-arrow    { color: #cbd5e1; font-size: 0.7rem; }
+
+    /* Field hints */
+    .field-hint {
+      font-size: 0.7rem;
+      color: #9ca3af;
+      margin-top: 2px;
+      line-height: 1.4;
+    }
+
+    @media (max-width: 580px) {
+      .form-grid { grid-template-columns: 1fr; }
+      .individual-buttons { grid-template-columns: 1fr 1fr; }
+    }
+
+    /* ── Booking Section (disabled styles) ── */
+    .btn-booking-single, .btn-booking-multi {
+      padding: 13px;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 0.93rem;
+      font-weight: 700;
+      cursor: not-allowed;
+      letter-spacing: 0.03em;
+    }
+    .btn-booking-single { background: #e94560; }
+    .btn-booking-multi  { background: #7c3aed; }
+
+    .booking-buttons {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 14px;
+    }
+
+    /* ── ASN Lookup (disabled styles) ── */
+    .btn-lookup {
+      width: 100%;
+      padding: 13px;
+      background: #0ea5e9;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 0.97rem;
+      font-weight: 700;
+      cursor: not-allowed;
+      letter-spacing: 0.03em;
+    }
+
+    /* ── Full SCC Flow (disabled styles) ── */
+    .btn-full-flow {
+      width: 100%;
+      padding: 15px;
+      background: linear-gradient(135deg, #059669, #10b981);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: not-allowed;
+      letter-spacing: 0.03em;
+    }
+
+    /* ── E2Open Outbound Message Search ── */
+    .btn-blob-search {
+      width: 100%;
+      padding: 13px;
+      background: #7c3aed;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 0.97rem;
+      font-weight: 700;
+      cursor: pointer;
+      letter-spacing: 0.03em;
+      transition: background 0.2s, transform 0.1s;
+    }
+    .btn-blob-search:hover { background: #6d28d9; }
+    .btn-blob-search:active { transform: scale(0.99); }
+    .btn-blob-search:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-blob-download {
+      padding: 8px 16px;
+      background: #059669;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 10px;
+      transition: background 0.2s;
+    }
+    .btn-blob-download:hover { background: #047857; }
+    .btn-blob-download:disabled { opacity: 0.5; cursor: not-allowed; }
+    .blob-results-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      font-size: 0.85rem;
+    }
+    .blob-results-table th {
+      text-align: left;
+      padding: 8px 10px;
+      background: #f1f5f9;
+      border-bottom: 2px solid #e2e8f0;
+      font-weight: 600;
+    }
+    .blob-results-table td {
+      padding: 6px 10px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .blob-results-table tr:hover { background: #f8fafc; }
+    .blob-results-table input[type="checkbox"] { cursor: pointer; }
+    .blob-select-all { cursor: pointer; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>ASOS-E2Open Data ToolKit : ASN/PO/SKU updates, ASN lookups, Carrier Booking, Carrier &amp; WMS Milestones</h1>
+  <span class="badge-cloud">CLOUD</span>
+  <button class="btn-reset-all" onclick="resetAll()" title="Reset all inputs, results and logs">&#8635; Reset</button>
+</header>
+
+<main class="container">
+
+  <!-- ── ASN Creation (Self-Service) ── -->
+  <div class="card" style="background: #e8f5e9; border-left: 4px solid #2e7d32;">
+    <a href="https://e2e01-self-service.azurewebsites.net/E2E-Util-Services/job-details/21384"
+       target="_blank" rel="noopener noreferrer"
+       style="display:flex; align-items:center; gap:10px; text-decoration:none; color:#2e7d32; font-weight:700; font-size:0.95rem;">
+      &#128279;&nbsp; Click here to create ASN (Self-Service Job #21384)
+      <span style="font-size:0.75rem; color:#555; font-weight:400;">Opens in new tab</span>
+    </a>
+    <p style="margin-top:10px; font-size:0.82rem; color:#555; font-style:italic;">
+      &#9432; Once ASN is completed in self-serve tool, wait for 1 hr to reflect in AIM SCC &mdash; then you can use any of the below features.
+    </p>
+  </div>
+
+  <!-- ── ASN Lookup in SCC (LOCAL ONLY) ── -->
+  <div class="card local-only-card">
+    <span class="local-only-badge">&#128274; Local Only</span>
+    <div class="card-title">ASN Lookup in E2Open SCC</div>
+    <div class="form-grid">
+      <div class="form-group" style="grid-column: 1 / -1;">
+        <label>ASN</label>
+        <input type="text" placeholder="e.g. 49870000001275 or ASN1,ASN2,ASN3" disabled />
+        <span class="field-hint">Requires Playwright browser &mdash; available on local version only.</span>
+      </div>
+    </div>
+    <button class="btn-lookup" disabled style="margin-top:14px;">
+      &#128269;&nbsp; Check ASN in SCC
+    </button>
+  </div>
+
+  <!-- ── Booking Creation (LOCAL ONLY) ── -->
+  <div class="card local-only-card">
+    <span class="local-only-badge">&#128274; Local Only</span>
+    <div class="card-title">Carrier Booking Creation</div>
+    <div class="form-grid">
+      <div class="form-group" style="grid-column: 1 / -1;">
+        <label>ASN for Booking</label>
+        <input type="text" placeholder="e.g. 49870000001275 or ASN1,ASN2,ASN3" disabled />
+        <span class="field-hint">Requires Playwright browser &mdash; available on local version only.</span>
+      </div>
+    </div>
+    <div class="booking-buttons">
+      <button class="btn-booking-single" disabled>
+        &#9654;&nbsp; Single ASN per Booking
+        <span class="btn-label-sub">One booking per ASN, login once</span>
+      </button>
+      <button class="btn-booking-multi" disabled>
+        &#9654;&nbsp; All ASNs &times; One Booking
+        <span class="btn-label-sub">All ASNs combined in one booking</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ── Full SCC Flow (LOCAL ONLY) ── -->
+  <div class="card local-only-card">
+    <span class="local-only-badge">&#128274; Local Only</span>
+    <div class="card-title">Full SCC Flow &mdash; One-Click Booking</div>
+    <div class="form-grid">
+      <div class="form-group" style="grid-column: 1 / -1;">
+        <label>ASN</label>
+        <input type="text" placeholder="e.g. 49870000001275 or ASN1,ASN2,ASN3" disabled />
+        <span class="field-hint">Requires Playwright browser &mdash; available on local version only.</span>
+      </div>
+    </div>
+    <button class="btn-full-flow" disabled style="margin-top:14px;">
+      &#9889;&nbsp; Full SCC Flow
+      <span class="btn-label-sub">ASN Lookup + Single Booking Creation + Edit + Submit + Approve</span>
+    </button>
+  </div>
+
+  <!-- ── Carrier & WMS Events ── -->
+  <div class="card">
+    <div class="card-title">Carrier &amp; WMS Events</div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label for="asn">ASN</label>
+        <input id="asn" type="text" placeholder="e.g. 49870000001275" />
+      </div>
+      <div class="form-group">
+        <label for="po">PO</label>
+        <input id="po" type="text" placeholder="e.g. 500034216385" />
+      </div>
+      <div class="form-group">
+        <label for="sku">SKU</label>
+        <input id="sku" type="text" placeholder="e.g. 148609059 or 148609059,140260042" />
+        <span class="field-hint">Multiple SKUs: comma-separated, e.g. <strong>SKU1,SKU2</strong></span>
+      </div>
+      <div class="form-group">
+        <label for="skuQty">SKU Qty</label>
+        <input id="skuQty" type="text" placeholder="e.g. 100 or 100,50" value="1" />
+        <span class="field-hint">Match SKU order: e.g. <strong>100,50</strong> for two SKUs</span>
+      </div>
+      <div class="form-group">
+        <label for="optionId">Option ID</label>
+        <input id="optionId" type="text" placeholder="e.g. 149409035" />
+        <span class="field-hint">For GPM / SKU Re-trigger only</span>
+      </div>
+      <div class="form-group">
+        <label for="ace">ACE</label>
+        <input id="ace" type="text" placeholder="e.g. VB-0000002052" />
+      </div>
+      <div class="form-group">
+        <label for="carrier">Carrier</label>
+        <select id="carrier">
+          <option value="DT">DT — Davies Turner</option>
+          <option value="Maersk">Maersk</option>
+          <option value="Advanced">Advanced</option>
+        </select>
+      </div>
+    </div>
+
+    <button class="btn-generate-all" id="btnAll" onclick="generateAll()" style="margin-top:18px;">
+      &#9654;&nbsp; Happy Path Carrier &amp; WMS Milestones
+      <span class="btn-label-sub">Requires: ASN, PO, SKU, SKU Qty, ACE</span>
+    </button>
+
+    <div class="individual-buttons">
+      <button class="btn-msg btn-vbkcon" onclick="generateOne('vbkcon', 'VBKCON')">
+        VBKCON
+        <span class="btn-label-sub">Requires: ACE</span>
+      </button>
+      <button class="btn-msg btn-bst" onclick="generateOne('bst', 'Bulk Status')">
+        Bulk Status (BST)
+        <span class="btn-label-sub">Requires: ASN</span>
+      </button>
+      <button class="btn-msg btn-shipment" onclick="generateOne('shipment', 'Carrier Shipment')">
+        Carrier Shipment
+        <span class="btn-label-sub">Requires: ASN, PO, SKU, SKU Qty</span>
+      </button>
+      <button class="btn-msg btn-fcbkc" onclick="generateOne('asn-fcbkc', 'ASN FCBKC')">
+        ASN FCBKC
+        <span class="btn-label-sub">Requires: ASN</span>
+      </button>
+      <button class="btn-msg btn-rcv" onclick="generateOne('asn-rcv', 'ASN RCV')">
+        ASN RCV
+        <span class="btn-label-sub">Requires: ASN</span>
+      </button>
+      <button class="btn-msg btn-padex" onclick="generateOne('asn-padex', 'ASN PADEX')">
+        ASN PADEX
+        <span class="btn-label-sub">Requires: ASN, PO, SKU, SKU Qty</span>
+      </button>
+      <button class="btn-msg btn-feed" onclick="generateOne('asn-feed', 'ASN Feed')">
+        ASN Feed
+        <span class="btn-label-sub">Requires: ASN, PO, SKU, SKU Qty</span>
+      </button>
+      <button class="btn-msg btn-gpm" onclick="generateOne('gpm', 'SKU Re-trigger (GPM)')">
+        SKU Re-trigger
+        <span class="btn-label-sub">Requires: SKU (comma-sep), Option ID</span>
+      </button>
+      <button class="btn-msg btn-po" onclick="generateOne('po-feed', 'PO Feed')">
+        PO Feed
+        <span class="btn-label-sub">Requires: PO, SKU, SKU Qty, Option ID, Carrier</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ── Results ── -->
+  <div class="card" id="results">
+    <div class="results-header">
+      <div class="card-title">Results</div>
+      <button class="btn-clear" onclick="clearResults()">Clear</button>
+    </div>
+    <div class="result-list" id="resultList"></div>
+  </div>
+
+  <!-- ── E2Open Outbound Message Search ── -->
+  <div class="card">
+    <div class="card-title">&#9729; E2Open Outbound Message Search</div>
+    <div class="form-grid">
+      <div class="form-group" style="grid-column: 1 / -1;">
+        <label for="blobAsn">ASN</label>
+        <input id="blobAsn" type="text" placeholder="e.g. 49870000001418" />
+        <span class="field-hint">Search E2Open outbound messages for XML files containing this ASN.</span>
+      </div>
+    </div>
+    <button class="btn-blob-search" id="btnBlobSearch" onclick="searchBlobs()" style="margin-top:14px;">
+      &#9729;&nbsp; Search Outbound Messages
+    </button>
+    <div id="blobResult" style="margin-top:14px;"></div>
+  </div>
+
+  <!-- ── ADO Status Email (LOCAL ONLY) ── -->
+  <div class="card local-only-card" style="background:#e3f2fd; border-left:4px solid #0078D4;">
+    <span class="local-only-badge">&#128274; Local Only</span>
+    <div class="card-title" style="color:#0078D4;">&#128231; ADO Test Status Email</div>
+    <p style="font-size:0.82rem; color:#555; margin:6px 0 12px 0;">
+      Preview &amp; send the latest AIM Test Execution Progress &amp; Bug Report email. Requires Outlook COM &mdash; available on local version only.
+    </p>
+    <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+      <button disabled
+              style="background:#0078D4; color:white; font-weight:600; padding:8px 20px; border:none; border-radius:4px; opacity:0.5; cursor:not-allowed;">
+        &#128065; Preview Report
+      </button>
+      <button disabled
+              style="background:#2e7d32; color:white; font-weight:600; padding:8px 20px; border:none; border-radius:4px; opacity:0.5; cursor:not-allowed;">
+        &#9993; Send Email
+      </button>
+    </div>
+  </div>
+
+</main>
+
+<script>
+  function getInputs() {
+    return {
+      asn:      document.getElementById("asn").value.trim(),
+      po:       document.getElementById("po").value.trim(),
+      sku:      document.getElementById("sku").value.trim(),
+      skuQty:   document.getElementById("skuQty").value.trim() || "1",
+      optionId: document.getElementById("optionId").value.trim(),
+      ace:      document.getElementById("ace").value.trim(),
+      carrier:  document.getElementById("carrier").value,
+    };
+  }
+
+  function setAllButtons(disabled) {
+    document.querySelectorAll(".btn-msg, .btn-generate-all")
+      .forEach(b => (b.disabled = disabled));
+  }
+
+  function resetAll() {
+    setAllButtons(false);
+    ["asn", "po", "sku", "optionId", "ace"].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = "";
+    });
+    const skuQty = document.getElementById("skuQty");
+    if (skuQty) skuQty.value = "1";
+    const carrier = document.getElementById("carrier");
+    if (carrier) carrier.selectedIndex = 0;
+    clearResults();
+  }
+
+  function showResults() {
+    document.getElementById("results").style.display = "block";
+  }
+
+  function clearResults() {
+    document.getElementById("resultList").innerHTML = "";
+    document.getElementById("results").style.display = "none";
+  }
+
+  // ── Per-row timers ────────────────────────────────────────────────────────
+  const rowTimers = {};
+
+  function startTimer(id) { rowTimers[id] = Date.now(); }
+
+  function elapsedSec(id) {
+    if (!rowTimers[id]) return "";
+    return ((Date.now() - rowTimers[id]) / 1000).toFixed(1) + "s";
+  }
+
+  // ── Progress-aware row helpers ─────────────────────────────────────────────
+
+  const STEPS = [
+    { key: "queued",    label: "Queued"    },
+    { key: "generating", label: "Generating file" },
+    { key: "uploading", label: "Uploading to SFTP" },
+    { key: "done",      label: "Complete"  },
+  ];
+
+  function stepsHtml(activeKey) {
+    return `<div class="progress-steps">` +
+      STEPS.map((s, i) => {
+        const cls = s.key === activeKey ? "active"
+                  : STEPS.findIndex(x => x.key === activeKey) > i ? "done"
+                  : "queued";
+        return (i > 0 ? `<span class="step-arrow">\u203A</span>` : "") +
+               `<span class="step ${cls}">${s.label}</span>`;
+      }).join("") +
+    `</div>`;
+  }
+
+  function addRow(id, label, initialStep = "queued") {
+    showResults();
+    if (initialStep !== "queued") startTimer(id);
+    const list = document.getElementById("resultList");
+    const div = document.createElement("div");
+    div.className = "result-item loading";
+    div.id = "row-" + id;
+    div.innerHTML =
+      `<div class="spinner"></div>` +
+      `<div class="result-body">` +
+        `<div class="result-label">${label}</div>` +
+        stepsHtml(initialStep) +
+      `</div>`;
+    list.appendChild(div);
+  }
+
+  function setRowStep(id, label, stepKey) {
+    if (stepKey === "generating" && !rowTimers[id]) startTimer(id);
+    const div = document.getElementById("row-" + id);
+    if (!div) return;
+    div.className = "result-item loading";
+    div.innerHTML =
+      `<div class="spinner"></div>` +
+      `<div class="result-body">` +
+        `<div class="result-label">${label}</div>` +
+        stepsHtml(stepKey) +
+      `</div>`;
+  }
+
+  function updateRow(id, label, result) {
+    const div = document.getElementById("row-" + id);
+    if (!div) return;
+    if (result.ok) {
+      let filesHtml = "";
+      if (result.files && result.files.length > 0) {
+        filesHtml = result.files.map(f =>
+          `<div class="result-filename" style="margin-top:4px">${f.fileName}</div>` +
+          `<div class="result-remote">\uD83D\uDCE4 ${f.remotePath || ""}</div>`
+        ).join("");
+      } else {
+        filesHtml =
+          `<div class="result-filename" style="margin-top:6px">${result.fileName}</div>` +
+          `<div class="result-remote">\uD83D\uDCE4 ${result.remotePath || ""}</div>`;
+      }
+      div.className = "result-item success";
+      div.innerHTML =
+        `<div class="result-icon">\u2705</div>` +
+        `<div class="result-body">` +
+          `<div class="result-label">${label}</div>` +
+          `<div class="progress-steps">` +
+            STEPS.map((s, i) =>
+              (i > 0 ? `<span class="step-arrow">\u203A</span>` : "") +
+              `<span class="step done">${s.label}</span>`
+            ).join("") +
+          `</div>` +
+          filesHtml +
+          `<div class="result-remote" style="color:#6b7280;margin-top:3px">\u23F1 Completed in ${elapsedSec(id)}</div>` +
+        `</div>`;
+    } else {
+      div.className = "result-item error";
+      div.innerHTML =
+        `<div class="result-icon">\u274C</div>` +
+        `<div class="result-body">` +
+          `<div class="result-label">${label}</div>` +
+          `<div class="result-error" style="margin-top:4px">${result.error}</div>` +
+        `</div>`;
+    }
+  }
+
+  function escapeHtml(str) {
+    const d = document.createElement("div");
+    d.appendChild(document.createTextNode(str));
+    return d.innerHTML;
+  }
+
+  // ── Single message generator ─────────────────────────────────────────────
+
+  async function generateOne(endpoint, label) {
+    const inputs = getInputs();
+    setAllButtons(true);
+    const rowId = endpoint + "-" + Date.now();
+    addRow(rowId, label, "generating");
+    try {
+      const res = await fetch("/api/generate/" + endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(inputs),
+      });
+      setRowStep(rowId, label, "uploading");
+      await new Promise(r => setTimeout(r, 300));
+      updateRow(rowId, label, await res.json().catch(() => ({ ok: false, error: "Invalid response" })));
+    } catch (e) {
+      updateRow(rowId, label, { ok: false, error: e.message });
+    } finally {
+      setAllButtons(false);
+    }
+  }
+
+  // ── Generate All — calls individual endpoints sequentially for live progress
+
+  async function generateAll() {
+    const inputs = getInputs();
+    setAllButtons(true);
+
+    const messages = [
+      { endpoint: "vbkcon",    label: "VBKCON"            },
+      { endpoint: "bst",       label: "Bulk Status (BST)"  },
+      { endpoint: "shipment",  label: "Carrier Shipment"   },
+      { endpoint: "asn-fcbkc", label: "ASN FCBKC"          },
+      { endpoint: "asn-rcv",   label: "ASN RCV"             },
+      { endpoint: "asn-padex", label: "ASN PADEX"           },
+    ];
+
+    messages.forEach(m => addRow(m.endpoint, m.label, "queued"));
+
+    for (const m of messages) {
+      setRowStep(m.endpoint, m.label, "generating");
+      try {
+        const res = await fetch("/api/generate/" + m.endpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(inputs),
+        });
+        setRowStep(m.endpoint, m.label, "uploading");
+        await new Promise(r => setTimeout(r, 350));
+        const data = await res.json();
+        updateRow(m.endpoint, m.label, data);
+      } catch (e) {
+        updateRow(m.endpoint, m.label, { ok: false, error: e.message });
+      }
+    }
+
+    setAllButtons(false);
+  }
+
+  // ── E2Open Outbound Message Search ─────────────────────────────────────────
+
+  async function searchBlobs() {
+    const asn = document.getElementById("blobAsn").value.trim();
+    if (!asn) return alert("Please enter an ASN");
+
+    const btn = document.getElementById("btnBlobSearch");
+    const resultDiv = document.getElementById("blobResult");
+    btn.disabled = true;
+    btn.textContent = "\u23F3 Searching...";
+    resultDiv.innerHTML = '<div style="padding:14px;background:#eff6ff;border-radius:8px;border-left:4px solid #3b82f6;">Searching E2Open outbound messages...</div>';
+
+    try {
+      const res = await fetch("/api/blob-search", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ asn }),
+      });
+      const data = await res.json();
+      if (!data.ok) {
+        resultDiv.innerHTML = `<div style="padding:14px;background:#fef2f2;border-radius:8px;border-left:4px solid #ef4444;">${data.error}</div>`;
+        return;
+      }
+
+      if (data.matches.length === 0) {
+        resultDiv.innerHTML = `<div style="padding:14px;background:#fefce8;border-radius:8px;border-left:4px solid #eab308;">No outbound messages found containing ASN <b>${escapeHtml(asn)}</b> (scanned ${data.scanned} files)</div>`;
+        return;
+      }
+
+      let html = `<div style="padding:14px;background:#f0fdf4;border-radius:8px;border-left:4px solid #22c55e;">`;
+      html += `<div style="margin-bottom:8px;"><b>${data.matches.length}</b> outbound message(s) found containing ASN <b>${escapeHtml(asn)}</b> <span style="color:#64748b;">(scanned ${data.scanned}, skipped ${data.skipped})</span></div>`;
+      html += `<table class="blob-results-table"><thead><tr>`;
+      html += `<th><input type="checkbox" class="blob-select-all" checked onchange="toggleAllBlobs(this)"></th>`;
+      html += `<th>#</th><th>File Name</th><th>Size</th><th>Modified</th><th></th>`;
+      html += `</tr></thead><tbody>`;
+      data.matches.forEach((m, i) => {
+        const fileName = m.name.split("/").pop();
+        const sizeKB = (m.size / 1024).toFixed(1);
+        const modified = new Date(m.lastModified).toLocaleString();
+        const downloadUrl = `/api/blob-file?name=${encodeURIComponent(m.name)}`;
+        html += `<tr>`;
+        html += `<td><input type="checkbox" class="blob-checkbox" value="${escapeHtml(m.name)}" checked></td>`;
+        html += `<td>${i + 1}</td>`;
+        html += `<td style="font-family:monospace;font-size:0.82rem;"><a href="${downloadUrl}" title="Download this file" style="color:#7c3aed;text-decoration:none;">${escapeHtml(fileName)}</a></td>`;
+        html += `<td>${sizeKB} KB</td>`;
+        html += `<td>${modified}</td>`;
+        html += `<td><a href="${downloadUrl}" title="Download" style="font-size:1.1rem;">\u2B07</a></td>`;
+        html += `</tr>`;
+      });
+      html += `</tbody></table>`;
+      html += `<div style="display:flex;gap:10px;align-items:center;margin-top:10px;flex-wrap:wrap;">`;
+      html += `<button class="btn-blob-download" onclick="downloadAllSelectedToPC()">\uD83D\uDCBE Download Selected to PC</button>`;
+      html += `<span id="blobDownloadStatus" style="margin-left:4px;font-size:0.88rem;"></span>`;
+      html += `</div>`;
+      html += `</div>`;
+      resultDiv.innerHTML = html;
+    } catch (e) {
+      resultDiv.innerHTML = `<div style="padding:14px;background:#fef2f2;border-radius:8px;border-left:4px solid #ef4444;">Error: ${escapeHtml(e.message)}</div>`;
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "\u2601 Search Outbound Messages";
+    }
+  }
+
+  function toggleAllBlobs(master) {
+    document.querySelectorAll(".blob-checkbox").forEach(cb => cb.checked = master.checked);
+  }
+
+  function downloadAllSelectedToPC() {
+    const checkboxes = document.querySelectorAll(".blob-checkbox:checked");
+    const blobNames = Array.from(checkboxes).map(cb => cb.value);
+    if (blobNames.length === 0) return alert("No files selected");
+
+    blobNames.forEach((name, i) => {
+      setTimeout(() => {
+        const a = document.createElement("a");
+        a.href = `/api/blob-file?name=${encodeURIComponent(name)}`;
+        a.download = name.split("/").pop();
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      }, i * 300);
+    });
+
+    const statusEl = document.getElementById("blobDownloadStatus");
+    if (statusEl) {
+      statusEl.textContent = `\uD83D\uDCBE Downloading ${blobNames.length} file(s) to your PC...`;
+      statusEl.style.color = "#7c3aed";
+    }
+  }
+</script>
+
+</body>
+</html>

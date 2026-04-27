@@ -1,0 +1,9 @@
+node_modules/
+config/.env
+config/inputs.json
+config/abv-counter.json
+config/*.ppk
+output/
+state/
+iisnode/
+*.log
