@@ -32,7 +32,8 @@ function buildSftpConfigFromEnv(env) {
     }
   } else if (env.SFTP_PRIVATE_KEY_CONTENT) {
     // Support inline key content (for Azure App Service / cloud environments)
-    connectionOptions.privateKey = env.SFTP_PRIVATE_KEY_CONTENT;
+    // Azure App Settings strip real newlines; restore \\n literals to actual newlines
+    connectionOptions.privateKey = env.SFTP_PRIVATE_KEY_CONTENT.replace(/\\n/g, "\n");
     if (passphrase) {
       connectionOptions.passphrase = passphrase;
     }
