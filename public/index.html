@@ -547,6 +547,22 @@
     <div id="blobResultAsn" style="margin-top:14px;"></div>
   </div>
 
+  <!-- ── E2Open PO Feed Search (asbamintstgeunendtoend01) ── -->
+  <div class="card">
+    <div class="card-title">&#9729; E2Open PO Feed Search</div>
+    <div class="form-grid">
+      <div class="form-group" style="grid-column: 1 / -1;">
+        <label for="blobPoE2">PO</label>
+        <input id="blobPoE2" type="text" placeholder="e.g. 500034216385" />
+        <span class="field-hint">Search E2Open PO feed storage for XML files where filename and content match this PO.</span>
+      </div>
+    </div>
+    <button class="btn-blob-search" id="btnBlobSearchPo" onclick="searchBlobsPo()" style="margin-top:14px;">
+      &#9729;&nbsp; Search E2Open PO Feed
+    </button>
+    <div id="blobResultPo" style="margin-top:14px;"></div>
+  </div>
+
   <!-- ── ASN Lookup in SCC (LOCAL ONLY) ── -->
   <div class="card local-only-card">
     <span class="local-only-badge">&#128274; Local Only</span>
@@ -1006,6 +1022,97 @@
     });
 
     const statusEl = document.getElementById("blobAsnDownloadStatus");
+    if (statusEl) {
+      statusEl.textContent = `\uD83D\uDCBE Downloading ${blobNames.length} file(s) to your PC...`;
+      statusEl.style.color = "#7c3aed";
+    }
+  }
+
+  // ── E2Open PO Feed Search (asbamintstgeunendtoend01) ──
+
+  async function searchBlobsPo() {
+    const po = document.getElementById("blobPoE2").value.trim();
+    if (!po) return alert("Please enter a PO");
+
+    const btn = document.getElementById("btnBlobSearchPo");
+    const resultDiv = document.getElementById("blobResultPo");
+    btn.disabled = true;
+    btn.textContent = "\u23F3 Searching...";
+    resultDiv.innerHTML = '<div style="padding:14px;background:#eff6ff;border-radius:8px;border-left:4px solid #3b82f6;">Searching E2Open PO feed storage...</div>';
+
+    try {
+      const res = await fetch("/api/blob-search-po", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ po }),
+      });
+      const data = await res.json();
+      if (!data.ok) {
+        resultDiv.innerHTML = `<div style="padding:14px;background:#fef2f2;border-radius:8px;border-left:4px solid #ef4444;">${data.error}</div>`;
+        return;
+      }
+
+      if (data.matches.length === 0) {
+        resultDiv.innerHTML = `<div style="padding:14px;background:#fefce8;border-radius:8px;border-left:4px solid #eab308;">No PO feed files found matching <b>${escapeHtml(po)}</b> (scanned ${data.scanned} files)</div>`;
+        return;
+      }
+
+      let html = `<div style="padding:14px;background:#f0fdf4;border-radius:8px;border-left:4px solid #22c55e;">`;
+      html += `<div style="margin-bottom:8px;"><b>${data.matches.length}</b> PO feed file(s) found matching <b>${escapeHtml(po)}</b> <span style="color:#64748b;">(scanned ${data.scanned}, skipped ${data.skipped})</span></div>`;
+      html += `<table class="blob-results-table"><thead><tr>`;
+      html += `<th><input type="checkbox" class="blob-po-select-all" checked onchange="toggleAllBlobsPo(this)"></th>`;
+      html += `<th>#</th><th>File Name</th><th>Size</th><th>Modified</th><th></th>`;
+      html += `</tr></thead><tbody>`;
+      data.matches.forEach((m, i) => {
+        const fileName = m.name.split("/").pop();
+        const sizeKB = (m.size / 1024).toFixed(1);
+        const modified = new Date(m.lastModified).toLocaleString();
+        const downloadUrl = `/api/blob-file-po?name=${encodeURIComponent(m.name)}`;
+        html += `<tr>`;
+        html += `<td><input type="checkbox" class="blob-po-checkbox" value="${escapeHtml(m.name)}" checked></td>`;
+        html += `<td>${i + 1}</td>`;
+        html += `<td style="font-family:monospace;font-size:0.82rem;"><a href="${downloadUrl}" title="Download this file" style="color:#7c3aed;text-decoration:none;">${escapeHtml(fileName)}</a></td>`;
+        html += `<td>${sizeKB} KB</td>`;
+        html += `<td>${modified}</td>`;
+        html += `<td><a href="${downloadUrl}" title="Download" style="font-size:1.1rem;">\u2B07</a></td>`;
+        html += `</tr>`;
+      });
+      html += `</tbody></table>`;
+      html += `<div style="display:flex;gap:10px;align-items:center;margin-top:10px;flex-wrap:wrap;">`;
+      html += `<button class="btn-blob-download" onclick="downloadAllSelectedPoToPC()">\uD83D\uDCBE Download Selected to PC</button>`;
+      html += `<span id="blobPoDownloadStatus" style="margin-left:4px;font-size:0.88rem;"></span>`;
+      html += `</div>`;
+      html += `</div>`;
+      resultDiv.innerHTML = html;
+    } catch (e) {
+      resultDiv.innerHTML = `<div style="padding:14px;background:#fef2f2;border-radius:8px;border-left:4px solid #ef4444;">Error: ${escapeHtml(e.message)}</div>`;
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "\u2601 Search E2Open PO Feed";
+    }
+  }
+
+  function toggleAllBlobsPo(master) {
+    document.querySelectorAll(".blob-po-checkbox").forEach(cb => cb.checked = master.checked);
+  }
+
+  function downloadAllSelectedPoToPC() {
+    const checkboxes = document.querySelectorAll(".blob-po-checkbox:checked");
+    const blobNames = Array.from(checkboxes).map(cb => cb.value);
+    if (blobNames.length === 0) return alert("No files selected");
+
+    blobNames.forEach((name, i) => {
+      setTimeout(() => {
+        const a = document.createElement("a");
+        a.href = `/api/blob-file-po?name=${encodeURIComponent(name)}`;
+        a.download = name.split("/").pop();
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      }, i * 300);
+    });
+
+    const statusEl = document.getElementById("blobPoDownloadStatus");
     if (statusEl) {
       statusEl.textContent = `\uD83D\uDCBE Downloading ${blobNames.length} file(s) to your PC...`;
       statusEl.style.color = "#7c3aed";
