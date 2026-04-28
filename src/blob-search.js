@@ -143,7 +143,7 @@ async function downloadBlobs({ blobNames, connectionString, containerName, outpu
   return { downloaded, failed };
 }
 
-module.exports = { searchBlobsByAsn, searchBlobsByAsnNameAndContent, searchBlobsByPoNameAndContent, downloadBlobs };
+module.exports = { searchBlobsByAsn, searchBlobsByAsnNameAndContent, searchBlobsByPoNameAndContent, searchBlobsCarrierFeedByAsn, downloadBlobs };
 
 /**
  * Search Azure Blob Storage for XML files where the ASN appears in BOTH
@@ -285,6 +285,74 @@ async function searchBlobsByPoNameAndContent({
           }
         } catch (err) {
           console.error(`[blob-search-po] Failed to read ${blob.name}: ${err.message}`);
+        }
+        return null;
+      })
+    );
+    matches.push(...results.filter(Boolean));
+  }
+
+  return { matches, scanned, skipped };
+}
+
+/**
+ * Search Azure Blob Storage for carrier feed XML files where the ASN appears
+ * in BOTH the blob file name AND the file content.
+ * Blobs are stored in carrier-wise folders (e.g. DAVIESTN/, MAEU/, etc.)
+ */
+async function searchBlobsCarrierFeedByAsn({
+  asn,
+  connectionString,
+  containerName,
+  maxBlobs = 500,
+}) {
+  const blobServiceClient = BlobServiceClient.fromConnectionString(connectionString);
+  const containerClient = blobServiceClient.getContainerClient(containerName);
+
+  const matches = [];
+  let scanned = 0;
+  let skipped = 0;
+
+  // List all blobs across all carrier folders, filter by ASN in filename
+  const blobs = [];
+  for await (const blob of containerClient.listBlobsFlat()) {
+    if (!blob.name.includes(asn)) {
+      skipped++;
+      continue;
+    }
+    if (!blob.name.endsWith(".xml") && !blob.name.endsWith(".XML")) {
+      skipped++;
+      continue;
+    }
+    blobs.push(blob);
+    if (blobs.length >= maxBlobs) break;
+  }
+
+  // Download and verify ASN also appears in content (batches of 10)
+  const BATCH_SIZE = 10;
+  for (let i = 0; i < blobs.length; i += BATCH_SIZE) {
+    const batch = blobs.slice(i, i + BATCH_SIZE);
+    const results = await Promise.all(
+      batch.map(async (blob) => {
+        scanned++;
+        try {
+          const blobClient = containerClient.getBlobClient(blob.name);
+          const downloadResponse = await blobClient.download(0);
+          const content = await streamToString(downloadResponse.readableStreamBody);
+
+          if (content.includes(asn)) {
+            // Extract carrier folder from path
+            const carrierFolder = blob.name.split("/")[0] || "";
+            return {
+              name: blob.name,
+              size: blob.properties.contentLength,
+              lastModified: blob.properties.lastModified?.toISOString(),
+              url: blobClient.url,
+              carrier: carrierFolder,
+            };
+          }
+        } catch (err) {
+          console.error(`[blob-search-carrier] Failed to read ${blob.name}: ${err.message}`);
         }
         return null;
       })

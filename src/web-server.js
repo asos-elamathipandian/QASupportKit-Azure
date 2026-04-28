@@ -19,7 +19,7 @@ const { writeGpmFile } = require("./gpm");
 const { writePoFeedFile } = require("./po-feed");
 const { uploadFileToSftp } = require("./sftp");
 const { buildSftpConfigFromEnv } = require("./sftp-config");
-const { searchBlobsByAsn, searchBlobsByAsnNameAndContent, searchBlobsByPoNameAndContent, downloadBlobs } = require("./blob-search");
+const { searchBlobsByAsn, searchBlobsByAsnNameAndContent, searchBlobsByPoNameAndContent, searchBlobsCarrierFeedByAsn, downloadBlobs } = require("./blob-search");
 const {
   getAbvCounterFile,
   getCarrierSequenceFile,
@@ -491,6 +491,60 @@ app.get("/api/blob-file-po", async (req, res) => {
   try {
     const { BlobServiceClient } = require("@azure/storage-blob");
     const containerName = process.env.AZURE_BLOB_E2OPEN_PO_CONTAINER || "bam033v-aimpurchaseorder-endtoend";
+    const blobServiceClient = BlobServiceClient.fromConnectionString(connectionString);
+    const containerClient = blobServiceClient.getContainerClient(containerName);
+    const blobClient = containerClient.getBlobClient(blobName);
+
+    const downloadResponse = await blobClient.download(0);
+    const fileName = blobName.split("/").pop();
+
+    res.setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
+    res.setHeader("Content-Type", "application/xml");
+    if (downloadResponse.contentLength) {
+      res.setHeader("Content-Length", downloadResponse.contentLength);
+    }
+    downloadResponse.readableStreamBody.pipe(res);
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+// ── PO Carrier Feed Blob Search (bam036-asnin-endtoend) ─────────────────────
+
+app.post("/api/blob-search-carrier-feed", async (req, res) => {
+  const { asn, maxBlobs = 500 } = req.body;
+  if (!asn || !asn.trim()) return res.status(400).json({ ok: false, error: "asn is required" });
+
+  const connectionString = process.env.AZURE_BLOB_E2OPEN_PO_CONNECTION_STRING;
+  if (!connectionString) {
+    return res.status(500).json({ ok: false, error: "AZURE_BLOB_E2OPEN_PO_CONNECTION_STRING not configured" });
+  }
+
+  try {
+    const containerName = process.env.AZURE_BLOB_CARRIER_FEED_CONTAINER || "bam036-asnin-endtoend";
+    const result = await searchBlobsCarrierFeedByAsn({ asn: asn.trim(), connectionString, containerName, maxBlobs });
+    res.json({ ok: true, ...result });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+app.get("/api/blob-file-carrier-feed", async (req, res) => {
+  const blobName = req.query.name;
+  if (!blobName) return res.status(400).json({ ok: false, error: "name query param is required" });
+
+  if (blobName.includes("..") || blobName.startsWith("/")) {
+    return res.status(400).json({ ok: false, error: "Invalid blob name" });
+  }
+
+  const connectionString = process.env.AZURE_BLOB_E2OPEN_PO_CONNECTION_STRING;
+  if (!connectionString) {
+    return res.status(500).json({ ok: false, error: "AZURE_BLOB_E2OPEN_PO_CONNECTION_STRING not configured" });
+  }
+
+  try {
+    const { BlobServiceClient } = require("@azure/storage-blob");
+    const containerName = process.env.AZURE_BLOB_CARRIER_FEED_CONTAINER || "bam036-asnin-endtoend";
     const blobServiceClient = BlobServiceClient.fromConnectionString(connectionString);
     const containerClient = blobServiceClient.getContainerClient(containerName);
     const blobClient = containerClient.getBlobClient(blobName);
