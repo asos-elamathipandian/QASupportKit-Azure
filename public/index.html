@@ -420,62 +420,6 @@
     </p>
   </div>
 
-  <!-- ── ASN Lookup in SCC (LOCAL ONLY) ── -->
-  <div class="card local-only-card">
-    <span class="local-only-badge">&#128274; Local Only</span>
-    <div class="card-title">ASN Lookup in E2Open SCC</div>
-    <div class="form-grid">
-      <div class="form-group" style="grid-column: 1 / -1;">
-        <label>ASN</label>
-        <input type="text" placeholder="e.g. 49870000001275 or ASN1,ASN2,ASN3" disabled />
-        <span class="field-hint">Requires Playwright browser &mdash; available on local version only.</span>
-      </div>
-    </div>
-    <button class="btn-lookup" disabled style="margin-top:14px;">
-      &#128269;&nbsp; Check ASN in SCC
-    </button>
-  </div>
-
-  <!-- ── Booking Creation (LOCAL ONLY) ── -->
-  <div class="card local-only-card">
-    <span class="local-only-badge">&#128274; Local Only</span>
-    <div class="card-title">Carrier Booking Creation</div>
-    <div class="form-grid">
-      <div class="form-group" style="grid-column: 1 / -1;">
-        <label>ASN for Booking</label>
-        <input type="text" placeholder="e.g. 49870000001275 or ASN1,ASN2,ASN3" disabled />
-        <span class="field-hint">Requires Playwright browser &mdash; available on local version only.</span>
-      </div>
-    </div>
-    <div class="booking-buttons">
-      <button class="btn-booking-single" disabled>
-        &#9654;&nbsp; Single ASN per Booking
-        <span class="btn-label-sub">One booking per ASN, login once</span>
-      </button>
-      <button class="btn-booking-multi" disabled>
-        &#9654;&nbsp; All ASNs &times; One Booking
-        <span class="btn-label-sub">All ASNs combined in one booking</span>
-      </button>
-    </div>
-  </div>
-
-  <!-- ── Full SCC Flow (LOCAL ONLY) ── -->
-  <div class="card local-only-card">
-    <span class="local-only-badge">&#128274; Local Only</span>
-    <div class="card-title">Full SCC Flow &mdash; One-Click Booking</div>
-    <div class="form-grid">
-      <div class="form-group" style="grid-column: 1 / -1;">
-        <label>ASN</label>
-        <input type="text" placeholder="e.g. 49870000001275 or ASN1,ASN2,ASN3" disabled />
-        <span class="field-hint">Requires Playwright browser &mdash; available on local version only.</span>
-      </div>
-    </div>
-    <button class="btn-full-flow" disabled style="margin-top:14px;">
-      &#9889;&nbsp; Full SCC Flow
-      <span class="btn-label-sub">ASN Lookup + Single Booking Creation + Edit + Submit + Approve</span>
-    </button>
-  </div>
-
   <!-- ── Carrier & WMS Events ── -->
   <div class="card">
     <div class="card-title">Carrier &amp; WMS Events</div>
@@ -585,6 +529,62 @@
       &#9729;&nbsp; Search Outbound Messages
     </button>
     <div id="blobResult" style="margin-top:14px;"></div>
+  </div>
+
+  <!-- ── ASN Lookup in SCC (LOCAL ONLY) ── -->
+  <div class="card local-only-card">
+    <span class="local-only-badge">&#128274; Local Only</span>
+    <div class="card-title">ASN Lookup in E2Open SCC</div>
+    <div class="form-grid">
+      <div class="form-group" style="grid-column: 1 / -1;">
+        <label>ASN</label>
+        <input type="text" placeholder="e.g. 49870000001275 or ASN1,ASN2,ASN3" disabled />
+        <span class="field-hint">Requires Playwright browser &mdash; available on local version only.</span>
+      </div>
+    </div>
+    <button class="btn-lookup" disabled style="margin-top:14px;">
+      &#128269;&nbsp; Check ASN in SCC
+    </button>
+  </div>
+
+  <!-- ── Booking Creation (LOCAL ONLY) ── -->
+  <div class="card local-only-card">
+    <span class="local-only-badge">&#128274; Local Only</span>
+    <div class="card-title">Carrier Booking Creation</div>
+    <div class="form-grid">
+      <div class="form-group" style="grid-column: 1 / -1;">
+        <label>ASN for Booking</label>
+        <input type="text" placeholder="e.g. 49870000001275 or ASN1,ASN2,ASN3" disabled />
+        <span class="field-hint">Requires Playwright browser &mdash; available on local version only.</span>
+      </div>
+    </div>
+    <div class="booking-buttons">
+      <button class="btn-booking-single" disabled>
+        &#9654;&nbsp; Single ASN per Booking
+        <span class="btn-label-sub">One booking per ASN, login once</span>
+      </button>
+      <button class="btn-booking-multi" disabled>
+        &#9654;&nbsp; All ASNs &times; One Booking
+        <span class="btn-label-sub">All ASNs combined in one booking</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ── Full SCC Flow (LOCAL ONLY) ── -->
+  <div class="card local-only-card">
+    <span class="local-only-badge">&#128274; Local Only</span>
+    <div class="card-title">Full SCC Flow &mdash; One-Click Booking</div>
+    <div class="form-grid">
+      <div class="form-group" style="grid-column: 1 / -1;">
+        <label>ASN</label>
+        <input type="text" placeholder="e.g. 49870000001275 or ASN1,ASN2,ASN3" disabled />
+        <span class="field-hint">Requires Playwright browser &mdash; available on local version only.</span>
+      </div>
+    </div>
+    <button class="btn-full-flow" disabled style="margin-top:14px;">
+      &#9889;&nbsp; Full SCC Flow
+      <span class="btn-label-sub">ASN Lookup + Single Booking Creation + Edit + Submit + Approve</span>
+    </button>
   </div>
 
   <!-- ── ADO Status Email (LOCAL ONLY) ── -->
