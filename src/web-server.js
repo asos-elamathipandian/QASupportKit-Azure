@@ -19,7 +19,7 @@ const { writeGpmFile } = require("./gpm");
 const { writePoFeedFile } = require("./po-feed");
 const { uploadFileToSftp } = require("./sftp");
 const { buildSftpConfigFromEnv } = require("./sftp-config");
-const { searchBlobsByAsn, downloadBlobs } = require("./blob-search");
+const { searchBlobsByAsn, searchBlobsByAsnNameAndContent, downloadBlobs } = require("./blob-search");
 const {
   getAbvCounterFile,
   getCarrierSequenceFile,
@@ -383,6 +383,60 @@ app.get("/api/blob-file", async (req, res) => {
   try {
     const { BlobServiceClient } = require("@azure/storage-blob");
     const containerName = process.env.AZURE_BLOB_CONTAINER || "sftp-inbound";
+    const blobServiceClient = BlobServiceClient.fromConnectionString(connectionString);
+    const containerClient = blobServiceClient.getContainerClient(containerName);
+    const blobClient = containerClient.getBlobClient(blobName);
+
+    const downloadResponse = await blobClient.download(0);
+    const fileName = blobName.split("/").pop();
+
+    res.setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
+    res.setHeader("Content-Type", "application/xml");
+    if (downloadResponse.contentLength) {
+      res.setHeader("Content-Length", downloadResponse.contentLength);
+    }
+    downloadResponse.readableStreamBody.pipe(res);
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+// ── E2Open ASN Blob Search (asscteunintebbe2e) ───────────────────────────────
+
+app.post("/api/blob-search-asn", async (req, res) => {
+  const { asn, hoursBack = 1440, maxBlobs = 500 } = req.body;
+  if (!asn || !asn.trim()) return res.status(400).json({ ok: false, error: "asn is required" });
+
+  const connectionString = process.env.AZURE_BLOB_E2OPEN_ASN_CONNECTION_STRING;
+  if (!connectionString) {
+    return res.status(500).json({ ok: false, error: "AZURE_BLOB_E2OPEN_ASN_CONNECTION_STRING not configured" });
+  }
+
+  try {
+    const containerName = process.env.AZURE_BLOB_E2OPEN_ASN_CONTAINER || "sds-asn-e2open";
+    const result = await searchBlobsByAsnNameAndContent({ asn: asn.trim(), connectionString, containerName, hoursBack, maxBlobs });
+    res.json({ ok: true, ...result });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+app.get("/api/blob-file-asn", async (req, res) => {
+  const blobName = req.query.name;
+  if (!blobName) return res.status(400).json({ ok: false, error: "name query param is required" });
+
+  if (blobName.includes("..") || blobName.startsWith("/")) {
+    return res.status(400).json({ ok: false, error: "Invalid blob name" });
+  }
+
+  const connectionString = process.env.AZURE_BLOB_E2OPEN_ASN_CONNECTION_STRING;
+  if (!connectionString) {
+    return res.status(500).json({ ok: false, error: "AZURE_BLOB_E2OPEN_ASN_CONNECTION_STRING not configured" });
+  }
+
+  try {
+    const { BlobServiceClient } = require("@azure/storage-blob");
+    const containerName = process.env.AZURE_BLOB_E2OPEN_ASN_CONTAINER || "sds-asn-e2open";
     const blobServiceClient = BlobServiceClient.fromConnectionString(connectionString);
     const containerClient = blobServiceClient.getContainerClient(containerName);
     const blobClient = containerClient.getBlobClient(blobName);

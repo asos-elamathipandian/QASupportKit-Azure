@@ -143,4 +143,74 @@ async function downloadBlobs({ blobNames, connectionString, containerName, outpu
   return { downloaded, failed };
 }
 
-module.exports = { searchBlobsByAsn, downloadBlobs };
+module.exports = { searchBlobsByAsn, searchBlobsByAsnNameAndContent, downloadBlobs };
+
+/**
+ * Search Azure Blob Storage for XML files where the ASN appears in BOTH
+ * the blob file name AND the file content.
+ */
+async function searchBlobsByAsnNameAndContent({
+  asn,
+  connectionString,
+  containerName,
+  maxBlobs = 500,
+  hoursBack = 1440,
+}) {
+  const blobServiceClient = BlobServiceClient.fromConnectionString(connectionString);
+  const containerClient = blobServiceClient.getContainerClient(containerName);
+
+  const cutoff = new Date(Date.now() - hoursBack * 60 * 60 * 1000);
+  const matches = [];
+  let scanned = 0;
+  let skipped = 0;
+
+  // Collect blobs whose name contains the ASN
+  const blobs = [];
+  for await (const blob of containerClient.listBlobsFlat()) {
+    if (!blob.name.includes(asn)) {
+      skipped++;
+      continue;
+    }
+    if (!blob.name.endsWith(".xml") && !blob.name.endsWith(".XML")) {
+      skipped++;
+      continue;
+    }
+    if (blob.properties.lastModified && blob.properties.lastModified < cutoff) {
+      skipped++;
+      continue;
+    }
+    blobs.push(blob);
+    if (blobs.length >= maxBlobs) break;
+  }
+
+  // Download and verify ASN also appears in content (batches of 10)
+  const BATCH_SIZE = 10;
+  for (let i = 0; i < blobs.length; i += BATCH_SIZE) {
+    const batch = blobs.slice(i, i + BATCH_SIZE);
+    const results = await Promise.all(
+      batch.map(async (blob) => {
+        scanned++;
+        try {
+          const blobClient = containerClient.getBlobClient(blob.name);
+          const downloadResponse = await blobClient.download(0);
+          const content = await streamToString(downloadResponse.readableStreamBody);
+
+          if (content.includes(asn)) {
+            return {
+              name: blob.name,
+              size: blob.properties.contentLength,
+              lastModified: blob.properties.lastModified?.toISOString(),
+              url: blobClient.url,
+            };
+          }
+        } catch (err) {
+          console.error(`[blob-search-asn] Failed to read ${blob.name}: ${err.message}`);
+        }
+        return null;
+      })
+    );
+    matches.push(...results.filter(Boolean));
+  }
+
+  return { matches, scanned, skipped };
+}
