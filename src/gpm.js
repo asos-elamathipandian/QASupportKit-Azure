@@ -90,18 +90,21 @@ function buildGpmXml({ sku, optionId }) {
 
 async function writeGpmFile({ sku, optionId, outputDir }) {
   const skus = sku.split(",").map(s => s.trim()).filter(Boolean);
+  const optionIds = optionId.split(",").map(s => s.trim()).filter(Boolean);
   const absoluteOutputDir = path.resolve(outputDir);
   await fs.mkdir(absoluteOutputDir, { recursive: true });
 
   const results = [];
-  for (const singleSku of skus) {
+  for (let i = 0; i < skus.length; i++) {
+    const singleSku = skus[i];
+    const singleOption = optionIds[i] || optionIds[0] || "";
     const now = new Date();
-    const xmlContent = buildGpmXml({ sku: singleSku, optionId });
+    const xmlContent = buildGpmXml({ sku: singleSku, optionId: singleOption });
     const fileTimestamp = formatFileTimestamp(now);
     const fileName = `ASOS_E2ASOS_GPM_1.0_${singleSku}_${fileTimestamp}.xml`;
     const filePath = path.join(absoluteOutputDir, fileName);
     await fs.writeFile(filePath, xmlContent, "utf8");
-    results.push({ fileName, filePath, xmlContent, sku: singleSku });
+    results.push({ fileName, filePath, xmlContent, sku: singleSku, optionId: singleOption });
   }
 
   // Return single-file shape when only one SKU, array when multiple
