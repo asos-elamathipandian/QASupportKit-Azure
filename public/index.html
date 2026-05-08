@@ -495,7 +495,7 @@
         ASN Feed
         <span class="btn-label-sub">Requires: ASN, PO, SKU, SKU Qty</span>
       </button>
-      <button class="btn-msg btn-gpm" onclick="generateOne('gpm', 'SKU Re-trigger (GPM)')">
+      <button class="btn-msg btn-gpm" onclick="generateGpmWithReview()">
         SKU Re-trigger
         <span class="btn-label-sub">Requires: SKU (comma-sep), Option ID</span>
       </button>
@@ -1230,5 +1230,95 @@
   }
 </script>
 
+</main>
+
+<!-- GPM XML Review Modal -->
+<div id="gpmReviewModal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(30,41,59,0.32);z-index:1000;align-items:center;justify-content:center;">
+  <div style="background:white;padding:28px 32px;border-radius:14px;box-shadow:0 8px 32px rgba(0,0,0,0.18);max-width:700px;width:96vw;max-height:90vh;overflow:auto;">
+    <div style="font-size:1.1rem;font-weight:700;margin-bottom:12px;">Review & Edit GPM XML</div>
+    <div id="gpmReviewFileName" style="font-size:0.93rem;color:#666;margin-bottom:8px;"></div>
+    <textarea id="gpmReviewXml" style="width:100%;height:320px;font-family:monospace;font-size:0.97rem;padding:12px 10px;border-radius:8px;border:1.5px solid #e0e0e0;resize:vertical;margin-bottom:16px;"></textarea>
+    <div style="display:flex;gap:12px;justify-content:flex-end;">
+      <button onclick="closeGpmReviewModal()" style="background:#e5e7eb;color:#222;padding:8px 18px;border:none;border-radius:7px;font-weight:600;">Cancel</button>
+      <button id="gpmUploadBtn" onclick="confirmAndUploadGpm()" style="background:#d35400;color:white;padding:8px 18px;border:none;border-radius:7px;font-weight:700;">Confirm & Upload</button>
+    </div>
+    <div id="gpmUploadStatus" style="margin-top:10px;font-size:0.93rem;"></div>
+  </div>
+</div>
+
+<script>
+// --- GPM XML Review/Edit Workflow ---
+function generateGpmWithReview() {
+  const inputs = getInputs();
+  setAllButtons(true);
+  addRow('gpm', 'SKU Re-trigger (GPM)', 'generating');
+  fetch('/api/generate/gpm', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(inputs)
+  })
+    .then(res => res.json())
+    .then(data => {
+      if (!data.ok) {
+        updateRow('gpm', 'SKU Re-trigger (GPM)', { ok: false, error: data.error || 'Failed to generate XML' });
+        setAllButtons(false);
+        return;
+      }
+      // Support for multiple SKUs/files
+      if (data.files && data.files.length > 0) {
+        // For simplicity, only support editing the first file (extend as needed)
+        showGpmReviewModal(data.files[0].fileName, data.files[0].xml);
+      } else {
+        showGpmReviewModal(data.fileName, data.xml);
+      }
+    })
+    .catch(e => {
+      updateRow('gpm', 'SKU Re-trigger (GPM)', { ok: false, error: e.message });
+      setAllButtons(false);
+    });
+}
+
+function showGpmReviewModal(fileName, xml) {
+  document.getElementById('gpmReviewFileName').textContent = fileName;
+  document.getElementById('gpmReviewXml').value = xml;
+  document.getElementById('gpmReviewModal').style.display = 'flex';
+  document.getElementById('gpmUploadStatus').textContent = '';
+  document.getElementById('gpmUploadBtn').disabled = false;
+  // Store for upload
+  window._gpmReviewFileName = fileName;
+}
+
+function closeGpmReviewModal() {
+  document.getElementById('gpmReviewModal').style.display = 'none';
+  setAllButtons(false);
+}
+
+function confirmAndUploadGpm() {
+  const fileName = window._gpmReviewFileName;
+  const xml = document.getElementById('gpmReviewXml').value;
+  document.getElementById('gpmUploadBtn').disabled = true;
+  document.getElementById('gpmUploadStatus').textContent = 'Uploading to SFTP...';
+  fetch('/api/upload/gpm', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ fileName, xml })
+  })
+    .then(res => res.json())
+    .then(data => {
+      if (data.ok) {
+        updateRow('gpm', 'SKU Re-trigger (GPM)', data);
+        document.getElementById('gpmUploadStatus').textContent = '✅ Uploaded successfully!';
+        setTimeout(closeGpmReviewModal, 1200);
+      } else {
+        document.getElementById('gpmUploadStatus').textContent = '❌ ' + (data.error || 'Upload failed');
+        document.getElementById('gpmUploadBtn').disabled = false;
+      }
+    })
+    .catch(e => {
+      document.getElementById('gpmUploadStatus').textContent = '❌ ' + e.message;
+      document.getElementById('gpmUploadBtn').disabled = false;
+    });
+}
+</script>
 </body>
 </html>
