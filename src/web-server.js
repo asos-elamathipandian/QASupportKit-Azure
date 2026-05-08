@@ -64,6 +64,7 @@ function validate(body, fields) {
 
 // ── Individual endpoints ──────────────────────────────────────────────────────
 
+// Step 1: Generate VBKCON XML and return for review (no upload yet)
 app.post("/api/generate/vbkcon", async (req, res) => {
   const err = validate(req.body, ["ace"]);
   if (err) return res.status(400).json({ ok: false, error: err });
@@ -76,13 +77,31 @@ app.post("/api/generate/vbkcon", async (req, res) => {
       outputDir,
       abvCounterFile: getAbvCounterFile(process.env),
     });
-    const remotePath = await upload(gen.filePath);
-    res.json({ ok: true, fileName: gen.fileName, uploaded: true, remotePath });
+    // Read XML content from file
+    const xmlContent = fs.readFileSync(gen.filePath, "utf8");
+    res.json({ ok: true, fileName: gen.fileName, xml: xmlContent });
   } catch (e) {
     res.status(500).json({ ok: false, error: e.message });
   }
 });
 
+// Step 2: Accept reviewed/edited VBKCON XML and upload to SFTP
+app.post("/api/upload/vbkcon", async (req, res) => {
+  const err = validate(req.body, ["fileName", "xml"]);
+  if (err) return res.status(400).json({ ok: false, error: err });
+  try {
+    const { fileName, xml } = req.body;
+    const outputDir = getOutputDir(process.env);
+    const filePath = path.join(outputDir, fileName);
+    fs.writeFileSync(filePath, xml, "utf8");
+    const remotePath = await upload(filePath);
+    res.json({ ok: true, fileName, uploaded: true, remotePath });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+// Step 1: Generate BST XML and return for review (no upload yet)
 app.post("/api/generate/bst", async (req, res) => {
   const err = validate(req.body, ["asn", "carrier"]);
   if (err) return res.status(400).json({ ok: false, error: err });
@@ -90,13 +109,30 @@ app.post("/api/generate/bst", async (req, res) => {
     const { asn, carrier } = req.body;
     const outputDir = getOutputDir(process.env);
     const gen = await writeBulkStatusFile({ asn, carrier, outputDir });
-    const remotePath = await upload(gen.filePath);
-    res.json({ ok: true, fileName: gen.fileName, uploaded: true, remotePath });
+    const xmlContent = fs.readFileSync(gen.filePath, "utf8");
+    res.json({ ok: true, fileName: gen.fileName, xml: xmlContent });
   } catch (e) {
     res.status(500).json({ ok: false, error: e.message });
   }
 });
 
+// Step 2: Accept reviewed/edited BST XML and upload to SFTP
+app.post("/api/upload/bst", async (req, res) => {
+  const err = validate(req.body, ["fileName", "xml"]);
+  if (err) return res.status(400).json({ ok: false, error: err });
+  try {
+    const { fileName, xml } = req.body;
+    const outputDir = getOutputDir(process.env);
+    const filePath = path.join(outputDir, fileName);
+    fs.writeFileSync(filePath, xml, "utf8");
+    const remotePath = await upload(filePath);
+    res.json({ ok: true, fileName, uploaded: true, remotePath });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+// Step 1: Generate Carrier Shipment XML and return for review (no upload yet)
 app.post("/api/generate/shipment", async (req, res) => {
   const err = validate(req.body, ["asn", "po", "sku"]);
   if (err) return res.status(400).json({ ok: false, error: err });
@@ -112,19 +148,30 @@ app.post("/api/generate/shipment", async (req, res) => {
       outputDir,
       sequenceFile: getCarrierSequenceFile(process.env),
     });
-    const remotePath = await upload(gen.filePath);
-    res.json({
-      ok: true,
-      fileName: gen.fileName,
-      uploaded: true,
-      remotePath,
-      sequence: gen.sequence,
-    });
+    const xmlContent = fs.readFileSync(gen.filePath, "utf8");
+    res.json({ ok: true, fileName: gen.fileName, xml: xmlContent, sequence: gen.sequence });
   } catch (e) {
     res.status(500).json({ ok: false, error: e.message });
   }
 });
 
+// Step 2: Accept reviewed/edited Carrier Shipment XML and upload to SFTP
+app.post("/api/upload/shipment", async (req, res) => {
+  const err = validate(req.body, ["fileName", "xml"]);
+  if (err) return res.status(400).json({ ok: false, error: err });
+  try {
+    const { fileName, xml } = req.body;
+    const outputDir = getOutputDir(process.env);
+    const filePath = path.join(outputDir, fileName);
+    fs.writeFileSync(filePath, xml, "utf8");
+    const remotePath = await upload(filePath);
+    res.json({ ok: true, fileName, uploaded: true, remotePath });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+// Step 1: Generate ASN FCBKC XML and return for review (no upload yet)
 app.post("/api/generate/asn-fcbkc", async (req, res) => {
   const err = validate(req.body, ["asn"]);
   if (err) return res.status(400).json({ ok: false, error: err });
@@ -132,13 +179,30 @@ app.post("/api/generate/asn-fcbkc", async (req, res) => {
     const { asn } = req.body;
     const outputDir = getOutputDir(process.env);
     const gen = await writeAsnFcbkcFile({ asn, outputDir });
-    const remotePath = await upload(gen.filePath);
-    res.json({ ok: true, fileName: gen.fileName, uploaded: true, remotePath });
+    const xmlContent = fs.readFileSync(gen.filePath, "utf8");
+    res.json({ ok: true, fileName: gen.fileName, xml: xmlContent });
   } catch (e) {
     res.status(500).json({ ok: false, error: e.message });
   }
 });
 
+// Step 2: Accept reviewed/edited ASN FCBKC XML and upload to SFTP
+app.post("/api/upload/asn-fcbkc", async (req, res) => {
+  const err = validate(req.body, ["fileName", "xml"]);
+  if (err) return res.status(400).json({ ok: false, error: err });
+  try {
+    const { fileName, xml } = req.body;
+    const outputDir = getOutputDir(process.env);
+    const filePath = path.join(outputDir, fileName);
+    fs.writeFileSync(filePath, xml, "utf8");
+    const remotePath = await upload(filePath);
+    res.json({ ok: true, fileName, uploaded: true, remotePath });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+// Step 1: Generate ASN RCV XML and return for review (no upload yet)
 app.post("/api/generate/asn-rcv", async (req, res) => {
   const err = validate(req.body, ["asn"]);
   if (err) return res.status(400).json({ ok: false, error: err });
@@ -146,13 +210,30 @@ app.post("/api/generate/asn-rcv", async (req, res) => {
     const { asn } = req.body;
     const outputDir = getOutputDir(process.env);
     const gen = await writeAsnRcvFile({ asn, outputDir });
-    const remotePath = await upload(gen.filePath);
-    res.json({ ok: true, fileName: gen.fileName, uploaded: true, remotePath });
+    const xmlContent = fs.readFileSync(gen.filePath, "utf8");
+    res.json({ ok: true, fileName: gen.fileName, xml: xmlContent });
   } catch (e) {
     res.status(500).json({ ok: false, error: e.message });
   }
 });
 
+// Step 2: Accept reviewed/edited ASN RCV XML and upload to SFTP
+app.post("/api/upload/asn-rcv", async (req, res) => {
+  const err = validate(req.body, ["fileName", "xml"]);
+  if (err) return res.status(400).json({ ok: false, error: err });
+  try {
+    const { fileName, xml } = req.body;
+    const outputDir = getOutputDir(process.env);
+    const filePath = path.join(outputDir, fileName);
+    fs.writeFileSync(filePath, xml, "utf8");
+    const remotePath = await upload(filePath);
+    res.json({ ok: true, fileName, uploaded: true, remotePath });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+// Step 1: Generate ASN PADEX XML and return for review (no upload yet)
 app.post("/api/generate/asn-padex", async (req, res) => {
   const err = validate(req.body, ["asn", "po", "sku"]);
   if (err) return res.status(400).json({ ok: false, error: err });
@@ -160,13 +241,30 @@ app.post("/api/generate/asn-padex", async (req, res) => {
     const { asn, po, sku, skuQty = "1" } = req.body;
     const outputDir = getOutputDir(process.env);
     const gen = await writeAsnPadexFile({ asn, po, sku, skuQty, outputDir });
-    const remotePath = await upload(gen.filePath);
-    res.json({ ok: true, fileName: gen.fileName, uploaded: true, remotePath });
+    const xmlContent = fs.readFileSync(gen.filePath, "utf8");
+    res.json({ ok: true, fileName: gen.fileName, xml: xmlContent });
   } catch (e) {
     res.status(500).json({ ok: false, error: e.message });
   }
 });
 
+// Step 2: Accept reviewed/edited ASN PADEX XML and upload to SFTP
+app.post("/api/upload/asn-padex", async (req, res) => {
+  const err = validate(req.body, ["fileName", "xml"]);
+  if (err) return res.status(400).json({ ok: false, error: err });
+  try {
+    const { fileName, xml } = req.body;
+    const outputDir = getOutputDir(process.env);
+    const filePath = path.join(outputDir, fileName);
+    fs.writeFileSync(filePath, xml, "utf8");
+    const remotePath = await upload(filePath);
+    res.json({ ok: true, fileName, uploaded: true, remotePath });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+// Step 1: Generate ASN FEED XML and return for review (no upload yet)
 app.post("/api/generate/asn-feed", async (req, res) => {
   const err = validate(req.body, ["asn", "po", "sku"]);
   if (err) return res.status(400).json({ ok: false, error: err });
@@ -174,8 +272,24 @@ app.post("/api/generate/asn-feed", async (req, res) => {
     const { asn, po, sku, skuQty = "1" } = req.body;
     const outputDir = getOutputDir(process.env);
     const gen = await writeAsnFeedFile({ asn, po, sku, skuQty, outputDir });
-    const remotePath = await upload(gen.filePath);
-    res.json({ ok: true, fileName: gen.fileName, uploaded: true, remotePath });
+    const xmlContent = fs.readFileSync(gen.filePath, "utf8");
+    res.json({ ok: true, fileName: gen.fileName, xml: xmlContent });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+// Step 2: Accept reviewed/edited ASN FEED XML and upload to SFTP
+app.post("/api/upload/asn-feed", async (req, res) => {
+  const err = validate(req.body, ["fileName", "xml"]);
+  if (err) return res.status(400).json({ ok: false, error: err });
+  try {
+    const { fileName, xml } = req.body;
+    const outputDir = getOutputDir(process.env);
+    const filePath = path.join(outputDir, fileName);
+    fs.writeFileSync(filePath, xml, "utf8");
+    const remotePath = await upload(filePath);
+    res.json({ ok: true, fileName, uploaded: true, remotePath });
   } catch (e) {
     res.status(500).json({ ok: false, error: e.message });
   }
@@ -225,6 +339,7 @@ app.post("/api/upload/gpm", async (req, res) => {
     res.status(500).json({ ok: false, error: e.message });
   }
 });
+// Step 1: Generate PO FEED XML and return for review (no upload yet)
 app.post("/api/generate/po-feed", async (req, res) => {
   const err = validate(req.body, ["po", "sku", "optionId"]);
   if (err) return res.status(400).json({ ok: false, error: err });
@@ -232,8 +347,24 @@ app.post("/api/generate/po-feed", async (req, res) => {
     const { po, sku, skuQty = "1", optionId, carrier = "DT" } = req.body;
     const outputDir = getOutputDir(process.env);
     const gen = await writePoFeedFile({ po, sku, skuQty, optionId, carrier, outputDir });
-    const remotePath = await upload(gen.filePath);
-    res.json({ ok: true, fileName: gen.fileName, uploaded: true, remotePath });
+    const xmlContent = fs.readFileSync(gen.filePath, "utf8");
+    res.json({ ok: true, fileName: gen.fileName, xml: xmlContent });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+// Step 2: Accept reviewed/edited PO FEED XML and upload to SFTP
+app.post("/api/upload/po-feed", async (req, res) => {
+  const err = validate(req.body, ["fileName", "xml"]);
+  if (err) return res.status(400).json({ ok: false, error: err });
+  try {
+    const { fileName, xml } = req.body;
+    const outputDir = getOutputDir(process.env);
+    const filePath = path.join(outputDir, fileName);
+    fs.writeFileSync(filePath, xml, "utf8");
+    const remotePath = await upload(filePath);
+    res.json({ ok: true, fileName, uploaded: true, remotePath });
   } catch (e) {
     res.status(500).json({ ok: false, error: e.message });
   }
