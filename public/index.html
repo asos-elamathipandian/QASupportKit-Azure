@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <!-- Ace Editor CDN for XML syntax highlighting -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.3/ace.js" integrity="sha512-+QnQn6Qw6Qw6Qw6Qw6Qw6Qw6Qw6Qw6Qw6Qw6Qw6Qw6Qw6Qw6Qw6Qw6Qw6Qw6Qw6Qw6Qw6Qw6Qw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ASOS Inbound QA Support Kit -ASN/PO/SKU updates,Carrier & WMS Milestones</title>
@@ -1237,7 +1239,7 @@
   <div style="background:white;padding:28px 32px;border-radius:14px;box-shadow:0 8px 32px rgba(0,0,0,0.18);max-width:700px;width:96vw;max-height:90vh;overflow:auto;">
     <div style="font-size:1.1rem;font-weight:700;margin-bottom:12px;">Review & Edit GPM XML</div>
     <div id="gpmReviewFileName" style="font-size:0.93rem;color:#666;margin-bottom:8px;"></div>
-    <textarea id="gpmReviewXml" style="width:100%;height:320px;font-family:monospace;font-size:0.97rem;padding:12px 10px;border-radius:8px;border:1.5px solid #e0e0e0;resize:vertical;margin-bottom:16px;"></textarea>
+    <div id="gpmReviewXml" style="width:100%;height:320px;border-radius:8px;border:1.5px solid #e0e0e0;margin-bottom:16px;"></div>
     <div style="display:flex;gap:12px;justify-content:flex-end;">
       <button onclick="closeGpmReviewModal()" style="background:#e5e7eb;color:#222;padding:8px 18px;border:none;border-radius:7px;font-weight:600;">Cancel</button>
       <button id="gpmUploadBtn" onclick="confirmAndUploadGpm()" style="background:#d35400;color:white;padding:8px 18px;border:none;border-radius:7px;font-weight:700;">Confirm & Upload</button>
@@ -1278,14 +1280,29 @@ function generateGpmWithReview() {
     });
 }
 
+
+let aceEditor = null;
 function showGpmReviewModal(fileName, xml) {
   document.getElementById('gpmReviewFileName').textContent = fileName;
-  document.getElementById('gpmReviewXml').value = xml;
   document.getElementById('gpmReviewModal').style.display = 'flex';
   document.getElementById('gpmUploadStatus').textContent = '';
   document.getElementById('gpmUploadBtn').disabled = false;
-  // Store for upload
   window._gpmReviewFileName = fileName;
+  // Initialize Ace Editor if not already
+  if (!aceEditor) {
+    aceEditor = ace.edit('gpmReviewXml');
+    aceEditor.setTheme('ace/theme/textmate');
+    aceEditor.session.setMode('ace/mode/xml');
+    aceEditor.setOptions({
+      fontSize: '1rem',
+      showPrintMargin: false,
+      wrap: true,
+      tabSize: 2,
+      useSoftTabs: true
+    });
+  }
+  aceEditor.setValue(xml || '', -1);
+  aceEditor.focus();
 }
 
 function closeGpmReviewModal() {
@@ -1295,7 +1312,7 @@ function closeGpmReviewModal() {
 
 function confirmAndUploadGpm() {
   const fileName = window._gpmReviewFileName;
-  const xml = document.getElementById('gpmReviewXml').value;
+  const xml = aceEditor ? aceEditor.getValue() : '';
   document.getElementById('gpmUploadBtn').disabled = true;
   document.getElementById('gpmUploadStatus').textContent = 'Uploading to SFTP...';
   fetch('/api/upload/gpm', {
