@@ -1288,6 +1288,12 @@ function showGpmReviewModal(fileName, xml) {
   document.getElementById('gpmUploadStatus').textContent = '';
   document.getElementById('gpmUploadBtn').disabled = false;
   window._gpmReviewFileName = fileName;
+  // Debug log
+  console.log('[GPM XML Review] fileName:', fileName);
+  console.log('[GPM XML Review] xml:', xml);
+  if (!xml || xml.trim() === '') {
+    alert('No XML content received from backend. Please check backend logs and XML generation.');
+  }
   // Destroy previous Ace instance if exists
   if (aceEditor) {
     aceEditor.destroy();
