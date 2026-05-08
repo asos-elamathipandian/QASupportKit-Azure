@@ -821,10 +821,16 @@
       });
       setRowStep(rowId, label, "uploading");
       await new Promise(r => setTimeout(r, 300));
-      updateRow(rowId, label, await res.json().catch(() => ({ ok: false, error: "Invalid response" })));
+      const data = await res.json().catch(() => ({ ok: false, error: "Invalid response" }));
+      // If backend returns XML for review, show modal before upload
+      if (data && data.xml && data.fileName) {
+        showXmlReviewModal(data.fileName, data.xml, endpoint, label, rowId);
+      } else {
+        updateRow(rowId, label, data);
+        setAllButtons(false);
+      }
     } catch (e) {
       updateRow(rowId, label, { ok: false, error: e.message });
-    } finally {
       setAllButtons(false);
     }
   }
@@ -1249,48 +1255,19 @@
 </div>
 
 <script>
-// --- GPM XML Review/Edit Workflow ---
-function generateGpmWithReview() {
-  const inputs = getInputs();
-  setAllButtons(true);
-  addRow('gpm', 'SKU Re-trigger (GPM)', 'generating');
-  fetch('/api/generate/gpm', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(inputs)
-  })
-    .then(res => res.json())
-    .then(data => {
-      if (!data.ok) {
-        updateRow('gpm', 'SKU Re-trigger (GPM)', { ok: false, error: data.error || 'Failed to generate XML' });
-        setAllButtons(false);
-        return;
-      }
-      // Support for multiple SKUs/files
-      if (data.files && data.files.length > 0) {
-        // For simplicity, only support editing the first file (extend as needed)
-        showGpmReviewModal(data.files[0].fileName, data.files[0].xml);
-      } else {
-        showGpmReviewModal(data.fileName, data.xml);
-      }
-    })
-    .catch(e => {
-      updateRow('gpm', 'SKU Re-trigger (GPM)', { ok: false, error: e.message });
-      setAllButtons(false);
-    });
-}
 
-
+// --- Universal XML Review/Edit Modal ---
 let aceEditor = null;
-function showGpmReviewModal(fileName, xml) {
+let _xmlReviewContext = {};
+function showXmlReviewModal(fileName, xml, endpoint, label, rowId) {
   document.getElementById('gpmReviewFileName').textContent = fileName;
   document.getElementById('gpmReviewModal').style.display = 'flex';
   document.getElementById('gpmUploadStatus').textContent = '';
   document.getElementById('gpmUploadBtn').disabled = false;
-  window._gpmReviewFileName = fileName;
+  _xmlReviewContext = { fileName, xml, endpoint, label, rowId };
   // Debug log
-  console.log('[GPM XML Review] fileName:', fileName);
-  console.log('[GPM XML Review] xml:', xml);
+  console.log('[XML Review] fileName:', fileName);
+  console.log('[XML Review] xml:', xml);
   if (!xml || xml.trim() === '') {
     alert('No XML content received from backend. Please check backend logs and XML generation.');
   }
@@ -1322,19 +1299,31 @@ function closeGpmReviewModal() {
 }
 
 function confirmAndUploadGpm() {
-  const fileName = window._gpmReviewFileName;
+  const { fileName, endpoint, label, rowId } = _xmlReviewContext;
   const xml = aceEditor ? aceEditor.getValue() : '';
   document.getElementById('gpmUploadBtn').disabled = true;
   document.getElementById('gpmUploadStatus').textContent = 'Uploading to SFTP...';
-  fetch('/api/upload/gpm', {
+  // Use correct upload endpoint for each XML type
+  let uploadEndpoint = '/api/upload/gpm';
+  if (endpoint === 'vbkcon') uploadEndpoint = '/api/generate/vbkcon';
+  else if (endpoint === 'bst') uploadEndpoint = '/api/generate/bst';
+  else if (endpoint === 'shipment') uploadEndpoint = '/api/generate/shipment';
+  else if (endpoint === 'asn-fcbkc') uploadEndpoint = '/api/generate/asn-fcbkc';
+  else if (endpoint === 'asn-rcv') uploadEndpoint = '/api/generate/asn-rcv';
+  else if (endpoint === 'asn-padex') uploadEndpoint = '/api/generate/asn-padex';
+  else if (endpoint === 'asn-feed') uploadEndpoint = '/api/generate/asn-feed';
+  else if (endpoint === 'po-feed') uploadEndpoint = '/api/generate/po-feed';
+  // For GPM, use /api/upload/gpm; for others, use their generate endpoint with XML override
+  const payload = { fileName, xml };
+  fetch(uploadEndpoint, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ fileName, xml })
+    body: JSON.stringify(payload)
   })
     .then(res => res.json())
     .then(data => {
       if (data.ok) {
-        updateRow('gpm', 'SKU Re-trigger (GPM)', data);
+        updateRow(rowId, label, data);
         document.getElementById('gpmUploadStatus').textContent = '✅ Uploaded successfully!';
         setTimeout(closeGpmReviewModal, 1200);
       } else {
