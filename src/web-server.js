@@ -181,6 +181,8 @@ app.post("/api/generate/asn-feed", async (req, res) => {
   }
 });
 
+
+// Step 1: Generate GPM XML and return for review (no upload yet)
 app.post("/api/generate/gpm", async (req, res) => {
   const err = validate(req.body, ["sku", "optionId"]);
   if (err) return res.status(400).json({ ok: false, error: err });
@@ -191,22 +193,38 @@ app.post("/api/generate/gpm", async (req, res) => {
 
     // Multiple SKUs → multiple files
     if (gen.files) {
-      const uploaded = [];
+      const files = [];
       for (const f of gen.files) {
-        const remotePath = await upload(f.filePath);
-        uploaded.push({ fileName: f.fileName, sku: f.sku, uploaded: true, remotePath });
+        // Read XML content from file
+        const xmlContent = fs.readFileSync(f.filePath, "utf8");
+        files.push({ fileName: f.fileName, sku: f.sku, xml: xmlContent });
       }
-      return res.json({ ok: true, files: uploaded });
+      return res.json({ ok: true, files });
     }
 
     // Single SKU
-    const remotePath = await upload(gen.filePath);
-    res.json({ ok: true, fileName: gen.fileName, uploaded: true, remotePath });
+    const xmlContent = fs.readFileSync(gen.filePath, "utf8");
+    res.json({ ok: true, fileName: gen.fileName, xml: xmlContent });
   } catch (e) {
     res.status(500).json({ ok: false, error: e.message });
   }
 });
 
+// Step 2: Accept reviewed/edited XML and upload to SFTP
+app.post("/api/upload/gpm", async (req, res) => {
+  const err = validate(req.body, ["fileName", "xml"]);
+  if (err) return res.status(400).json({ ok: false, error: err });
+  try {
+    const { fileName, xml } = req.body;
+    const outputDir = getOutputDir(process.env);
+    const filePath = path.join(outputDir, fileName);
+    fs.writeFileSync(filePath, xml, "utf8");
+    const remotePath = await upload(filePath);
+    res.json({ ok: true, fileName, uploaded: true, remotePath });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
 app.post("/api/generate/po-feed", async (req, res) => {
   const err = validate(req.body, ["po", "sku", "optionId"]);
   if (err) return res.status(400).json({ ok: false, error: err });
