@@ -1288,8 +1288,13 @@ function showGpmReviewModal(fileName, xml) {
   document.getElementById('gpmUploadStatus').textContent = '';
   document.getElementById('gpmUploadBtn').disabled = false;
   window._gpmReviewFileName = fileName;
-  // Initialize Ace Editor if not already
-  if (!aceEditor) {
+  // Destroy previous Ace instance if exists
+  if (aceEditor) {
+    aceEditor.destroy();
+    aceEditor = null;
+  }
+  // Timeout ensures modal is visible before Ace initializes
+  setTimeout(() => {
     aceEditor = ace.edit('gpmReviewXml');
     aceEditor.setTheme('ace/theme/textmate');
     aceEditor.session.setMode('ace/mode/xml');
@@ -1300,9 +1305,9 @@ function showGpmReviewModal(fileName, xml) {
       tabSize: 2,
       useSoftTabs: true
     });
-  }
-  aceEditor.setValue(xml || '', -1);
-  aceEditor.focus();
+    aceEditor.setValue(xml || '', -1);
+    aceEditor.focus();
+  }, 0);
 }
 
 function closeGpmReviewModal() {
