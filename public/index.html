@@ -497,7 +497,7 @@
         ASN Feed
         <span class="btn-label-sub">Requires: ASN, PO, SKU, SKU Qty</span>
       </button>
-      <button class="btn-msg btn-gpm" onclick="generateGpmWithReview()">
+      <button class="btn-msg btn-gpm" onclick="generateOne('gpm', 'SKU Re-trigger')">
         SKU Re-trigger
         <span class="btn-label-sub">Requires: SKU (comma-sep), Option ID</span>
       </button>
@@ -1243,7 +1243,7 @@
 <!-- GPM XML Review Modal -->
 <div id="gpmReviewModal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(30,41,59,0.32);z-index:1000;align-items:center;justify-content:center;">
   <div style="background:white;padding:28px 32px;border-radius:14px;box-shadow:0 8px 32px rgba(0,0,0,0.18);max-width:700px;width:96vw;max-height:90vh;overflow:auto;">
-    <div style="font-size:1.1rem;font-weight:700;margin-bottom:12px;">Review & Edit GPM XML</div>
+    <div id="gpmReviewModalTitle" style="font-size:1.1rem;font-weight:700;margin-bottom:12px;">Review & Edit XML</div>
     <div id="gpmReviewFileName" style="font-size:0.93rem;color:#666;margin-bottom:8px;"></div>
     <div id="gpmReviewXml" style="width:100%;height:320px;border-radius:8px;border:1.5px solid #e0e0e0;margin-bottom:16px;"></div>
     <div style="display:flex;gap:12px;justify-content:flex-end;">
@@ -1265,6 +1265,11 @@ function showXmlReviewModal(fileName, xml, endpoint, label, rowId) {
   document.getElementById('gpmUploadStatus').textContent = '';
   document.getElementById('gpmUploadBtn').disabled = false;
   _xmlReviewContext = { fileName, xml, endpoint, label, rowId };
+  // Set dynamic modal title
+  let typeLabel = label || endpoint || 'XML';
+  // If label contains 'GPM', 'VBKCON', etc., use as is; else, prettify endpoint
+  if (!typeLabel || typeLabel === '') typeLabel = 'XML';
+  document.getElementById('gpmReviewModalTitle').textContent = `Review & Edit ${typeLabel} XML`;
   // Debug log
   console.log('[XML Review] fileName:', fileName);
   console.log('[XML Review] xml:', xml);
