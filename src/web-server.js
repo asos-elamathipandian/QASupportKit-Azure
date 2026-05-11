@@ -753,16 +753,30 @@ app.post("/api/cancel", (req, res) => {
   res.json({ ok: true, message: "Nothing running" });
 });
 
+// ADO Email Report (enabled when config and env are valid)
+const { sendAdoReportEmail, getAdoAvailability, generateAdoReportHtml } = require("./ado-email");
+
 app.get("/api/ado-status", (req, res) => {
-  res.json({ available: false });
+  res.json(getAdoAvailability());
 });
 
-app.post("/api/preview-status-email", (req, res) => {
-  res.json({ ok: false, error: "ADO Email is only available on the local version." });
+app.post("/api/preview-status-email", async (req, res) => {
+  try {
+    const report = await generateAdoReportHtml();
+    res.json({ ok: true, html: report.html, subject: report.subject, summary: report.summary });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
 });
 
-app.post("/api/send-status-email", (req, res) => {
-  res.json({ ok: false, error: "ADO Email is only available on the local version." });
+app.post("/api/send-status-email", async (req, res) => {
+  try {
+    const { html, subject } = req.body || {};
+    const result = await sendAdoReportEmail({ htmlOverride: html, subjectOverride: subject });
+    res.json({ ok: true, message: "ADO status email sent.", transport: result.transport });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
 });
 
 // ── Start ─────────────────────────────────────────────────────────────────────

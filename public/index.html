@@ -1364,6 +1364,44 @@ async function fullSccFlow() {
   </div>
 </div>
 
+<!-- ADO Preview & Send Modal -->
+<div id="adoPreviewModal" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,0.45);z-index:1200;align-items:stretch;justify-content:stretch;padding:12px;box-sizing:border-box;">
+  <div style="background:white;padding:20px;border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,0.22);width:100%;height:100%;display:flex;flex-direction:column;box-sizing:border-box;min-height:0;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:10px;">
+      <div style="font-size:1.05rem;font-weight:700;color:#0f172a;">📧 ADO Test Status Email Preview</div>
+      <button onclick="closeAdoPreviewModal()" style="background:#e5e7eb;border:none;border-radius:8px;padding:6px 12px;font-weight:700;cursor:pointer;white-space:nowrap;">✕ Close</button>
+    </div>
+    <div style="flex:1;min-height:0;overflow:hidden;border:1px solid #cbd5e1;border-radius:8px;background:#fff;margin-bottom:12px;">
+      <iframe id="adoPreviewFrame" style="width:100%;height:100%;border:none;display:block;"></iframe>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center;justify-content:flex-end;padding:10px;background:#f3f4f6;border-radius:8px;">
+      <span id="adoPreviewStatus" style="margin-right:auto;font-size:0.88rem;color:#555;"></span>
+      <button onclick="openAdoEditModal()" style="background:#2563eb;color:white;border:none;border-radius:8px;padding:8px 16px;font-weight:700;cursor:pointer;white-space:nowrap;">✎ Edit Email</button>
+      <button id="adoSendBtn" onclick="sendAdoEmail()" style="background:#15803d;color:white;border:none;border-radius:8px;padding:8px 16px;font-weight:700;cursor:pointer;white-space:nowrap;">✉ Send Email</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADO Edit Modal -->
+<div id="adoEditModal" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,0.45);z-index:1300;align-items:stretch;justify-content:stretch;padding:12px;box-sizing:border-box;">
+  <div style="background:white;padding:20px;border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,0.22);width:100%;height:100%;display:flex;flex-direction:column;box-sizing:border-box;min-height:0;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:10px;">
+      <div style="font-size:1.05rem;font-weight:700;color:#0f172a;">✎ Edit Email Content</div>
+      <button onclick="closeAdoEditModal()" style="background:#e5e7eb;border:none;border-radius:8px;padding:6px 12px;font-weight:700;cursor:pointer;">✕ Close</button>
+    </div>
+    <label style="display:block;font-size:0.85rem;font-weight:700;color:#334155;margin-bottom:6px;">Subject Line</label>
+    <input id="adoEditSubject" type="text" style="width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:8px;margin-bottom:12px;font-size:0.95rem;" />
+    <label style="display:block;font-size:0.85rem;font-weight:700;color:#334155;margin-bottom:6px;">Email Content</label>
+    <div id="adoEditBody" contenteditable="true" spellcheck="false" style="width:100%;flex:1;min-height:0;padding:14px;border:1px solid #cbd5e1;border-radius:8px;background:#fff;overflow:auto;font-family:Segoe UI,Arial,sans-serif;font-size:0.95rem;line-height:1.5;margin-bottom:12px;"></div>
+    <div style="display:flex;gap:10px;align-items:center;justify-content:flex-end;padding:10px;background:#f3f4f6;border-radius:8px;">
+      <span id="adoEditStatus" style="margin-right:auto;font-size:0.88rem;color:#555;"></span>
+      <button onclick="closeAdoEditModal()" style="background:#9ca3af;color:white;border:none;border-radius:8px;padding:8px 16px;font-weight:700;cursor:pointer;">Cancel</button>
+      <button id="adoUpdateBtn" onclick="updateAndPreviewAdoEmail()" style="background:#2563eb;color:white;border:none;border-radius:8px;padding:8px 16px;font-weight:700;cursor:pointer;">✓ Update Preview</button>
+      <button id="adoSendEditedBtn" onclick="sendAdoEditedEmail()" style="background:#15803d;color:white;border:none;border-radius:8px;padding:8px 16px;font-weight:700;cursor:pointer;">✉ Send Edited</button>
+    </div>
+  </div>
+</div>
+
 <script>
 
 // --- Universal XML Review/Edit Modal ---
@@ -1442,6 +1480,241 @@ function confirmAndUploadGpm() {
       document.getElementById('gpmUploadStatus').textContent = '❌ ' + e.message;
       document.getElementById('gpmUploadBtn').disabled = false;
     });
+}
+
+// ── ADO Email Preview & Send ──────────────────────────────────────────────────
+let adoEmailCache = { subject: '', html: '' };
+
+function syncAdoPreviewFromEdit() {
+  const subject = document.getElementById('adoEditSubject').value || '';
+  const html = document.getElementById('adoEditBody').innerHTML || '';
+
+  adoEmailCache.subject = subject;
+  adoEmailCache.html = html;
+
+  const frame = document.getElementById('adoPreviewFrame');
+  if (frame) {
+    frame.srcdoc = html;
+  }
+}
+
+function openAdoPreviewModal(subject, html) {
+  adoEmailCache.subject = subject || '';
+  adoEmailCache.html = html || '';
+  
+  // Render email in iframe
+  const frame = document.getElementById('adoPreviewFrame');
+  frame.srcdoc = html;
+  
+  document.getElementById('adoPreviewStatus').textContent = `Ready to send. Click "✎ Edit Email" to modify, or "✉ Send Email" to send directly.`;
+  document.getElementById('adoPreviewModal').style.display = 'flex';
+}
+
+function closeAdoPreviewModal() {
+  document.getElementById('adoPreviewModal').style.display = 'none';
+}
+
+function openAdoEditModal() {
+  document.getElementById('adoEditSubject').value = adoEmailCache.subject || '';
+  document.getElementById('adoEditBody').innerHTML = adoEmailCache.html || '';
+  document.getElementById('adoEditStatus').textContent = 'Make changes to the subject or HTML, then click "✓ Update Preview" to see changes.';
+  document.getElementById('adoEditModal').style.display = 'flex';
+
+  const subjectInput = document.getElementById('adoEditSubject');
+  const bodyInput = document.getElementById('adoEditBody');
+  subjectInput.oninput = syncAdoPreviewFromEdit;
+  bodyInput.oninput = syncAdoPreviewFromEdit;
+}
+
+function closeAdoEditModal() {
+  document.getElementById('adoEditModal').style.display = 'none';
+}
+
+async function updateAndPreviewAdoEmail() {
+  const subject = document.getElementById('adoEditSubject').value || '';
+  const html = document.getElementById('adoEditBody').innerHTML || '';
+  
+  if (!html) {
+    alert('Email content cannot be empty');
+    return;
+  }
+
+  syncAdoPreviewFromEdit();
+  document.getElementById('adoEditStatus').textContent = '✓ Preview updated. Click "✉ Send Edited" to send or close to go back.';
+}
+
+async function sendAdoEmail() {
+  const subject = adoEmailCache.subject || '';
+  const html = adoEmailCache.html || '';
+  
+  if (!html) {
+    alert('No email content to send');
+    return;
+  }
+  
+  const sendBtn = document.getElementById('adoSendBtn');
+  sendBtn.disabled = true;
+  sendBtn.textContent = '⏳ Sending...';
+  
+  document.getElementById('adoPreviewStatus').textContent = 'Sending email...';
+  
+  try {
+    const res = await fetch('/api/send-status-email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ subject, html })
+    });
+    const result = await res.json();
+    
+    if (result.ok) {
+      document.getElementById('adoPreviewStatus').textContent = `✅ Email sent successfully via ${result.transport || 'Outlook'}!`;
+      setTimeout(() => closeAdoPreviewModal(), 1500);
+    } else {
+      document.getElementById('adoPreviewStatus').textContent = `❌ ${result.error || 'Failed to send email'}`;
+    }
+  } catch (e) {
+    document.getElementById('adoPreviewStatus').textContent = `❌ ${e.message}`;
+  } finally {
+    sendBtn.disabled = false;
+    sendBtn.textContent = '✉ Send Email';
+  }
+}
+
+async function sendAdoEditedEmail() {
+  const subject = document.getElementById('adoEditSubject').value || '';
+  const html = document.getElementById('adoEditBody').innerHTML || '';
+  
+  if (!html) {
+    alert('Email content cannot be empty');
+    return;
+  }
+  
+  const sendBtn = document.getElementById('adoSendEditedBtn');
+  sendBtn.disabled = true;
+  sendBtn.textContent = '⏳ Sending...';
+  
+  document.getElementById('adoEditStatus').textContent = 'Sending email...';
+  
+  try {
+    const res = await fetch('/api/send-status-email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ subject, html })
+    });
+    const result = await res.json();
+    
+    if (result.ok) {
+      document.getElementById('adoEditStatus').textContent = `✅ Email sent successfully via ${result.transport || 'Outlook'}!`;
+      setTimeout(() => {
+        closeAdoEditModal();
+        closeAdoPreviewModal();
+      }, 1500);
+    } else {
+      document.getElementById('adoEditStatus').textContent = `❌ ${result.error || 'Failed to send email'}`;
+    }
+  } catch (e) {
+    document.getElementById('adoEditStatus').textContent = `❌ ${e.message}`;
+  } finally {
+    sendBtn.disabled = false;
+    sendBtn.textContent = '✉ Send Edited';
+  }
+}
+
+async function initializeAdoStatus() {
+  try {
+    const response = await fetch('/api/ado-status');
+    const data = await response.json();
+    const adoTitle = Array.from(document.querySelectorAll('.card-title')).find((el) =>
+      (el.textContent || '').toLowerCase().includes('ado test status email')
+    );
+    const adoCard = adoTitle ? adoTitle.closest('.card') : null;
+
+    if (!adoCard) return;
+    
+    if (data.available) {
+      // Enable the ADO card
+      adoCard.classList.remove('local-only-card');
+      adoCard.style.opacity = '1';
+      adoCard.style.pointerEvents = 'auto';
+      adoCard.style.userSelect = 'auto';
+      
+      // Remove local-only badge
+      const badge = adoCard.querySelector('.local-only-badge');
+      if (badge) badge.style.display = 'none';
+      
+      // Enable buttons
+      const buttons = adoCard.querySelectorAll('button');
+      buttons.forEach(btn => {
+        btn.disabled = false;
+        btn.style.opacity = '1';
+        btn.style.cursor = 'pointer';
+      });
+      
+      // Add event listeners to buttons
+      const previewBtn = Array.from(buttons).find(b => b.textContent.includes('Preview'));
+      const sendBtn = Array.from(buttons).find(b => b.textContent.includes('Send'));
+      
+      if (previewBtn) {
+        previewBtn.onclick = async () => {
+          previewBtn.disabled = true;
+          previewBtn.textContent = '⏳ Loading...';
+          try {
+            const res = await fetch('/api/preview-status-email', { method: 'POST' });
+            const result = await res.json();
+            if (result.ok) {
+              openAdoPreviewModal(result.subject, result.html);
+            } else {
+              alert('❌ Error: ' + (result.error || 'Failed to load preview'));
+            }
+          } catch (e) {
+            alert('❌ Error: ' + e.message);
+          } finally {
+            previewBtn.disabled = false;
+            previewBtn.textContent = '👁 Preview Report';
+          }
+        };
+      }
+      
+      if (sendBtn) {
+        sendBtn.onclick = async () => {
+          sendBtn.disabled = true;
+          sendBtn.textContent = '⏳ Sending...';
+          try {
+            const res = await fetch('/api/preview-status-email', { method: 'POST' });
+            const result = await res.json();
+            if (result.ok) {
+              adoEmailCache.subject = result.subject;
+              adoEmailCache.html = result.html;
+              await sendAdoEmail();
+            } else {
+              alert('❌ Error: ' + (result.error || 'Failed to load email'));
+            }
+          } catch (e) {
+            alert('❌ Error: ' + e.message);
+          } finally {
+            sendBtn.disabled = false;
+            sendBtn.textContent = '✉ Send Email';
+          }
+        };
+      }
+    } else {
+      const issueText = (data.issues || []).join('\n- ');
+      console.warn('ADO feature is not configured:', data.issues || []);
+      const description = adoCard.querySelector('p');
+      if (description && issueText) {
+        description.textContent = `ADO setup required. ${data.issues[0]}`;
+      }
+    }
+  } catch (e) {
+    console.error('Failed to check ADO status:', e);
+  }
+}
+
+// Initialize on page load
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initializeAdoStatus);
+} else {
+  initializeAdoStatus();
 }
 </script>
 </body>

@@ -14,6 +14,8 @@
     "@azure/storage-blob": "^12.31.0",
     "dotenv": "^16.4.5",
     "express": "^4.19.0",
+    "node-fetch": "^2.7.0",
+    "nodemailer": "^8.0.7",
     "ssh2-sftp-client": "^11.0.0"
   }
 }

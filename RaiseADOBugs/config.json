@@ -1,0 +1,36 @@
+{
+  "AzureDevOps": {
+    "Organization": "asos",
+    "Project": "Inbound",
+    "BaseUrl": "https://dev.azure.com/asos/Inbound",
+    "BugQueryId": "a3fdd1b4-c240-4cd7-a577-d208b4162bce",
+    "TestPlanId": 1192299,
+    "TestSuiteId": 1192300,
+    "TstmTestPlanId": 1199685,
+    "TstmTestSuiteId": 1199686,
+    "TestPlanQueryId": "8137f9dc-880d-43cc-9cf0-c636a02d1337",
+    "PatTokenEnvVar": "ADO_PAT_TOKEN"
+  },
+  "Email": {
+    "Recipients": [
+      "elamathi.pandian@asos.com"
+    ],
+    "From": "elamathi.pandian@asos.com",
+    "Subject": "AIM Test Execution Progress & Bug Report",
+    "SmtpServer": "smtp.office365.com",
+    "Port": 587,
+    "UseSsl": true
+  },
+  "TargetDate": {
+    "Date": "",
+    "Label": "E2E Testing Completion Target",
+    "AmberThresholdDays": 14,
+    "GreenThresholdDays": 30,
+    "RagOverride": "Auto",
+    "RagReason": ""
+  },
+  "Schedule": {
+    "Frequency": "Daily",
+    "Time": "09:00"
+  }
+}
