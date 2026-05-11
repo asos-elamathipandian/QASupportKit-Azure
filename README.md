@@ -1,2 +1,97 @@
-# QASupportKit-Azure
-On Azure: All XML generators, SFTP upload, blob search/download, full UI and  What shows as disabled (with "Local Only" badge): ASN Lookup, Carrier Booking, Full SCC Flow, ADO Email — greyed out
+# QA Support Kit Azure
+
+QA Support Kit Azure is a web application used by QA and support teams to generate, validate, review, and deliver test/integration payloads across inbound logistics workflows.
+
+The app combines XML generation utilities, SFTP upload helpers, storage search tools, and operational actions into one UI so common support tasks can be completed quickly with less manual effort.
+
+## What This Project Provides
+
+- XML generation and review flows for multiple message types
+- Upload support for configured SFTP destinations
+- Search and retrieval tools for storage/blob based artifacts
+- Carrier and WMS event helper workflows
+- ADO status email workflow for local runtime (preview, edit, send)
+
+## Runtime Behavior
+
+### Localhost
+
+Most features are available in local runtime, including local-only tools and ADO email.
+
+### Azure App Service (Cloud)
+
+Core XML and search features remain available.
+
+Some actions are intentionally disabled in cloud runtime and shown with a Local Only badge, including:
+
+- ASN Lookup
+- Carrier Booking
+- Full SCC Flow
+- ADO Email
+
+This is by design to avoid dependencies that require local desktop/runtime components.
+
+## Tech Stack
+
+- Node.js + Express backend
+- Static frontend served from public
+- Azure/App Service friendly deployment model
+
+## Run Locally
+
+1. Install dependencies:
+
+	npm install
+
+2. Start the app:
+
+	npm start
+
+3. Open:
+
+	http://localhost:3000
+
+## Configuration Notes
+
+- App config files are under config and RaiseADOBugs
+- Environment variables are used for sensitive values (for example ADO PAT and SMTP credentials)
+- For cloud deployments, set required app settings in App Service configuration
+
+## Troubleshooting
+
+### App Does Not Start Locally
+
+- Symptom: `npm start` fails or exits quickly.
+- Check:
+	- Run `npm install` to ensure dependencies are present.
+	- Confirm no old Node process is holding port 3000.
+	- Restart terminal and run `npm start` again.
+
+### ADO Preview/Send Fails Locally
+
+- Symptom: ADO email preview/send shows an error.
+- Check:
+	- Ensure `ADO_PAT_TOKEN` is set in your local environment.
+	- Verify `RaiseADOBugs/config.json` values (organization, project, query IDs, recipients).
+	- Confirm `RaiseADOBugs/Send-ADOReport.ps1` exists.
+
+### SMTP Send Fails
+
+- Symptom: SMTP timeout or connection error.
+- Check:
+	- Confirm `SMTP_PASSWORD` is set.
+	- Validate network route to SMTP host/port.
+	- Local app can fall back to Outlook/PowerShell path where applicable.
+
+### ADO Email Missing In Cloud
+
+- Symptom: ADO Email card is disabled in App Service.
+- Expected: This is intentional.
+- Reason: ADO email is disabled in cloud runtime to avoid desktop/runtime dependencies.
+
+### "Works On Local, Not In App Service"
+
+- Check:
+	- Verify App Service configuration settings are present and correct.
+	- Confirm required secrets/environment variables are configured in App Service.
+	- Use app logs to inspect endpoint errors and missing configuration values.

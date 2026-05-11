@@ -979,15 +979,35 @@ Write-Host "Querying Bug data..." -ForegroundColor Yellow
 [array]$bugs = @(Get-QueryResults -QueryId $bugQueryId -Headers $headers)
 Write-Host "  Found $($bugs.Count) bugs." -ForegroundColor Green
 
-# Step 2: Query Test Plan donut from Test Points API (CR144)
-Write-Host "Querying CR144 Test Plan (Plan=$testPlanId, Suite=$testSuiteId)..." -ForegroundColor Yellow
-[array]$testPoints = @(Get-TestPointResults -PlanId $testPlanId -SuiteId $testSuiteId -Headers $headers)
-Write-Host "  Found $($testPoints.Count) CR144 test points." -ForegroundColor Green
+# Step 2: Query target suite charts (only requested suites)
+$targetChartSuites = @(
+    @{ Key = 'CR140'; PlanId = 1190678; SuiteId = 1190679; Title = 'CR140 Dummy PO' },
+    @{ Key = 'CR144'; PlanId = 1192299; SuiteId = 1192300; Title = 'CR144 DDP PL View' },
+    @{ Key = 'CR147'; PlanId = 1192486; SuiteId = 1192487; Title = 'CR147 VBKCON date' }
+)
 
-# Step 2b: Query TSTM Test Plan donut from Test Points API
-Write-Host "Querying TSTM Test Plan (Plan=$tstmTestPlanId, Suite=$tstmTestSuiteId)..." -ForegroundColor Yellow
-[array]$tstmTestPoints = @(Get-TestPointResults -PlanId $tstmTestPlanId -SuiteId $tstmTestSuiteId -Headers $headers)
-Write-Host "  Found $($tstmTestPoints.Count) TSTM test points." -ForegroundColor Green
+$suitePointsMap = @{}
+foreach ($suite in $targetChartSuites) {
+    $suiteId = [int]$suite.SuiteId
+    $planId  = [int]$suite.PlanId
+    $title   = $suite.Title
+    $points  = @()
+
+    try {
+        Write-Host "Querying $title (Plan=$planId, Suite=$suiteId)..." -ForegroundColor Yellow
+        $points = @(Get-TestPointResults -PlanId $planId -SuiteId $suiteId -Headers $headers)
+        Write-Host "  Found $($points.Count) test points for $title." -ForegroundColor Green
+    }
+    catch {
+        Write-Host "  Could not query suite $suiteId in plan $planId : $_" -ForegroundColor DarkYellow
+    }
+
+    $suitePointsMap[$suite.Key] = @($points)
+}
+
+# Preserve highlight inputs with first two target suites
+[array]$testPoints = @($suitePointsMap['CR140'])
+[array]$tstmTestPoints = @($suitePointsMap['CR144'])
 
 # Step 3: Query Test Plan items from shared query (Report-Testplan)
 Write-Host "Querying Test Plan items from shared query..." -ForegroundColor Yellow
@@ -1001,8 +1021,9 @@ Write-Host "Building HTML report..." -ForegroundColor Yellow
 Write-Host "Generating today's highlights..." -ForegroundColor Yellow
 $todaysHighlights = Get-TodaysHighlights -TestPoints $testPoints -TstmTestPoints $tstmTestPoints -TestPlanItems $testItems -Bugs $bugs -Headers $headers
 
-$cr144Chart = Get-TestOutcomeDonutChart -TestPoints $testPoints -ChartTitle "CR144 Test Cases Stats"
-$tstmChart = Get-TestOutcomeDonutChart -TestPoints $tstmTestPoints -ChartTitle "TSTM Suite Test Cases Stats"
+$cr140Chart = Get-TestOutcomeDonutChart -TestPoints @($suitePointsMap['CR140']) -ChartTitle "CR140 Dummy PO Test Cases Stats"
+$cr144Chart = Get-TestOutcomeDonutChart -TestPoints @($suitePointsMap['CR144']) -ChartTitle "CR144 DDP PL View Test Cases Stats"
+$cr147Chart = Get-TestOutcomeDonutChart -TestPoints @($suitePointsMap['CR147']) -ChartTitle "CR147 VBKCON date Test Cases Stats"
 $testTable = Format-TestPlanItemsToHtml -WorkItems $testItems -Headers $headers
 $bugChart = Get-DonutChart -WorkItems $bugs -ChartTitle "Bug Stats" -CenterLabel "Resolved"
 $bugTable = Format-WorkItemsToHtml -WorkItems $bugs -TableTitle "Bug Report" -AccentColor "#D32F2F" -Headers $headers
@@ -1033,8 +1054,9 @@ $htmlBody = @"
                 $testTable
                 <table cellpadding="0" cellspacing="0" border="0" style="width:100%;margin-top:20px;">
                     <tr>
-                        <td style="width:50%;vertical-align:top;padding-right:10px;">$cr144Chart</td>
-                        <td style="width:50%;vertical-align:top;padding-left:10px;">$tstmChart</td>
+                        <td style="width:33.33%;vertical-align:top;padding-right:8px;">$cr140Chart</td>
+                        <td style="width:33.33%;vertical-align:top;padding:0 8px;">$cr144Chart</td>
+                        <td style="width:33.33%;vertical-align:top;padding-left:8px;">$cr147Chart</td>
                     </tr>
                 </table>
             </div>
