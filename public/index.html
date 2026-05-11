@@ -1305,15 +1305,7 @@ function confirmAndUploadGpm() {
   document.getElementById('gpmUploadStatus').textContent = 'Uploading to SFTP...';
   // Use correct upload endpoint for each XML type
   let uploadEndpoint = '/api/upload/gpm';
-  if (endpoint === 'vbkcon') uploadEndpoint = '/api/generate/vbkcon';
-  else if (endpoint === 'bst') uploadEndpoint = '/api/generate/bst';
-  else if (endpoint === 'shipment') uploadEndpoint = '/api/generate/shipment';
-  else if (endpoint === 'asn-fcbkc') uploadEndpoint = '/api/generate/asn-fcbkc';
-  else if (endpoint === 'asn-rcv') uploadEndpoint = '/api/generate/asn-rcv';
-  else if (endpoint === 'asn-padex') uploadEndpoint = '/api/generate/asn-padex';
-  else if (endpoint === 'asn-feed') uploadEndpoint = '/api/generate/asn-feed';
-  else if (endpoint === 'po-feed') uploadEndpoint = '/api/generate/po-feed';
-  // For GPM, use /api/upload/gpm; for others, use their generate endpoint with XML override
+  if (endpoint && endpoint !== 'gpm') uploadEndpoint = '/api/upload/' + endpoint;
   const payload = { fileName, xml };
   fetch(uploadEndpoint, {
     method: 'POST',
