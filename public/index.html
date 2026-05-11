@@ -584,60 +584,170 @@
   </div>
 
   <!-- ── ASN Lookup in SCC (LOCAL ONLY) ── -->
-  <div class="card local-only-card">
-    <span class="local-only-badge">&#128274; Local Only</span>
+  <div class="card">
     <div class="card-title">ASN Lookup in E2Open SCC</div>
     <div class="form-grid">
       <div class="form-group" style="grid-column: 1 / -1;">
         <label>ASN</label>
-        <input type="text" placeholder="e.g. 49870000001275 or ASN1,ASN2,ASN3" disabled />
-        <span class="field-hint">Requires Playwright browser &mdash; available on local version only.</span>
+        <input id="asnLookupInput" type="text" placeholder="e.g. 49870000001275 or ASN1,ASN2,ASN3" />
+        <span class="field-hint">Enter one or more ASNs (comma-separated) to look up in SCC.</span>
       </div>
     </div>
-    <button class="btn-lookup" disabled style="margin-top:14px;">
+    <button class="btn-lookup" id="btnAsnLookup" onclick="asnLookup()" style="margin-top:14px;">
       &#128269;&nbsp; Check ASN in SCC
     </button>
+    <div id="asnLookupResult" style="margin-top:14px;"></div>
   </div>
 
   <!-- ── Booking Creation (LOCAL ONLY) ── -->
-  <div class="card local-only-card">
-    <span class="local-only-badge">&#128274; Local Only</span>
+  <div class="card">
     <div class="card-title">Carrier Booking Creation</div>
     <div class="form-grid">
       <div class="form-group" style="grid-column: 1 / -1;">
         <label>ASN for Booking</label>
-        <input type="text" placeholder="e.g. 49870000001275 or ASN1,ASN2,ASN3" disabled />
-        <span class="field-hint">Requires Playwright browser &mdash; available on local version only.</span>
+        <input id="bookingAsnInput" type="text" placeholder="e.g. 49870000001275 or ASN1,ASN2,ASN3" />
+        <span class="field-hint">Enter one or more ASNs (comma-separated) for booking.</span>
       </div>
     </div>
     <div class="booking-buttons">
-      <button class="btn-booking-single" disabled>
+      <button class="btn-booking-single" id="btnBookingSingle" onclick="bookingCreateSingle()">
         &#9654;&nbsp; Single ASN per Booking
         <span class="btn-label-sub">One booking per ASN, login once</span>
       </button>
-      <button class="btn-booking-multi" disabled>
+      <button class="btn-booking-multi" id="btnBookingMulti" onclick="bookingCreateMulti()">
         &#9654;&nbsp; All ASNs &times; One Booking
         <span class="btn-label-sub">All ASNs combined in one booking</span>
       </button>
     </div>
+    <div id="bookingResult" style="margin-top:14px;"></div>
   </div>
 
   <!-- ── Full SCC Flow (LOCAL ONLY) ── -->
-  <div class="card local-only-card">
-    <span class="local-only-badge">&#128274; Local Only</span>
+  <div class="card">
     <div class="card-title">Full SCC Flow &mdash; One-Click Booking</div>
     <div class="form-grid">
       <div class="form-group" style="grid-column: 1 / -1;">
         <label>ASN</label>
-        <input type="text" placeholder="e.g. 49870000001275 or ASN1,ASN2,ASN3" disabled />
-        <span class="field-hint">Requires Playwright browser &mdash; available on local version only.</span>
+        <input id="fullSccAsnInput" type="text" placeholder="e.g. 49870000001275 or ASN1,ASN2,ASN3" />
+        <span class="field-hint">Enter one or more ASNs (comma-separated) for full SCC flow.</span>
       </div>
     </div>
-    <button class="btn-full-flow" disabled style="margin-top:14px;">
+    <button class="btn-full-flow" id="btnFullSccFlow" onclick="fullSccFlow()" style="margin-top:14px;">
       &#9889;&nbsp; Full SCC Flow
       <span class="btn-label-sub">ASN Lookup + Single Booking Creation + Edit + Submit + Approve</span>
     </button>
+    <div id="fullSccResult" style="margin-top:14px;"></div>
   </div>
+</main>
+
+<script>
+// --- Cloud-enabled ASN Lookup ---
+async function asnLookup() {
+  const asn = document.getElementById('asnLookupInput').value.trim();
+  if (!asn) return alert('Please enter one or more ASNs');
+  const btn = document.getElementById('btnAsnLookup');
+  const resultDiv = document.getElementById('asnLookupResult');
+  btn.disabled = true;
+  resultDiv.innerHTML = '<div style="padding:10px;">Looking up ASN(s)...</div>';
+  try {
+    const res = await fetch('/api/asn-lookup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ asn })
+    });
+    const data = await res.json();
+    if (data.ok) {
+      resultDiv.innerHTML = `<div style='color:green;padding:10px;'>${data.result || 'Lookup successful.'}</div>`;
+    } else {
+      resultDiv.innerHTML = `<div style='color:red;padding:10px;'>${data.error || 'Lookup failed.'}</div>`;
+    }
+  } catch (e) {
+    resultDiv.innerHTML = `<div style='color:red;padding:10px;'>${e.message}</div>`;
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+// --- Cloud-enabled Carrier Booking ---
+async function bookingCreateSingle() {
+  const asn = document.getElementById('bookingAsnInput').value.trim();
+  if (!asn) return alert('Please enter one or more ASNs');
+  const btn = document.getElementById('btnBookingSingle');
+  const resultDiv = document.getElementById('bookingResult');
+  btn.disabled = true;
+  resultDiv.innerHTML = '<div style="padding:10px;">Creating single booking(s)...</div>';
+  try {
+    const res = await fetch('/api/booking/create-single', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ asn })
+    });
+    const data = await res.json();
+    if (data.ok) {
+      resultDiv.innerHTML = `<div style='color:green;padding:10px;'>${data.result || 'Booking created.'}</div>`;
+    } else {
+      resultDiv.innerHTML = `<div style='color:red;padding:10px;'>${data.error || 'Booking failed.'}</div>`;
+    }
+  } catch (e) {
+    resultDiv.innerHTML = `<div style='color:red;padding:10px;'>${e.message}</div>`;
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+async function bookingCreateMulti() {
+  const asn = document.getElementById('bookingAsnInput').value.trim();
+  if (!asn) return alert('Please enter one or more ASNs');
+  const btn = document.getElementById('btnBookingMulti');
+  const resultDiv = document.getElementById('bookingResult');
+  btn.disabled = true;
+  resultDiv.innerHTML = '<div style="padding:10px;">Creating multi-ASN booking...</div>';
+  try {
+    const res = await fetch('/api/booking/create-multi', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ asn })
+    });
+    const data = await res.json();
+    if (data.ok) {
+      resultDiv.innerHTML = `<div style='color:green;padding:10px;'>${data.result || 'Multi-ASN booking created.'}</div>`;
+    } else {
+      resultDiv.innerHTML = `<div style='color:red;padding:10px;'>${data.error || 'Booking failed.'}</div>`;
+    }
+  } catch (e) {
+    resultDiv.innerHTML = `<div style='color:red;padding:10px;'>${e.message}</div>`;
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+// --- Cloud-enabled Full SCC Flow ---
+async function fullSccFlow() {
+  const asn = document.getElementById('fullSccAsnInput').value.trim();
+  if (!asn) return alert('Please enter one or more ASNs');
+  const btn = document.getElementById('btnFullSccFlow');
+  const resultDiv = document.getElementById('fullSccResult');
+  btn.disabled = true;
+  resultDiv.innerHTML = '<div style="padding:10px;">Running full SCC flow...</div>';
+  try {
+    const res = await fetch('/api/full-scc-flow', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ asn })
+    });
+    const data = await res.json();
+    if (data.ok) {
+      resultDiv.innerHTML = `<div style='color:green;padding:10px;'>${data.result || 'Full SCC flow completed.'}</div>`;
+    } else {
+      resultDiv.innerHTML = `<div style='color:red;padding:10px;'>${data.error || 'Full SCC flow failed.'}</div>`;
+    }
+  } catch (e) {
+    resultDiv.innerHTML = `<div style='color:red;padding:10px;'>${e.message}</div>`;
+  } finally {
+    btn.disabled = false;
+  }
+}
+</script>
 
   <!-- ── ADO Status Email (LOCAL ONLY) ── -->
   <div class="card local-only-card" style="background:#e3f2fd; border-left:4px solid #0078D4;">

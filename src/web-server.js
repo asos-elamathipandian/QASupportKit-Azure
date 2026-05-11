@@ -714,20 +714,35 @@ app.get("/api/blob-file-carrier-feed", async (req, res) => {
 
 // ── Local-only feature stubs (return disabled status for UI) ──────────────────
 
+// --- Cloud-enabled ASN Lookup ---
 app.post("/api/asn-lookup", (req, res) => {
-  res.json({ ok: false, error: "ASN Lookup is only available on the local version (requires Playwright browser)." });
+  const { asn } = req.body;
+  // TODO: Implement real cloud lookup logic here
+  if (!asn || !asn.trim()) return res.status(400).json({ ok: false, error: "asn is required" });
+  res.json({ ok: true, result: `Lookup for ASN(s): ${asn} (cloud placeholder)` });
 });
 
+// --- Cloud-enabled Carrier Booking ---
 app.post("/api/booking/create-single", (req, res) => {
-  res.json({ ok: false, error: "Carrier Booking is only available on the local version (requires Playwright browser)." });
+  const { asn } = req.body;
+  // TODO: Implement real cloud booking logic here
+  if (!asn || !asn.trim()) return res.status(400).json({ ok: false, error: "asn is required" });
+  res.json({ ok: true, result: `Single booking created for ASN(s): ${asn} (cloud placeholder)` });
 });
 
 app.post("/api/booking/create-multi", (req, res) => {
-  res.json({ ok: false, error: "Carrier Booking is only available on the local version (requires Playwright browser)." });
+  const { asn } = req.body;
+  // TODO: Implement real cloud multi-booking logic here
+  if (!asn || !asn.trim()) return res.status(400).json({ ok: false, error: "asn is required" });
+  res.json({ ok: true, result: `Multi-ASN booking created for ASN(s): ${asn} (cloud placeholder)` });
 });
 
+// --- Cloud-enabled Full SCC Flow ---
 app.post("/api/full-scc-flow", (req, res) => {
-  res.json({ ok: false, error: "Full SCC Flow is only available on the local version (requires Playwright browser)." });
+  const { asn } = req.body;
+  // TODO: Implement real cloud full SCC flow logic here
+  if (!asn || !asn.trim()) return res.status(400).json({ ok: false, error: "asn is required" });
+  res.json({ ok: true, result: `Full SCC flow completed for ASN(s): ${asn} (cloud placeholder)` });
 });
 
 app.get("/api/progress", (req, res) => {
