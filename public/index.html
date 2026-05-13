@@ -297,7 +297,7 @@
       .individual-buttons { grid-template-columns: 1fr 1fr; }
     }
 
-    /* ── Booking Section (disabled styles) ── */
+    /* ── Booking Section (enabled styles) ── */
     .btn-booking-single, .btn-booking-multi {
       padding: 13px;
       color: white;
@@ -305,11 +305,18 @@
       border-radius: 10px;
       font-size: 0.93rem;
       font-weight: 700;
-      cursor: not-allowed;
+      cursor: pointer;
       letter-spacing: 0.03em;
+      transition: background 0.2s, transform 0.1s;
     }
     .btn-booking-single { background: #e94560; }
+    .btn-booking-single:hover { background: #d63d56; }
+    .btn-booking-single:active { transform: scale(0.99); }
+    .btn-booking-single:disabled { opacity: 0.5; cursor: not-allowed; }
     .btn-booking-multi  { background: #7c3aed; }
+    .btn-booking-multi:hover { background: #6d28d9; }
+    .btn-booking-multi:active { transform: scale(0.99); }
+    .btn-booking-multi:disabled { opacity: 0.5; cursor: not-allowed; }
 
     .booking-buttons {
       display: grid;
@@ -318,7 +325,7 @@
       margin-top: 14px;
     }
 
-    /* ── ASN Lookup (disabled styles) ── */
+    /* ── ASN Lookup (enabled styles) ── */
     .btn-lookup {
       width: 100%;
       padding: 13px;
@@ -328,11 +335,15 @@
       border-radius: 10px;
       font-size: 0.97rem;
       font-weight: 700;
-      cursor: not-allowed;
+      cursor: pointer;
       letter-spacing: 0.03em;
+      transition: background 0.2s, transform 0.1s;
     }
+    .btn-lookup:hover { background: #0284c7; }
+    .btn-lookup:active { transform: scale(0.99); }
+    .btn-lookup:disabled { opacity: 0.5; cursor: not-allowed; }
 
-    /* ── Full SCC Flow (disabled styles) ── */
+    /* ── Full SCC Flow (enabled styles) ── */
     .btn-full-flow {
       width: 100%;
       padding: 15px;
@@ -342,9 +353,13 @@
       border-radius: 10px;
       font-size: 1rem;
       font-weight: 700;
-      cursor: not-allowed;
+      cursor: pointer;
       letter-spacing: 0.03em;
+      transition: background 0.2s, transform 0.1s;
     }
+    .btn-full-flow:hover { background: linear-gradient(135deg, #047857, #059669); }
+    .btn-full-flow:active { transform: scale(0.99); }
+    .btn-full-flow:disabled { opacity: 0.5; cursor: not-allowed; }
 
     /* ── E2Open Outbound Message Search ── */
     .btn-blob-search {
@@ -586,6 +601,15 @@
   <!-- ── ASN Lookup in SCC (LOCAL ONLY) ── -->
   <div class="card">
     <div class="card-title">ASN Lookup in E2Open SCC</div>
+    <div style="display:none; gap:10px; flex-wrap:wrap; margin-bottom:12px;">
+      <button class="btn-lookup" id="btnSccBootstrap" onclick="bootstrapSccSession()" style="width:auto; padding:10px 14px; background:#0f766e;">
+        🔐 Initialize SCC Session (Optional)
+      </button>
+      <button class="btn-lookup" id="btnSccClearSession" onclick="clearSccSession()" style="width:auto; padding:10px 14px; background:#9f1239;">
+        🧹 Clear Session
+      </button>
+    </div>
+    <div id="sccSessionResult" style="display:none; margin-bottom:12px;"></div>
     <div class="form-grid">
       <div class="form-group" style="grid-column: 1 / -1;">
         <label>ASN</label>
@@ -614,7 +638,7 @@
         &#9654;&nbsp; Single ASN per Booking
         <span class="btn-label-sub">One booking per ASN, login once</span>
       </button>
-      <button class="btn-booking-multi" id="btnBookingMulti" onclick="bookingCreateMulti()">
+      <button class="btn-booking-multi" id="btnBookingMulti" onclick="bookingCreateMulti()" disabled title="Temporarily disabled until stabilization is complete">
         &#9654;&nbsp; All ASNs &times; One Booking
         <span class="btn-label-sub">All ASNs combined in one booking</span>
       </button>
@@ -641,6 +665,56 @@
 </main>
 
 <script>
+async function refreshSccSessionStatus() {
+  const resultDiv = document.getElementById('sccSessionResult');
+  if (!resultDiv) return;
+
+  try {
+    const res = await fetch('/api/scc/session-status');
+    const data = await res.json();
+    const session = data.session || {};
+    if (session.exists) {
+      resultDiv.innerHTML = `<div style='color:#065f46;padding:10px;background:#ecfdf5;border-left:4px solid #10b981;border-radius:6px;'><strong>✅ SCC session ready</strong><div style='margin-top:4px;font-size:0.85rem;'>Last updated: ${session.lastUpdated || 'unknown'}</div></div>`;
+    } else {
+      resultDiv.innerHTML = `<div style='color:#1f2937;padding:10px;background:#eff6ff;border-left:4px solid #3b82f6;border-radius:6px;'><strong>ℹ️ No saved SCC session yet</strong><div style='margin-top:4px;font-size:0.85rem;'>You can click "Check ASN in SCC" directly. Backend will login automatically using configured credentials. "Initialize SCC Session" is optional.</div></div>`;
+    }
+  } catch (e) {
+    resultDiv.innerHTML = `<div style='color:#b91c1c;padding:10px;background:#fef2f2;border-left:4px solid #ef4444;border-radius:6px;'><strong>❌ Failed to read SCC session status:</strong> ${e.message}</div>`;
+  }
+}
+
+async function bootstrapSccSession() {
+  const btn = document.getElementById('btnSccBootstrap');
+  const resultDiv = document.getElementById('sccSessionResult');
+  btn.disabled = true;
+  resultDiv.innerHTML = `<div style='color:#1f2937;padding:10px;background:#eff6ff;border-left:4px solid #3b82f6;border-radius:6px;'><strong>⏳ Opening browser for one-time SCC login...</strong><div style='margin-top:4px;font-size:0.85rem;'>Please complete login in the opened Playwright browser window.</div></div>`;
+  try {
+    const res = await fetch('/api/scc/session/bootstrap', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ timeoutMs: 240000 })
+    });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || 'Session bootstrap failed');
+    await refreshSccSessionStatus();
+  } catch (e) {
+    resultDiv.innerHTML = `<div style='color:#b91c1c;padding:10px;background:#fef2f2;border-left:4px solid #ef4444;border-radius:6px;'><strong>❌ SCC session bootstrap failed:</strong> ${e.message}</div>`;
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+async function clearSccSession() {
+  const btn = document.getElementById('btnSccClearSession');
+  btn.disabled = true;
+  try {
+    await fetch('/api/scc/session/clear', { method: 'POST' });
+    await refreshSccSessionStatus();
+  } finally {
+    btn.disabled = false;
+  }
+}
+
 // --- Cloud-enabled ASN Lookup ---
 async function asnLookup() {
   const asn = document.getElementById('asnLookupInput').value.trim();
@@ -648,101 +722,125 @@ async function asnLookup() {
   const btn = document.getElementById('btnAsnLookup');
   const resultDiv = document.getElementById('asnLookupResult');
   btn.disabled = true;
-  resultDiv.innerHTML = '<div style="padding:10px;">Looking up ASN(s)...</div>';
+  resultDiv.innerHTML = '<div style="padding:10px; color:#666;"><strong>⏳ Checking ASN availability in SCC (auto-login if needed)...</strong></div>';
   try {
-    const res = await fetch('/api/asn-lookup', {
+    const res = await fetch('/api/scc/asn-lookup', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ asn })
     });
     const data = await res.json();
     if (data.ok) {
-      resultDiv.innerHTML = `<div style='color:green;padding:10px;'>${data.result || 'Lookup successful.'}</div>`;
+      const found = Boolean(data.result.found || (Number(data.result.matchCount || 0) > 0));
+      const msg = found ? 'ASN found' : 'ASN not found';
+      const matchCount = data.result.matchCount || 0;
+      const color = found ? '#047857' : '#92400e';
+      const bg = found ? '#f0fdf4' : '#fffbeb';
+      const border = found ? '#10b981' : '#f59e0b';
+      resultDiv.innerHTML = `<div style='color:${color};padding:12px;background:${bg};border-left:4px solid ${border};border-radius:6px;'><strong>${found ? '✅' : '⚠️'} ${msg}</strong><div style='margin-top:8px;font-size:0.85rem;'>${matchCount} order(s) found</div></div>`;
     } else {
-      resultDiv.innerHTML = `<div style='color:red;padding:10px;'>${data.error || 'Lookup failed.'}</div>`;
+      const error = data.error || 'ASN lookup failed';
+      resultDiv.innerHTML = `<div style='color:#b91c1c;padding:12px;background:#fef2f2;border-left:4px solid #ef4444;border-radius:6px;'><strong>❌ ${error}</strong></div>`;
     }
   } catch (e) {
-    resultDiv.innerHTML = `<div style='color:red;padding:10px;'>${e.message}</div>`;
+    resultDiv.innerHTML = `<div style='color:#b91c1c;padding:12px;background:#fef2f2;border-left:4px solid #ef4444;border-radius:6px;'><strong>❌ Error:</strong> ${e.message}</div>`;
   } finally {
     btn.disabled = false;
   }
 }
 
-// --- Cloud-enabled Carrier Booking ---
+// --- Carrier Booking - Single ASN per Booking ---
 async function bookingCreateSingle() {
   const asn = document.getElementById('bookingAsnInput').value.trim();
   if (!asn) return alert('Please enter one or more ASNs');
   const btn = document.getElementById('btnBookingSingle');
   const resultDiv = document.getElementById('bookingResult');
   btn.disabled = true;
-  resultDiv.innerHTML = '<div style="padding:10px;">Creating single booking(s)...</div>';
+  resultDiv.innerHTML = '<div style="padding:10px; color:#666;"><strong>⏳ Creating single booking(s) (auto-login if needed)...</strong></div>';
   try {
-    const res = await fetch('/api/booking/create-single', {
+    const res = await fetch('/api/scc/booking/create-single', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ asn })
     });
     const data = await res.json();
     if (data.ok) {
-      resultDiv.innerHTML = `<div style='color:green;padding:10px;'>${data.result || 'Booking created.'}</div>`;
+      const msg = data.result.message || 'Booking created';
+      const count = data.result.count || 1;
+      resultDiv.innerHTML = `<div style='color:#047857;padding:12px;background:#f0fdf4;border-left:4px solid #10b981;border-radius:6px;'><strong>✅ ${msg}</strong><div style='margin-top:8px;font-size:0.85rem;'>${count} booking(s) created</div></div>`;
     } else {
-      resultDiv.innerHTML = `<div style='color:red;padding:10px;'>${data.error || 'Booking failed.'}</div>`;
+      const error = data.error || 'Booking creation failed';
+      resultDiv.innerHTML = `<div style='color:#b91c1c;padding:12px;background:#fef2f2;border-left:4px solid #ef4444;border-radius:6px;'><strong>❌ ${error}</strong></div>`;
     }
   } catch (e) {
-    resultDiv.innerHTML = `<div style='color:red;padding:10px;'>${e.message}</div>`;
+    resultDiv.innerHTML = `<div style='color:#b91c1c;padding:12px;background:#fef2f2;border-left:4px solid #ef4444;border-radius:6px;'><strong>❌ Error:</strong> ${e.message}</div>`;
   } finally {
     btn.disabled = false;
   }
 }
 
 async function bookingCreateMulti() {
+  const resultDiv = document.getElementById('bookingResult');
+  resultDiv.innerHTML = `<div style='color:#92400e;padding:12px;background:#fffbeb;border-left:4px solid #f59e0b;border-radius:6px;'><strong>⚠️ Multi-ASN booking is temporarily disabled.</strong><div style='margin-top:8px;font-size:0.85rem;'>Completed localhost features are ASN lookup and single ASN booking.</div></div>`;
+  return;
+
   const asn = document.getElementById('bookingAsnInput').value.trim();
   if (!asn) return alert('Please enter one or more ASNs');
   const btn = document.getElementById('btnBookingMulti');
-  const resultDiv = document.getElementById('bookingResult');
   btn.disabled = true;
-  resultDiv.innerHTML = '<div style="padding:10px;">Creating multi-ASN booking...</div>';
+  resultDiv.innerHTML = '<div style="padding:10px; color:#666;"><strong>⏳ Creating multi-ASN booking...</strong></div>';
   try {
-    const res = await fetch('/api/booking/create-multi', {
+    const res = await fetch('/api/scc/booking/create-multi', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ asn })
     });
     const data = await res.json();
     if (data.ok) {
-      resultDiv.innerHTML = `<div style='color:green;padding:10px;'>${data.result || 'Multi-ASN booking created.'}</div>`;
+      const msg = data.result.message || 'Multi-ASN booking created';
+      const count = data.result.count || 1;
+      resultDiv.innerHTML = `<div style='color:#047857;padding:12px;background:#f0fdf4;border-left:4px solid #10b981;border-radius:6px;'><strong>✅ ${msg}</strong><div style='margin-top:8px;font-size:0.85rem;'>${count} ASN(s) in 1 booking</div></div>`;
     } else {
-      resultDiv.innerHTML = `<div style='color:red;padding:10px;'>${data.error || 'Booking failed.'}</div>`;
+      const error = data.error || 'Booking creation failed';
+      resultDiv.innerHTML = `<div style='color:#b91c1c;padding:12px;background:#fef2f2;border-left:4px solid #ef4444;border-radius:6px;'><strong>❌ ${error}</strong></div>`;
     }
   } catch (e) {
-    resultDiv.innerHTML = `<div style='color:red;padding:10px;'>${e.message}</div>`;
+    resultDiv.innerHTML = `<div style='color:#b91c1c;padding:12px;background:#fef2f2;border-left:4px solid #ef4444;border-radius:6px;'><strong>❌ Error:</strong> ${e.message}</div>`;
   } finally {
     btn.disabled = false;
   }
 }
 
-// --- Cloud-enabled Full SCC Flow ---
+// --- Full SCC Flow (placeholder for future) ---
 async function fullSccFlow() {
   const asn = document.getElementById('fullSccAsnInput').value.trim();
   if (!asn) return alert('Please enter one or more ASNs');
   const btn = document.getElementById('btnFullSccFlow');
   const resultDiv = document.getElementById('fullSccResult');
   btn.disabled = true;
-  resultDiv.innerHTML = '<div style="padding:10px;">Running full SCC flow...</div>';
+  resultDiv.innerHTML = '<div style="padding:10px; color:#666;"><strong>⏳ Running full SCC flow...</strong></div>';
   try {
-    const res = await fetch('/api/full-scc-flow', {
+    // For now, run ASN lookup first
+    const lookupRes = await fetch('/api/scc/asn-lookup', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ asn })
     });
-    const data = await res.json();
-    if (data.ok) {
-      resultDiv.innerHTML = `<div style='color:green;padding:10px;'>${data.result || 'Full SCC flow completed.'}</div>`;
-    } else {
-      resultDiv.innerHTML = `<div style='color:red;padding:10px;'>${data.error || 'Full SCC flow failed.'}</div>`;
-    }
+    const lookupData = await lookupRes.json();
+    if (!lookupData.ok) throw new Error(lookupData.error || 'ASN lookup failed');
+    
+    // Then create single booking
+    const bookingRes = await fetch('/api/scc/booking/create-single', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ asn })
+    });
+    const bookingData = await bookingRes.json();
+    if (!bookingData.ok) throw new Error(bookingData.error || 'Booking creation failed');
+    
+    resultDiv.innerHTML = `<div style='color:#047857;padding:12px;background:#f0fdf4;border-left:4px solid #10b981;border-radius:6px;'><strong>✅ Full SCC flow completed successfully</strong><div style='margin-top:8px;font-size:0.85rem;'><div>• ASN Lookup: ${lookupData.result.matchCount} order(s) found</div><div>• Booking Creation: ${bookingData.result.count} booking(s) created</div></div></div>`;
   } catch (e) {
-    resultDiv.innerHTML = `<div style='color:red;padding:10px;'>${e.message}</div>`;
+    resultDiv.innerHTML = `<div style='color:#b91c1c;padding:12px;background:#fef2f2;border-left:4px solid #ef4444;border-radius:6px;'><strong>❌ Error:</strong> ${e.message}</div>`;
   } finally {
     btn.disabled = false;
   }
@@ -771,6 +869,58 @@ async function fullSccFlow() {
 </main>
 
 <script>
+  // --- Initialize SCC Status ---
+  async function initSccStatus() {
+    try {
+      const res = await fetch('/api/scc/status');
+      const data = await res.json();
+      const sccBtns = [
+        document.getElementById('btnAsnLookup'),
+        document.getElementById('btnBookingSingle'),
+        document.getElementById('btnBookingMulti'),
+        document.getElementById('btnFullSccFlow')
+      ];
+      
+      if (!data.available) {
+        // Disable SCC buttons and show message
+        sccBtns.forEach(btn => {
+          if (btn) {
+            btn.disabled = true;
+            btn.title = data.issues ? data.issues[0] : 'SCC feature unavailable';
+            btn.style.opacity = '0.5';
+            btn.style.cursor = 'not-allowed';
+          }
+        });
+        
+        // Add warning message to each SCC section
+        const sections = [
+          'asnLookupResult',
+          'bookingResult',
+          'fullSccResult'
+        ];
+        sections.forEach(id => {
+          const div = document.getElementById(id);
+          if (div) {
+            div.innerHTML = `<div style='color:#b45309;padding:12px;background:#fef3c7;border-left:4px solid #f59e0b;border-radius:6px;'><strong>⚠️ Cloud Runtime Detected</strong><div style='margin-top:6px;font-size:0.85rem;'>SCC Playwright automation is disabled on cloud. Use local app (localhost:3000) for this feature.</div></div>`;
+          }
+        });
+      }
+    } catch (e) {
+      console.error('Failed to check SCC status:', e);
+    }
+  }
+  
+  // Initialize when DOM is ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+      initSccStatus();
+      refreshSccSessionStatus();
+    });
+  } else {
+    initSccStatus();
+    refreshSccSessionStatus();
+  }
+
   function getInputs() {
     return {
       asn:      document.getElementById("asn").value.trim(),

@@ -1,0 +1,175 @@
+{
+  "cookies": [
+    {
+      "name": "Authorization",
+      "value": "eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiIxMTA5IiwidGVuYW50SWQiOiJBU09TIiwidXNlcklkIjoiNDY4IiwidXNlck5hbWUiOiJlbGFtYXRoaSBwYW5kaWFuIiwidXNlckVtYWlsIjoiZWxhbWF0aGkucGFuZGlhbkBhc29zLmNvbSIsInVuaWZpZWRBcHBJZCI6IkFTT1MuU3VwcGx5IENoYWluIENvbGxhYm9yYXRpb24uU0NDU3RhY2suU0NDIiwiZXhwIjoxNzc4Njc4NjA5fQ.gsW_1Fo_lij4LRiQfpNaUpx2jcz6Qekc8OH3xFxblPOsQg4fYa-ApvdBaxNprzge2PtnBd5gJy7b5e-z7OnbSw",
+      "domain": ".e2open.com",
+      "path": "/DISCSVCCHEF_di",
+      "expires": 1778678608.975541,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "Strict"
+    },
+    {
+      "name": "Authorization_ASOS.Supply Chain Collaboration.SCCStack.SCC",
+      "value": "eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiIxMTA5IiwidGVuYW50SWQiOiJBU09TIiwidXNlcklkIjoiNDY4IiwidXNlck5hbWUiOiJlbGFtYXRoaSBwYW5kaWFuIiwidXNlckVtYWlsIjoiZWxhbWF0aGkucGFuZGlhbkBhc29zLmNvbSIsInVuaWZpZWRBcHBJZCI6IkFTT1MuU3VwcGx5IENoYWluIENvbGxhYm9yYXRpb24uU0NDU3RhY2suU0NDIiwiZXhwIjoxNzc4Njc4NjA5fQ.gsW_1Fo_lij4LRiQfpNaUpx2jcz6Qekc8OH3xFxblPOsQg4fYa-ApvdBaxNprzge2PtnBd5gJy7b5e-z7OnbSw",
+      "domain": ".e2open.com",
+      "path": "/DISCSVCCHEF_di",
+      "expires": 1778678608.975756,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "Strict"
+    },
+    {
+      "name": "X-Contour-Session-Affinity",
+      "value": "\"d276b0ada448b261\"",
+      "domain": "e2portal.staging.e2open.com",
+      "path": "/DISCSVCCHEF_di",
+      "expires": -1,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "Strict"
+    },
+    {
+      "name": "e2.app.route",
+      "value": "\"78bd18a61fe0609e\"",
+      "domain": "asos.staging.e2open.com",
+      "path": "/CLPSTG_e2clp",
+      "expires": -1,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "JSESSIONID",
+      "value": "3BA45F6B0289809E4CC27CAF6EDC28E1",
+      "domain": "asos.staging.e2open.com",
+      "path": "/CLPSTG_e2clp",
+      "expires": -1,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "com.e2open.e2clp.rememberMe",
+      "value": "vZrtMhI/VOgCsRSwNK5lJZJTH6we4UoF66NVisZr3LqmJu0jDBot5k15xy9LY1niuGHIQlHGs8R9NAo2VuoScN3jarN6w1Tf3ZJO5GNCJdtd6xaJgUxZDMHOQZRB2FYj3bO9fi9qDnYv+Q0ZnhdIgoM1KzizwQFWhcQ0vK8UzLW48ue1u362XBMMmEq006ilQoCWY0DvQ7zFXW+oHZ6kQfhEPlXH/+nKibzSxZilFpPTAUcJnfarBfts9AISQQmyA5KwEWa6T812doZ4KBP5z2GtTRjNGJewJoCzDhLxbnn/L3TvgSQsc72uS1oN5yZhCjdYyQM8z9xclA5fk1XqYA4raRgCRVKfT6PvOOVEH1fEz8Vnjfmuu5OlZSHLWooTUIR/lva7AIzcKPafngMtkLgHZYHX0607+wyyenZbH1XMIvC7hQOTx2iBIOGdAgMhduWHxQIds8XOKR8jau/znUOTqoFnoUcd7zwa5yKJOEJvZqBnH6uQo8aFchFWfJ71b+m89AmffvuaT3EkP8WyfMnXX1RdqVqFeebZqYFtEL1IgYItOYBD2OK6Mn80CH8TfxD/u9MiqY2MbiI=",
+      "domain": "asos.staging.e2open.com",
+      "path": "/CLPSTG_e2clp",
+      "expires": 1810128184.366839,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "SSESS713b590f9d5437865ae45e1efd8c2d24",
+      "value": "5FqMlJSI3-qdSi5X5dA-4jVe0cKISpnYGaNRBV8Ht6U",
+      "domain": ".asos.staging.e2open.com",
+      "path": "/asosccp",
+      "expires": -1,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "SCC_ROUTEID",
+      "value": ".1",
+      "domain": "asos.staging.e2open.com",
+      "path": "/asosccp",
+      "expires": -1,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "JSESSIONID",
+      "value": "AaWnCXNJvOAwiPWlRVm2pDu44YmAE4zk-zyjjgyU.usdc4uatapp19",
+      "domain": "asos.staging.e2open.com",
+      "path": "/asosap",
+      "expires": -1,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "SCC_ROUTEID",
+      "value": ".2",
+      "domain": "asos.staging.e2open.com",
+      "path": "/asosap",
+      "expires": -1,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "ci_session_e2openstaging",
+      "value": "knnr7mahlbvfkgdp13q8g7g6vismmr61",
+      "domain": ".asos.staging.e2open.com",
+      "path": "/asos",
+      "expires": -1,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "SCC_ROUTEID",
+      "value": ".2",
+      "domain": "asos.staging.e2open.com",
+      "path": "/asos",
+      "expires": -1,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "acceptedCoreCookies",
+      "value": "True",
+      "domain": ".e2open.com",
+      "path": "/",
+      "expires": 1794144170.912044,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "allowFunctionalCookies",
+      "value": "False",
+      "domain": ".e2open.com",
+      "path": "/",
+      "expires": 1813152170.912511,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "allowPerfAnalyticCookies",
+      "value": "False",
+      "domain": ".e2open.com",
+      "path": "/",
+      "expires": 1813152170.912654,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "cacheCookie",
+      "value": "918f49b6-8acb-4943-a6b9-ffc042534b1b",
+      "domain": "authn.staging.e2open.com",
+      "path": "/",
+      "expires": -1,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "stage.e2open.session.id",
+      "value": "ab02220b-54a6-4306-b7d1-769cbe736209.1",
+      "domain": ".e2open.com",
+      "path": "/",
+      "expires": -1,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "Lax"
+    }
+  ],
+  "origins": []
+}

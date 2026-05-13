@@ -27,6 +27,15 @@ const {
   getStateDir,
   loadEnvironment,
 } = require("./app-config");
+const {
+  getSccAvailability,
+  getSccSessionStatus,
+  bootstrapSccSession,
+  clearSccSession,
+  lookupAsn,
+  createSingleAsnBooking,
+  createMultiAsnBooking,
+} = require("./scc-launcher");
 
 loadEnvironment();
 
@@ -714,7 +723,114 @@ app.get("/api/blob-file-carrier-feed", async (req, res) => {
 
 // ── Local-only feature stubs (return disabled status for UI) ──────────────────
 
-// --- Cloud-enabled ASN Lookup ---
+// --- SCC ASN Lookup (localhost only) ---
+app.get("/api/scc/status", (req, res) => {
+  res.json(getSccAvailability());
+});
+
+app.get("/api/scc/session-status", (req, res) => {
+  res.json({ ok: true, session: getSccSessionStatus() });
+});
+
+app.post("/api/scc/session/bootstrap", async (req, res) => {
+  try {
+    const availability = getSccAvailability();
+    if (!availability.available) {
+      return res.status(503).json({ ok: false, error: availability.issues[0] || "SCC unavailable" });
+    }
+
+    const timeoutMs = Number(req.body?.timeoutMs) || 180000;
+    const result = await bootstrapSccSession({ timeoutMs });
+    res.json({ ok: true, result, session: getSccSessionStatus() });
+  } catch (err) {
+    console.error('[API] SCC Session Bootstrap error:', err.message);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+app.post("/api/scc/session/clear", (req, res) => {
+  try {
+    clearSccSession();
+    res.json({ ok: true, session: getSccSessionStatus() });
+  } catch (err) {
+    console.error('[API] SCC Session Clear error:', err.message);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+app.post("/api/scc/asn-lookup", async (req, res) => {
+  try {
+    const availability = getSccAvailability();
+    if (!availability.available) {
+      return res.status(503).json({ ok: false, error: availability.issues[0] || 'SCC unavailable' });
+    }
+
+    const { asn } = req.body;
+    if (!asn || !String(asn).trim()) {
+      return res.status(400).json({ ok: false, error: "asn is required" });
+    }
+
+    const asnList = String(asn).split(',').map(a => a.trim()).filter(a => a);
+    if (asnList.length === 0) {
+      return res.status(400).json({ ok: false, error: "valid ASN list required" });
+    }
+
+    console.log(`[API] ASN Lookup requested for: ${asnList.join(',')}`);
+    const result = await lookupAsn(asnList);
+    res.json({ ok: true, result });
+  } catch (err) {
+    console.error('[API] ASN Lookup error:', err.message);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+// --- SCC Single ASN Booking (localhost only) ---
+app.post("/api/scc/booking/create-single", async (req, res) => {
+  try {
+    const availability = getSccAvailability();
+    if (!availability.available) {
+      return res.status(503).json({ ok: false, error: availability.issues[0] || 'SCC unavailable' });
+    }
+
+    const { asn } = req.body;
+    if (!asn || !String(asn).trim()) {
+      return res.status(400).json({ ok: false, error: "asn is required" });
+    }
+
+    const asnList = String(asn).split(',').map(a => a.trim()).filter(a => a);
+    if (asnList.length === 0) {
+      return res.status(400).json({ ok: false, error: "valid ASN list required" });
+    }
+
+    console.log(`[API] Single ASN Booking requested for: ${asnList.join(',')}`);
+    const result = await createSingleAsnBooking(asnList);
+    res.json({ ok: true, result });
+  } catch (err) {
+    console.error('[API] Single ASN Booking error:', err.message);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+// --- SCC Multi-ASN Booking (localhost only) ---
+app.post("/api/scc/booking/create-multi", async (req, res) => {
+  try {
+    const availability = getSccAvailability();
+    if (!availability.available) {
+      return res.status(503).json({ ok: false, error: availability.issues[0] || 'SCC unavailable' });
+    }
+
+    return res.status(501).json({
+      ok: false,
+      error: 'Multi-ASN booking is temporarily disabled on localhost until stabilization is complete. Completed local features: ASN lookup and single ASN booking.'
+    });
+  } catch (err) {
+    console.error('[API] Multi-ASN Booking error:', err.message);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+// --- Legacy placeholder endpoints (kept for backward compatibility) ---
+// These will be removed in a future version
 app.post("/api/asn-lookup", (req, res) => {
   const { asn } = req.body;
   // TODO: Implement real cloud lookup logic here
