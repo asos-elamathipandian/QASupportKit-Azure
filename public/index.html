@@ -1791,10 +1791,13 @@ async function previewAdoEmail() {
 async function previewAndSendAdoEmail() {
   const sendBtn = document.querySelector('button[onclick="previewAndSendAdoEmail()"]');
   const statusDiv = document.getElementById('adoDirectSendStatus');
+  console.log('[ADO] previewAndSendAdoEmail called, statusDiv:', statusDiv);
+  
   sendBtn.disabled = true;
   sendBtn.textContent = '⏳ Sending...';
   statusDiv.textContent = 'Sending email...';
   statusDiv.style.color = '#2563eb';
+  statusDiv.style.fontWeight = 'bold';
   
   try {
     console.log('[ADO] Fetching email to send...');
@@ -1804,6 +1807,7 @@ async function previewAndSendAdoEmail() {
       body: JSON.stringify({})
     });
     const result = await res.json();
+    console.log('[ADO] Preview response:', result);
     
     if (!result.ok) {
       statusDiv.textContent = `❌ Failed to fetch email: ${result.error || 'Unknown error'}`;
@@ -1818,12 +1822,15 @@ async function previewAndSendAdoEmail() {
       body: JSON.stringify({ subject: result.subject, html: result.html })
     });
     const sendResult = await sendRes.json();
+    console.log('[ADO] Send response:', sendResult);
     
     if (sendResult.ok) {
       console.log('[ADO] Email sent successfully via', sendResult.transport);
       statusDiv.textContent = `✅ Email sent successfully,please check Inbox!`;
       statusDiv.style.color = '#16a34a';
+      statusDiv.style.fontSize = '0.95rem';
     } else {
+      console.log('[ADO] Send failed:', sendResult.error);
       statusDiv.textContent = `❌ Send failed: ${sendResult.error || 'Unknown error'}`;
       statusDiv.style.color = '#dc2626';
     }

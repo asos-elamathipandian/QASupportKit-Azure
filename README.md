@@ -33,9 +33,34 @@ This is by design to avoid dependencies that require local desktop/runtime compo
 
 ## Tech Stack
 
-- Node.js + Express backend
-- Static frontend served from public
-- Azure/App Service friendly deployment model
+- Node.js runtime for API orchestration and backend processing
+- Express.js web framework for REST endpoints
+- Vanilla JavaScript + HTML/CSS frontend served from `public`
+- Playwright for SCC browser automation workflows
+- Azure Storage Blob SDK for blob search and file retrieval
+- Nodemailer for SMTP-based email sending
+- PowerShell (Outlook COM) fallback for local Windows email delivery
+- `ssh2-sftp-client` for SFTP uploads
+- Azure App Service compatible deployment model
+
+## Architecture Overview
+
+High-level request flow:
+
+1. Browser UI (public/index.html) triggers actions using fetch calls.
+2. Express API (src/web-server.js) validates input and routes each action.
+3. Service modules execute domain work:
+	- XML generation modules build payloads.
+	- Blob modules query/download from Azure Blob Storage.
+	- SCC module runs Playwright automation for ASN lookup.
+	- ADO email module generates HTML report and sends via SMTP or PowerShell Outlook fallback.
+4. Optional SFTP upload module transfers generated files to configured endpoints.
+5. API returns JSON responses; UI renders progress, success, and error states.
+
+Environment and runtime behavior:
+
+- Localhost enables local-only features such as SCC automation and ADO email send.
+- Cloud runtime (Azure App Service) keeps core XML and blob features, while local-only flows are intentionally restricted.
 
 ## Run Locally
 
