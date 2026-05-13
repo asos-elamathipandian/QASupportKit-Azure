@@ -623,10 +623,15 @@ async function sendAdoReportEmail(options = {}) {
   }
 
   // Send via SMTP
+  // For port 587: use STARTTLS (secure: false, then upgrade)
+  // For port 465: use direct TLS (secure: true)
+  const isPort587 = smtpPort === 587 || smtpPort === '587';
+  const secureOption = isPort587 ? false : useSsl;
+  
   const transporter = nodemailer.createTransport({
     host: smtpServer,
     port: smtpPort,
-    secure: useSsl,
+    secure: secureOption,
     auth: {
       user: fromAddr,
       pass: process.env.SMTP_PASSWORD

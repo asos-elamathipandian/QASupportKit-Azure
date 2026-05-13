@@ -1709,6 +1709,7 @@ async function sendAdoEmail() {
   document.getElementById('adoPreviewStatus').textContent = 'Sending email...';
   
   try {
+    console.log('[ADO] Sending email via /api/send-status-email');
     const res = await fetch('/api/send-status-email', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -1717,12 +1718,15 @@ async function sendAdoEmail() {
     const result = await res.json();
     
     if (result.ok) {
+      console.log('[ADO] Email sent successfully via', result.transport);
       document.getElementById('adoPreviewStatus').textContent = `✅ Email sent successfully via ${result.transport || 'Outlook'}!`;
       setTimeout(() => closeAdoPreviewModal(), 1500);
     } else {
+      console.error('[ADO] Email send failed:', result.error);
       document.getElementById('adoPreviewStatus').textContent = `❌ ${result.error || 'Failed to send email'}`;
     }
   } catch (e) {
+    console.error('[ADO] Email send error:', e.message, e);
     document.getElementById('adoPreviewStatus').textContent = `❌ ${e.message}`;
   } finally {
     sendBtn.disabled = false;
@@ -1746,6 +1750,7 @@ async function sendAdoEditedEmail() {
   document.getElementById('adoEditStatus').textContent = 'Sending email...';
   
   try {
+    console.log('[ADO] Sending edited email via /api/send-status-email');
     const res = await fetch('/api/send-status-email', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -1754,15 +1759,18 @@ async function sendAdoEditedEmail() {
     const result = await res.json();
     
     if (result.ok) {
+      console.log('[ADO] Edited email sent successfully via', result.transport);
       document.getElementById('adoEditStatus').textContent = `✅ Email sent successfully via ${result.transport || 'Outlook'}!`;
       setTimeout(() => {
         closeAdoEditModal();
         closeAdoPreviewModal();
       }, 1500);
     } else {
+      console.error('[ADO] Edited email send failed:', result.error);
       document.getElementById('adoEditStatus').textContent = `❌ ${result.error || 'Failed to send email'}`;
     }
   } catch (e) {
+    console.error('[ADO] Edited email send error:', e.message, e);
     document.getElementById('adoEditStatus').textContent = `❌ ${e.message}`;
   } finally {
     sendBtn.disabled = false;
@@ -1774,14 +1782,20 @@ async function initializeAdoStatus() {
   try {
     const response = await fetch('/api/ado-status');
     const data = await response.json();
+    console.log('[ADO] Status check:', data);
+    
     const adoTitle = Array.from(document.querySelectorAll('.card-title')).find((el) =>
       (el.textContent || '').toLowerCase().includes('ado test status email')
     );
     const adoCard = adoTitle ? adoTitle.closest('.card') : null;
 
-    if (!adoCard) return;
+    if (!adoCard) {
+      console.warn('[ADO] Email card not found');
+      return;
+    }
     
     if (data.available) {
+      console.log('[ADO] Email feature is available, enabling...');
       // Enable the ADO card
       adoCard.classList.remove('local-only-card');
       adoCard.style.opacity = '1';
@@ -1794,10 +1808,13 @@ async function initializeAdoStatus() {
       
       // Enable buttons
       const buttons = adoCard.querySelectorAll('button');
-      buttons.forEach(btn => {
+      console.log(`[ADO] Found ${buttons.length} buttons to enable`);
+      buttons.forEach((btn, idx) => {
         btn.disabled = false;
+        btn.removeAttribute('disabled');
         btn.style.opacity = '1';
         btn.style.cursor = 'pointer';
+        console.log(`[ADO] Enabled button ${idx}: ${btn.textContent}`);
       });
       
       // Add event listeners to buttons
@@ -1848,15 +1865,15 @@ async function initializeAdoStatus() {
         };
       }
     } else {
+      console.error('[ADO] Email feature is NOT available. Issues:', data.issues);
       const issueText = (data.issues || []).join('\n- ');
-      console.warn('ADO feature is not configured:', data.issues || []);
       const description = adoCard.querySelector('p');
       if (description && issueText) {
-        description.textContent = `ADO setup required. ${data.issues[0]}`;
+        description.textContent = `ADO setup required. Issues:\n- ${data.issues.join('\n- ')}`;
       }
     }
   } catch (e) {
-    console.error('Failed to check ADO status:', e);
+    console.error('[ADO] Failed to check ADO status:', e.message, e);
   }
 }
 
