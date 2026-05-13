@@ -768,13 +768,14 @@ async function fullSccFlow() {
     <p style="font-size:0.82rem; color:#555; margin:6px 0 12px 0;">
       Preview &amp; send the latest AIM Test Execution Progress &amp; Bug Report email. Requires Outlook COM &mdash; available on local version only.
     </p>
+    <div id="adoDirectSendStatus" style="font-size:0.85rem; color:#555; margin-bottom:10px; min-height:20px;"></div>
     <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-      <button disabled
-              style="background:#0078D4; color:white; font-weight:600; padding:8px 20px; border:none; border-radius:4px; opacity:0.5; cursor:not-allowed;">
+      <button onclick="previewAdoEmail()"
+              style="background:#0078D4; color:white; font-weight:600; padding:8px 20px; border:none; border-radius:4px; cursor:pointer;">
         &#128065; Preview Report
       </button>
-      <button disabled
-              style="background:#2e7d32; color:white; font-weight:600; padding:8px 20px; border:none; border-radius:4px; opacity:0.5; cursor:not-allowed;">
+      <button onclick="previewAndSendAdoEmail()"
+              style="background:#2e7d32; color:white; font-weight:600; padding:8px 20px; border:none; border-radius:4px; cursor:pointer;">
         &#9993; Send Email
       </button>
     </div>
@@ -1743,7 +1744,7 @@ async function sendAdoEmail() {
     
     if (result.ok) {
       console.log('[ADO] Email sent successfully via', result.transport);
-      document.getElementById('adoPreviewStatus').textContent = `✅ Email sent successfully via ${result.transport || 'Outlook'}!`;
+      document.getElementById('adoPreviewStatus').textContent = `✅ Email sent successfully,please check Inbox!`;
       setTimeout(() => closeAdoPreviewModal(), 1500);
     } else {
       console.error('[ADO] Email send failed:', result.error);
@@ -1755,6 +1756,84 @@ async function sendAdoEmail() {
   } finally {
     sendBtn.disabled = false;
     sendBtn.textContent = '✉ Send Email';
+  }
+}
+
+async function previewAdoEmail() {
+  const previewBtn = document.querySelector('button[onclick="previewAdoEmail()"]');
+  previewBtn.disabled = true;
+  previewBtn.textContent = '⏳ Loading...';
+  
+  try {
+    console.log('[ADO] Fetching email preview...');
+    const res = await fetch('/api/preview-status-email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({})
+    });
+    const result = await res.json();
+    
+    if (result.ok) {
+      console.log('[ADO] Preview loaded successfully');
+      openAdoPreviewModal(result.subject, result.html);
+    } else {
+      alert(`❌ Preview failed: ${result.error || 'Unknown error'}`);
+    }
+  } catch (e) {
+    console.error('[ADO] Preview error:', e);
+    alert(`❌ Preview error: ${e.message}`);
+  } finally {
+    previewBtn.disabled = false;
+    previewBtn.textContent = '👁️ Preview Report';
+  }
+}
+
+async function previewAndSendAdoEmail() {
+  const sendBtn = document.querySelector('button[onclick="previewAndSendAdoEmail()"]');
+  const statusDiv = document.getElementById('adoDirectSendStatus');
+  sendBtn.disabled = true;
+  sendBtn.textContent = '⏳ Sending...';
+  statusDiv.textContent = 'Sending email...';
+  statusDiv.style.color = '#2563eb';
+  
+  try {
+    console.log('[ADO] Fetching email to send...');
+    const res = await fetch('/api/preview-status-email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({})
+    });
+    const result = await res.json();
+    
+    if (!result.ok) {
+      statusDiv.textContent = `❌ Failed to fetch email: ${result.error || 'Unknown error'}`;
+      statusDiv.style.color = '#dc2626';
+      return;
+    }
+    
+    console.log('[ADO] Sending email via /api/send-status-email');
+    const sendRes = await fetch('/api/send-status-email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ subject: result.subject, html: result.html })
+    });
+    const sendResult = await sendRes.json();
+    
+    if (sendResult.ok) {
+      console.log('[ADO] Email sent successfully via', sendResult.transport);
+      statusDiv.textContent = `✅ Email sent successfully,please check Inbox!`;
+      statusDiv.style.color = '#16a34a';
+    } else {
+      statusDiv.textContent = `❌ Send failed: ${sendResult.error || 'Unknown error'}`;
+      statusDiv.style.color = '#dc2626';
+    }
+  } catch (e) {
+    console.error('[ADO] Send error:', e);
+    statusDiv.textContent = `❌ Error: ${e.message}`;
+    statusDiv.style.color = '#dc2626';
+  } finally {
+    sendBtn.disabled = false;
+    sendBtn.textContent = '✉️ Send Email';
   }
 }
 

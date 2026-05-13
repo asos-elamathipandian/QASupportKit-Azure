@@ -110,7 +110,11 @@ function shouldUsePowerShellFallback(error) {
     message.includes('econnrefused') ||
     message.includes('ehostunreach') ||
     message.includes('network') ||
-    message.includes('smtp')
+    message.includes('smtp') ||
+    message.includes('535') ||
+    message.includes('authentication') ||
+    message.includes('credentials') ||
+    message.includes('unauthorized')
   );
 }
 
@@ -617,7 +621,10 @@ async function sendAdoReportEmail(options = {}) {
   }
 
   const hasSmtpPassword = Boolean(process.env.SMTP_PASSWORD);
+  console.log(`[EMAIL] SMTP_PASSWORD set: ${hasSmtpPassword}`);
+  
   if (!hasSmtpPassword) {
+    console.log('[EMAIL] Using PowerShell Outlook COM fallback (SMTP_PASSWORD not set)');
     await sendViaPowerShellOutlookWithHtml({ html: htmlToSend, subjectLine: subjectToSend });
     return { transport: 'outlook-fallback' };
   }
@@ -628,6 +635,7 @@ async function sendAdoReportEmail(options = {}) {
   const isPort587 = smtpPort === 587 || smtpPort === '587';
   const secureOption = isPort587 ? false : useSsl;
   
+  console.log(`[EMAIL] Using SMTP (server: ${smtpServer}, port: ${smtpPort}, secure: ${secureOption})`);
   const transporter = nodemailer.createTransport({
     host: smtpServer,
     port: smtpPort,
@@ -646,6 +654,7 @@ async function sendAdoReportEmail(options = {}) {
     });
     return { transport: 'smtp' };
   } catch (error) {
+    console.log(`[EMAIL] SMTP failed: ${error.message}. Attempting PowerShell Outlook fallback...`);
     if (shouldUsePowerShellFallback(error)) {
       await sendViaPowerShellOutlookWithHtml({ html: htmlToSend, subjectLine: subjectToSend });
       return { transport: 'outlook-fallback' };
