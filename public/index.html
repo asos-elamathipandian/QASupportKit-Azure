@@ -5,7 +5,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.3/ace.js"></script>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ASOS Inbound QA Support Kit -ASN/PO/SKU updates,Carrier & WMS Milestones</title>
+  <title>Smart Data Assistant-ASOS Inbound</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -417,8 +417,7 @@
 <body>
 
 <header>
-  <h1>ASOS Inbound QA Support Kit -ASN/PO/SKU updates,Carrier &amp; WMS Milestones</h1>
-  <span class="badge-cloud">CLOUD</span>
+  <h1>Smart Data Assistant-ASOS Inbound</h1>
   <button class="btn-reset-all" onclick="resetAll()" title="Reset all inputs, results and logs">&#8635; Reset</button>
 </header>
 
@@ -439,7 +438,9 @@
 
   <!-- ── Carrier & WMS Events ── -->
   <div class="card">
-    <div class="card-title">Carrier &amp; WMS Events</div>
+    <div class="card-title">Carrier/WMS Milestones XML Generator</div>
+    
+    <!-- Input Fields -->
     <div class="form-grid">
       <div class="form-group">
         <label for="asn">ASN</label>
@@ -478,12 +479,8 @@
       </div>
     </div>
 
-    <button class="btn-generate-all" id="btnAll" onclick="generateAll()" style="margin-top:18px;">
-      &#9654;&nbsp; Happy Path Carrier &amp; WMS Milestones
-      <span class="btn-label-sub">Requires: ASN, PO, SKU, SKU Qty, ACE</span>
-    </button>
-
-    <div class="individual-buttons">
+    <!-- Individual Message Buttons -->
+    <div class="individual-buttons" style="margin-top:18px;">
       <button class="btn-msg btn-vbkcon" onclick="generateOne('vbkcon', 'VBKCON')">
         VBKCON
         <span class="btn-label-sub">Requires: ACE</span>
@@ -521,6 +518,12 @@
         <span class="btn-label-sub">Requires: PO, SKU, SKU Qty, Option ID, Carrier</span>
       </button>
     </div>
+
+    <!-- Happy Path Button -->
+    <button class="btn-generate-all" id="btnAll" onclick="generateAll()" style="margin-top:14px;">
+      &#9654;&nbsp; Happy Path Carrier &amp; WMS Milestones
+      <span class="btn-label-sub">Requires: ASN, PO, SKU, SKU Qty, ACE</span>
+    </button>
   </div>
 
   <!-- ── Results ── -->
@@ -534,7 +537,7 @@
 
   <!-- ── E2Open Outbound Message Search ── -->
   <div class="card">
-    <div class="card-title">&#9729; E2Open Outbound Message Search</div>
+    <div class="card-title">&#9729; Blob search- E2open 856 outbound</div>
     <div class="form-grid">
       <div class="form-group" style="grid-column: 1 / -1;">
         <label for="blobAsn">ASN</label>
@@ -546,56 +549,6 @@
       &#9729;&nbsp; Search Outbound Messages
     </button>
     <div id="blobResult" style="margin-top:14px;"></div>
-  </div>
-
-  <!-- ── E2Open ASN Search (asscteunintebbe2e) ── -->
-  <div class="card">
-    <div class="card-title">&#9729; E2Open ASN Search</div>
-    <div class="form-grid">
-      <div class="form-group" style="grid-column: 1 / -1;">
-        <label for="blobAsnE2">ASN</label>
-        <input id="blobAsnE2" type="text" placeholder="e.g. 49870000001418" />
-        <span class="field-hint">Search E2Open ASN storage for XML files where filename and content match this ASN.</span>
-      </div>
-    </div>
-    <button class="btn-blob-search" id="btnBlobSearchAsn" onclick="searchBlobsAsn()" style="margin-top:14px;">
-      &#9729;&nbsp; Search E2Open ASN
-    </button>
-    <div id="blobResultAsn" style="margin-top:14px;"></div>
-  </div>
-
-  <!-- ── E2Open PO Feed Search (asbamintstgeunendtoend01) ── -->
-  <div class="card" style="opacity:0.5;pointer-events:none;position:relative;">
-    <span style="position:absolute;top:10px;right:14px;background:#f59e0b;color:#fff;font-size:0.72rem;font-weight:700;padding:2px 8px;border-radius:4px;">&#9888; Auth Pending</span>
-    <div class="card-title">&#9729; E2Open PO Feed Search</div>
-    <div class="form-grid">
-      <div class="form-group" style="grid-column: 1 / -1;">
-        <label for="blobPoE2">PO</label>
-        <input id="blobPoE2" type="text" placeholder="e.g. 500034216385" />
-        <span class="field-hint">Search E2Open PO feed storage for XML files where filename and content match this PO.</span>
-      </div>
-    </div>
-    <button class="btn-blob-search" id="btnBlobSearchPo" onclick="searchBlobsPo()" style="margin-top:14px;">
-      &#9729;&nbsp; Search E2Open PO Feed
-    </button>
-    <div id="blobResultPo" style="margin-top:14px;"></div>
-  </div>
-
-  <!-- ── PO Carrier Feed Search (bam036-asnin-endtoend) ── -->
-  <div class="card" style="opacity:0.5;pointer-events:none;position:relative;">
-    <span style="position:absolute;top:10px;right:14px;background:#f59e0b;color:#fff;font-size:0.72rem;font-weight:700;padding:2px 8px;border-radius:4px;">&#9888; Auth Pending</span>
-    <div class="card-title">&#9729; PO Carrier Feed Search</div>
-    <div class="form-grid">
-      <div class="form-group" style="grid-column: 1 / -1;">
-        <label for="blobCarrierAsn">ASN</label>
-        <input id="blobCarrierAsn" type="text" placeholder="e.g. 49870000001418" />
-        <span class="field-hint">Search carrier feed storage for XML files matching this ASN across all carrier folders.</span>
-      </div>
-    </div>
-    <button class="btn-blob-search" id="btnBlobSearchCarrier" onclick="searchBlobsCarrierFeed()" style="margin-top:14px;">
-      &#9729;&nbsp; Search Carrier Feed
-    </button>
-    <div id="blobResultCarrier" style="margin-top:14px;"></div>
   </div>
 
   <!-- ── ASN Lookup in SCC (LOCAL ONLY) ── -->
@@ -623,45 +576,6 @@
     <div id="asnLookupResult" style="margin-top:14px;"></div>
   </div>
 
-  <!-- ── Booking Creation (LOCAL ONLY) ── -->
-  <div class="card">
-    <div class="card-title">Carrier Booking Creation</div>
-    <div class="form-grid">
-      <div class="form-group" style="grid-column: 1 / -1;">
-        <label>ASN for Booking</label>
-        <input id="bookingAsnInput" type="text" placeholder="e.g. 49870000001275 or ASN1,ASN2,ASN3" />
-        <span class="field-hint">Enter one or more ASNs (comma-separated) for booking.</span>
-      </div>
-    </div>
-    <div class="booking-buttons">
-      <button class="btn-booking-single" id="btnBookingSingle" onclick="bookingCreateSingle()">
-        &#9654;&nbsp; Single ASN per Booking
-        <span class="btn-label-sub">One booking per ASN, login once</span>
-      </button>
-      <button class="btn-booking-multi" id="btnBookingMulti" onclick="bookingCreateMulti()" disabled title="Temporarily disabled until stabilization is complete">
-        &#9654;&nbsp; All ASNs &times; One Booking
-        <span class="btn-label-sub">All ASNs combined in one booking</span>
-      </button>
-    </div>
-    <div id="bookingResult" style="margin-top:14px;"></div>
-  </div>
-
-  <!-- ── Full SCC Flow (LOCAL ONLY) ── -->
-  <div class="card">
-    <div class="card-title">Full SCC Flow &mdash; One-Click Booking</div>
-    <div class="form-grid">
-      <div class="form-group" style="grid-column: 1 / -1;">
-        <label>ASN</label>
-        <input id="fullSccAsnInput" type="text" placeholder="e.g. 49870000001275 or ASN1,ASN2,ASN3" />
-        <span class="field-hint">Enter one or more ASNs (comma-separated) for full SCC flow.</span>
-      </div>
-    </div>
-    <button class="btn-full-flow" id="btnFullSccFlow" onclick="fullSccFlow()" style="margin-top:14px;">
-      &#9889;&nbsp; Full SCC Flow
-      <span class="btn-label-sub">ASN Lookup + Single Booking Creation + Edit + Submit + Approve</span>
-    </button>
-    <div id="fullSccResult" style="margin-top:14px;"></div>
-  </div>
 </main>
 
 <script>
@@ -864,6 +778,116 @@ async function fullSccFlow() {
         &#9993; Send Email
       </button>
     </div>
+  </div>
+
+  <!-- ── WORK IN PROGRESS FEATURES ── -->
+  <hr style="margin:32px 0; border:none; border-top:2px solid #e5e7eb; opacity:0.5;" />
+  <div style="text-align:center; margin:20px 0;">
+    <span style="background:#ff9800; color:white; padding:4px 12px; border-radius:20px; font-size:0.75rem; font-weight:700; letter-spacing:0.05em;">🚧 WORK IN PROGRESS</span>
+    <p style="margin-top:8px; font-size:0.85rem; color:#666;">These features are temporarily disabled pending Playwright automation stabilization</p>
+  </div>
+
+  <!-- ── E2Open ASN Search (LOCAL ONLY) ── -->
+  <div class="card" style="opacity:0.6; border:2px dashed #ffc107;">
+    <div class="card-title">&#9729; E2Open ASN Search</div>
+    <p style="font-size:0.82rem; color:#856404; margin-bottom:12px; background:#fff8e1; padding:8px; border-radius:4px;">
+      ⚠️ Temporarily disabled pending authentication stabilization
+    </p>
+    <div class="form-grid">
+      <div class="form-group" style="grid-column: 1 / -1;">
+        <label for="blobAsnE2">ASN</label>
+        <input id="blobAsnE2" type="text" placeholder="e.g. 49870000001418" disabled />
+        <span class="field-hint">Search E2Open ASN storage for XML files where filename and content match this ASN.</span>
+      </div>
+    </div>
+    <button class="btn-blob-search" id="btnBlobSearchAsn" onclick="searchBlobsAsn()" disabled style="margin-top:14px;">
+      &#9729;&nbsp; Search E2Open ASN
+    </button>
+    <div id="blobResultAsn" style="margin-top:14px;"></div>
+  </div>
+
+  <!-- ── E2Open PO Feed Search (LOCAL ONLY) ── -->
+  <div class="card" style="opacity:0.6; border:2px dashed #ffc107;">
+    <div class="card-title">&#9729; E2Open PO Feed Search</div>
+    <p style="font-size:0.82rem; color:#856404; margin-bottom:12px; background:#fff8e1; padding:8px; border-radius:4px;">
+      ⚠️ Temporarily disabled pending authentication stabilization
+    </p>
+    <div class="form-grid">
+      <div class="form-group" style="grid-column: 1 / -1;">
+        <label for="blobPoE2">PO</label>
+        <input id="blobPoE2" type="text" placeholder="e.g. 500034216385" disabled />
+        <span class="field-hint">Search E2Open PO feed storage for XML files where filename and content match this PO.</span>
+      </div>
+    </div>
+    <button class="btn-blob-search" id="btnBlobSearchPo" onclick="searchBlobsPo()" disabled style="margin-top:14px;">
+      &#9729;&nbsp; Search E2Open PO Feed
+    </button>
+    <div id="blobResultPo" style="margin-top:14px;"></div>
+  </div>
+
+  <!-- ── PO Carrier Feed Search (LOCAL ONLY) ── -->
+  <div class="card" style="opacity:0.6; border:2px dashed #ffc107;">
+    <div class="card-title">&#9729; PO Carrier Feed Search</div>
+    <p style="font-size:0.82rem; color:#856404; margin-bottom:12px; background:#fff8e1; padding:8px; border-radius:4px;">
+      ⚠️ Temporarily disabled pending authentication stabilization
+    </p>
+    <div class="form-grid">
+      <div class="form-group" style="grid-column: 1 / -1;">
+        <label for="blobCarrierAsn">ASN</label>
+        <input id="blobCarrierAsn" type="text" placeholder="e.g. 49870000001418" disabled />
+        <span class="field-hint">Search carrier feed storage for XML files matching this ASN across all carrier folders.</span>
+      </div>
+    </div>
+    <button class="btn-blob-search" id="btnBlobSearchCarrier" onclick="searchBlobsCarrierFeed()" disabled style="margin-top:14px;">
+      &#9729;&nbsp; Search Carrier Feed
+    </button>
+    <div id="blobResultCarrier" style="margin-top:14px;"></div>
+  </div>
+
+  <!-- ── Booking Creation (LOCAL ONLY) ── -->
+  <div class="card" style="opacity:0.6; border:2px dashed #ffc107;">
+    <div class="card-title">Carrier Booking Creation</div>
+    <p style="font-size:0.82rem; color:#856404; margin-bottom:12px; background:#fff8e1; padding:8px; border-radius:4px;">
+      ⚠️ Temporarily disabled pending Playwright automation stabilization
+    </p>
+    <div class="form-grid">
+      <div class="form-group" style="grid-column: 1 / -1;">
+        <label>ASN for Booking</label>
+        <input id="bookingAsnInput" type="text" placeholder="e.g. 49870000001275 or ASN1,ASN2,ASN3" disabled />
+        <span class="field-hint">Enter one or more ASNs (comma-separated) for booking.</span>
+      </div>
+    </div>
+    <div class="booking-buttons">
+      <button class="btn-booking-single" id="btnBookingSingle" onclick="bookingCreateSingle()" disabled title="Temporarily disabled pending Playwright automation stabilization">
+        &#9654;&nbsp; Single ASN per Booking
+        <span class="btn-label-sub">One booking per ASN, login once</span>
+      </button>
+      <button class="btn-booking-multi" id="btnBookingMulti" onclick="bookingCreateMulti()" disabled title="Temporarily disabled pending Playwright automation stabilization">
+        &#9654;&nbsp; All ASNs &times; One Booking
+        <span class="btn-label-sub">All ASNs combined in one booking</span>
+      </button>
+    </div>
+    <div id="bookingResult" style="margin-top:14px;"></div>
+  </div>
+
+  <!-- ── Full SCC Flow (LOCAL ONLY) ── -->
+  <div class="card" style="opacity:0.6; border:2px dashed #ffc107;">
+    <div class="card-title">Full SCC Flow &mdash; One-Click Booking</div>
+    <p style="font-size:0.82rem; color:#856404; margin-bottom:12px; background:#fff8e1; padding:8px; border-radius:4px;">
+      ⚠️ Temporarily disabled pending Playwright automation stabilization
+    </p>
+    <div class="form-grid">
+      <div class="form-group" style="grid-column: 1 / -1;">
+        <label>ASN</label>
+        <input id="fullSccAsnInput" type="text" placeholder="e.g. 49870000001275 or ASN1,ASN2,ASN3" disabled />
+        <span class="field-hint">Enter one or more ASNs (comma-separated) for full SCC flow.</span>
+      </div>
+    </div>
+    <button class="btn-full-flow" id="btnFullSccFlow" onclick="fullSccFlow()" disabled title="Temporarily disabled pending Playwright automation stabilization" style="margin-top:14px;">
+      &#9889;&nbsp; Full SCC Flow
+      <span class="btn-label-sub">ASN Lookup + Single Booking Creation + Edit + Submit + Approve</span>
+    </button>
+    <div id="fullSccResult" style="margin-top:14px;"></div>
   </div>
 
 </main>

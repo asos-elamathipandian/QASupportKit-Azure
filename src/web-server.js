@@ -792,19 +792,10 @@ app.post("/api/scc/booking/create-single", async (req, res) => {
       return res.status(503).json({ ok: false, error: availability.issues[0] || 'SCC unavailable' });
     }
 
-    const { asn } = req.body;
-    if (!asn || !String(asn).trim()) {
-      return res.status(400).json({ ok: false, error: "asn is required" });
-    }
-
-    const asnList = String(asn).split(',').map(a => a.trim()).filter(a => a);
-    if (asnList.length === 0) {
-      return res.status(400).json({ ok: false, error: "valid ASN list required" });
-    }
-
-    console.log(`[API] Single ASN Booking requested for: ${asnList.join(',')}`);
-    const result = await createSingleAsnBooking(asnList);
-    res.json({ ok: true, result });
+    return res.status(501).json({
+      ok: false,
+      error: 'Single ASN booking is temporarily disabled on localhost pending Playwright automation stabilization. Available: ASN lookup. Coming soon: booking workflows.'
+    });
   } catch (err) {
     console.error('[API] Single ASN Booking error:', err.message);
     res.status(500).json({ ok: false, error: err.message });
@@ -821,7 +812,7 @@ app.post("/api/scc/booking/create-multi", async (req, res) => {
 
     return res.status(501).json({
       ok: false,
-      error: 'Multi-ASN booking is temporarily disabled on localhost until stabilization is complete. Completed local features: ASN lookup and single ASN booking.'
+      error: 'Multi-ASN booking is temporarily disabled on localhost pending Playwright automation stabilization. Available: ASN lookup. Coming soon: booking workflows.'
     });
   } catch (err) {
     console.error('[API] Multi-ASN Booking error:', err.message);

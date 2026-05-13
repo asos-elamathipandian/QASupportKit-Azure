@@ -1,11 +1,67 @@
 {
-  "totalRecords": 1,
+  "totalRecords": 2,
   "perAsn": {
-    "40452200458046": {
-      "found": false,
-      "records": 0,
-      "details": []
+    "49870000001799": {
+      "found": true,
+      "records": 2,
+      "details": [
+        {
+          "po": "500034225971",
+          "sku": "148687673",
+          "optionId": "148687671",
+          "units": "100.00",
+          "poSkuQty": "100.00",
+          "bookedUnits": "0.00",
+          "receivedUnits": "",
+          "poStatus": "Approved",
+          "bookingStatus": "",
+          "vbRef": "",
+          "carrier": "Advanced Processing"
+        },
+        {
+          "po": "500034225971",
+          "sku": "148687672",
+          "optionId": "148687671",
+          "units": "100.00",
+          "poSkuQty": "100.00",
+          "bookedUnits": "0.00",
+          "receivedUnits": "",
+          "poStatus": "Approved",
+          "bookingStatus": "",
+          "vbRef": "",
+          "carrier": "Advanced Processing"
+        }
+      ]
     }
   },
-  "rowDetails": []
+  "rowDetails": [
+    {
+      "asn": "49870000001799",
+      "po": "500034225971",
+      "sku": "148687673",
+      "optionId": "148687671",
+      "units": "100.00",
+      "poSkuQty": "100.00",
+      "bookedUnits": "0.00",
+      "receivedUnits": "",
+      "poStatus": "Approved",
+      "bookingStatus": "",
+      "vbRef": "",
+      "carrier": "Advanced Processing"
+    },
+    {
+      "asn": "49870000001799",
+      "po": "500034225971",
+      "sku": "148687672",
+      "optionId": "148687671",
+      "units": "100.00",
+      "poSkuQty": "100.00",
+      "bookedUnits": "0.00",
+      "receivedUnits": "",
+      "poStatus": "Approved",
+      "bookingStatus": "",
+      "vbRef": "",
+      "carrier": "Advanced Processing"
+    }
+  ]
 }

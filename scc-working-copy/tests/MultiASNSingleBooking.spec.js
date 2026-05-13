@@ -13,7 +13,7 @@ const { CarrierBookingEditPage } = require('../pages/CarrierBookingEditPage.js')
 const { CarrierBookingApprovalPage } = require('../pages/CarrierBookingApproval.js');
 const loginData = require('../tests-examples/Regression_TA_loginData.json');
 
-const asnFilePath = "tests\\asns.txt";
+const asnFilePath = path.join(__dirname, 'asns.txt');
 const fileReader = new FileReader(asnFilePath);
 const asnFromFile = fileReader.getFileContents();
 const firstAsn = asnFromFile.split(',').map(a => a.trim()).filter(a => a.length > 0)[0] || asnFromFile;
