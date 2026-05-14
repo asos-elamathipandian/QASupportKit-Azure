@@ -696,8 +696,8 @@ function Format-TestPointsToHtml {
 
 function Get-TodaysHighlights {
     param(
-        [array]$TestPoints,
-        [array]$TstmTestPoints,
+        [array]$HighlightSuites,
+        [hashtable]$SuitePointsMap,
         [array]$TestPlanItems,
         [array]$Bugs,
         [hashtable]$Headers
@@ -706,67 +706,39 @@ function Get-TodaysHighlights {
     $today = (Get-Date).Date
     $highlights = @()
 
-    # --- Test Case Highlights (by test plan/suite) ---
-    # Group test points by their plan/suite and check for today's activity
-    $todayTestUpdates = @()
-    foreach ($tp in $TestPoints) {
-        $lastRunDate = $null
-        if ($tp.lastResultDetails -and $tp.lastResultDetails.dateCompleted) {
-            $lastRunDate = (Get-Date $tp.lastResultDetails.dateCompleted).Date
-        }
-        if ($lastRunDate -eq $today) {
-            $todayTestUpdates += $tp
-        }
-    }
+    # --- Test Case Highlights (for configured CR suites) ---
+    foreach ($suite in $HighlightSuites) {
+        $suiteKey = [string]$suite.Key
+        $suitePoints = @($SuitePointsMap[$suiteKey])
+        $todaySuiteUpdates = @()
 
-    if ($todayTestUpdates.Count -gt 0) {
-        # Group by configuration (acts as suite grouping)
-        $byConfig = $todayTestUpdates | Group-Object { if ($_.configuration) { $_.configuration.name } else { "Default" } }
-        foreach ($cg in $byConfig) {
-            $byOutcome = $cg.Group | Group-Object { if ([string]::IsNullOrWhiteSpace($_.outcome) -or $_.outcome -eq 'Unspecified') { 'Not Run' } else { $_.outcome } }
-            $outcomeSummary = ($byOutcome | ForEach-Object { "$($_.Count) $($_.Name)" }) -join ", "
-            $highlights += @{
-                Icon = "&#9989;"
-                Category = "Test Execution (CR144)"
-                Text = "<strong>$($cg.Name)</strong>: $($cg.Group.Count) test case(s) updated - $outcomeSummary"
+        foreach ($tp in $suitePoints) {
+            $lastRunDate = $null
+            if ($tp.lastResultDetails -and $tp.lastResultDetails.dateCompleted) {
+                $lastRunDate = (Get-Date $tp.lastResultDetails.dateCompleted).Date
+            }
+            if ($lastRunDate -eq $today) {
+                $todaySuiteUpdates += $tp
             }
         }
-    } else {
-        $highlights += @{
-            Icon = "&#128203;"
-            Category = "Test Execution (CR144)"
-            Text = "No test executions recorded today"
-        }
-    }
 
-    # --- TSTM Test Case Highlights ---
-    $todayTstmUpdates = @()
-    foreach ($tp in $TstmTestPoints) {
-        $lastRunDate = $null
-        if ($tp.lastResultDetails -and $tp.lastResultDetails.dateCompleted) {
-            $lastRunDate = (Get-Date $tp.lastResultDetails.dateCompleted).Date
-        }
-        if ($lastRunDate -eq $today) {
-            $todayTstmUpdates += $tp
-        }
-    }
-
-    if ($todayTstmUpdates.Count -gt 0) {
-        $byConfig = $todayTstmUpdates | Group-Object { if ($_.configuration) { $_.configuration.name } else { "Default" } }
-        foreach ($cg in $byConfig) {
-            $byOutcome = $cg.Group | Group-Object { if ([string]::IsNullOrWhiteSpace($_.outcome) -or $_.outcome -eq 'Unspecified') { 'Not Run' } else { $_.outcome } }
-            $outcomeSummary = ($byOutcome | ForEach-Object { "$($_.Count) $($_.Name)" }) -join ", "
-            $highlights += @{
-                Icon = "&#9989;"
-                Category = "Test Execution (TSTM)"
-                Text = "<strong>$($cg.Name)</strong>: $($cg.Group.Count) test case(s) updated - $outcomeSummary"
+        if ($todaySuiteUpdates.Count -gt 0) {
+            $byConfig = $todaySuiteUpdates | Group-Object { if ($_.configuration) { $_.configuration.name } else { "Default" } }
+            foreach ($cg in $byConfig) {
+                $byOutcome = $cg.Group | Group-Object { if ([string]::IsNullOrWhiteSpace($_.outcome) -or $_.outcome -eq 'Unspecified') { 'Not Run' } else { $_.outcome } }
+                $outcomeSummary = ($byOutcome | ForEach-Object { "$($_.Count) $($_.Name)" }) -join ", "
+                $highlights += @{
+                    Icon = "&#9989;"
+                    Category = "Test Execution ($suiteKey)"
+                    Text = "<strong>$($cg.Name)</strong>: $($cg.Group.Count) test case(s) updated - $outcomeSummary"
+                }
             }
-        }
-    } else {
-        $highlights += @{
-            Icon = "&#128203;"
-            Category = "Test Execution (TSTM)"
-            Text = "No test executions recorded today"
+        } else {
+            $highlights += @{
+                Icon = "&#128203;"
+                Category = "Test Execution ($suiteKey)"
+                Text = "No test executions recorded today"
+            }
         }
     }
 
@@ -979,12 +951,15 @@ Write-Host "Querying Bug data..." -ForegroundColor Yellow
 [array]$bugs = @(Get-QueryResults -QueryId $bugQueryId -Headers $headers)
 Write-Host "  Found $($bugs.Count) bugs." -ForegroundColor Green
 
-# Step 2: Query target suite charts (only requested suites)
-$targetChartSuites = @(
-    @{ Key = 'CR140'; PlanId = 1190678; SuiteId = 1190679; Title = 'CR140 Dummy PO' },
-    @{ Key = 'CR144'; PlanId = 1192299; SuiteId = 1192300; Title = 'CR144 DDP PL View' },
-    @{ Key = 'CR147'; PlanId = 1192486; SuiteId = 1192487; Title = 'CR147 VBKCON date' }
-)
+# Step 2: Query target suites used for charts/highlights
+$targetChartSuites = @($config.AzureDevOps.HighlightSuites)
+if (-not $targetChartSuites -or $targetChartSuites.Count -eq 0) {
+    $targetChartSuites = @(
+        @{ Key = 'CR140'; PlanId = 1190678; SuiteId = 1190679; Title = 'CR140 Dummy PO' },
+        @{ Key = 'CR144'; PlanId = 1192299; SuiteId = 1192300; Title = 'CR144 DDP PL View' },
+        @{ Key = 'CR147'; PlanId = 1192486; SuiteId = 1192487; Title = 'CR147 VBKCON date' }
+    )
+}
 
 $suitePointsMap = @{}
 foreach ($suite in $targetChartSuites) {
@@ -1005,10 +980,6 @@ foreach ($suite in $targetChartSuites) {
     $suitePointsMap[$suite.Key] = @($points)
 }
 
-# Preserve highlight inputs with first two target suites
-[array]$testPoints = @($suitePointsMap['CR140'])
-[array]$tstmTestPoints = @($suitePointsMap['CR144'])
-
 # Step 3: Query Test Plan items from shared query (Report-Testplan)
 Write-Host "Querying Test Plan items from shared query..." -ForegroundColor Yellow
 [array]$testItems = @(Get-QueryResults -QueryId $testQueryId -Headers $headers)
@@ -1019,7 +990,7 @@ Write-Host "Building HTML report..." -ForegroundColor Yellow
 
 # Generate today's highlights
 Write-Host "Generating today's highlights..." -ForegroundColor Yellow
-$todaysHighlights = Get-TodaysHighlights -TestPoints $testPoints -TstmTestPoints $tstmTestPoints -TestPlanItems $testItems -Bugs $bugs -Headers $headers
+$todaysHighlights = Get-TodaysHighlights -HighlightSuites $targetChartSuites -SuitePointsMap $suitePointsMap -TestPlanItems $testItems -Bugs $bugs -Headers $headers
 
 $cr140Chart = Get-TestOutcomeDonutChart -TestPoints @($suitePointsMap['CR140']) -ChartTitle "CR140 Dummy PO Test Cases Stats"
 $cr144Chart = Get-TestOutcomeDonutChart -TestPoints @($suitePointsMap['CR144']) -ChartTitle "CR144 DDP PL View Test Cases Stats"

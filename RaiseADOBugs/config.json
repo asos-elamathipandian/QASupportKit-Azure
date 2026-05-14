@@ -9,6 +9,26 @@
     "TstmTestPlanId": 1199685,
     "TstmTestSuiteId": 1199686,
     "TestPlanQueryId": "8137f9dc-880d-43cc-9cf0-c636a02d1337",
+    "HighlightSuites": [
+      {
+        "Key": "CR140",
+        "PlanId": 1190678,
+        "SuiteId": 1190679,
+        "Title": "CR140 Dummy PO"
+      },
+      {
+        "Key": "CR144",
+        "PlanId": 1192299,
+        "SuiteId": 1192300,
+        "Title": "CR144 DDP PL View"
+      },
+      {
+        "Key": "CR147",
+        "PlanId": 1192486,
+        "SuiteId": 1192487,
+        "Title": "CR147 VBKCON date"
+      }
+    ],
     "PatTokenEnvVar": "ADO_PAT_TOKEN"
   },
   "Email": {
