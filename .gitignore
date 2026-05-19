@@ -8,3 +8,5 @@ state/
 iisnode/
 *.log
 *.html
+scc-working-copy/asn-lookup-auth.json
+scc-working-copy/asn-lookup-results.json
