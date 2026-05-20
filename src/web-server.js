@@ -36,6 +36,7 @@ const {
   createSingleAsnBooking,
   createMultiAsnBooking,
   createFullSccFlow,
+  cancelActiveSpec,
 } = require("./scc-launcher");
 
 loadEnvironment();
@@ -1034,7 +1035,10 @@ app.post("/api/full-scc-flow", async (req, res) => {
 });
 
 app.post("/api/cancel", (req, res) => {
-  res.json({ ok: true, message: "Nothing running" });
+  const killed = cancelActiveSpec();
+  clearProgress();
+  addProgress('⛔ Operation cancelled by user.');
+  res.json({ ok: true, message: killed ? 'Playwright process killed' : 'Nothing running' });
 });
 
 // ADO Email Report (enabled when config and env are valid)

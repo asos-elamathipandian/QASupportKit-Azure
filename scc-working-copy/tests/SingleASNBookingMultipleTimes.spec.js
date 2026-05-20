@@ -77,6 +77,12 @@ test('Single ASN Booking - Create separate booking for each ASN', async ({ page 
   test.setTimeout(240 * 1000 * asnList.length);
   const bookingResults = [];
 
+  // Accept ALL dialogs automatically — prevents unhandled dialogs from closing the edit page
+  page.on('dialog', async dialog => {
+    console.log(`[dialog] Auto-accepting: ${dialog.message()}`);
+    await dialog.accept();
+  });
+
   const loginPage = new Regression_TA_LoginPage(page);
 
   // Login once

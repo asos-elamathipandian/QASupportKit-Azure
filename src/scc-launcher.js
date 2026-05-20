@@ -13,6 +13,17 @@ const SCC_BASE_URL = 'https://asos.staging.e2open.com/pages/accept?destination=%
 const LOCAL_SCC_COPY_DIR = process.env.SCC_LOCAL_COPY_DIR || path.resolve(process.cwd(), 'scc-working-copy');
 const DEFAULT_LOGIN_DATA_FILE = path.join(LOCAL_SCC_COPY_DIR, 'tests-examples', 'Regression_TA_loginData.json');
 
+// Track the active Playwright child process so it can be force-killed via /api/cancel
+let _activeChild = null;
+function cancelActiveSpec() {
+  if (_activeChild) {
+    try { _activeChild.kill('SIGKILL'); } catch (_) {}
+    _activeChild = null;
+    return true;
+  }
+  return false;
+}
+
 function loadSccCredentials() {
   const loginDataFile = process.env.SCC_LOGIN_DATA_FILE || DEFAULT_LOGIN_DATA_FILE;
   let fileData = {};
@@ -81,6 +92,7 @@ async function runWorkingSpec(specPath, envVars = {}, timeoutMs = 300000, option
 
   return new Promise((resolve, reject) => {
     const child = spawn(cmdString, [], { cwd: specCwd, shell: true, env });
+    _activeChild = child;
 
     let stdout = '';
     let stderr = '';
@@ -105,6 +117,7 @@ async function runWorkingSpec(specPath, envVars = {}, timeoutMs = 300000, option
     }, timeoutMs);
 
     child.on('close', (code) => {
+      _activeChild = null;
       clearTimeout(killTimer);
       if (code !== 0) {
         // Filter Node.js deprecation warnings / stack traces — show last meaningful lines
@@ -120,6 +133,7 @@ async function runWorkingSpec(specPath, envVars = {}, timeoutMs = 300000, option
     });
 
     child.on('error', (err) => {
+      _activeChild = null;
       clearTimeout(killTimer);
       reject(new Error(`Spec spawn error: ${err.message}`));
     });
@@ -505,4 +519,5 @@ module.exports = {
   createSingleAsnBooking,
   createMultiAsnBooking,
   createFullSccFlow,
+  cancelActiveSpec,
 };

@@ -33,15 +33,29 @@ class CarrierBookingEditPage {
 
     async editCarrierBookingDetails() {
         const recordCount = await this.frame.locator(this.editrecordRows).count();
+
+        // Fill cartons for all rows — no Apply All per row (avoid mid-fill navigation)
         for (let i = 0; i < recordCount; i++) {
             await this.safeClick(this.frame.locator(this.numOfCartons).nth(i));
-            await this.frame.getByPlaceholder('#,##').fill('1');
-            await this.safeClick(this.frame.locator(this.applyAllButton));
+            await new Promise(r => setTimeout(r, 400));
+            // Use nth(i) so each row's input is targeted individually
+            await this.frame.getByPlaceholder('#,##').nth(i).fill('1').catch(async () => {
+                await this.frame.getByPlaceholder('#,##').first().fill('1');
+            });
+        }
+
+        // Fill weights for all rows — no Apply All per row
+        for (let i = 0; i < recordCount; i++) {
             await this.safeClick(this.frame.locator(this.weightField).nth(i));
             await this.safeClick(this.frame.locator(this.fillweightField).nth(i));
-            await this.frame.getByPlaceholder('#,##').fill('0.01');
-            await this.safeClick(this.frame.locator(this.applyAllButton));
+            await this.frame.locator(this.fillweightField).nth(i).fill('0.01').catch(async () => {
+                await this.frame.getByPlaceholder('#,##').first().fill('0.01');
+            });
         }
+
+        // Single Apply All at the end to confirm all entered values
+        await this.safeClick(this.frame.locator(this.applyAllButton));
+        await this.waitForGridToBeReady();
     }
     async selectDatepickerDay() {
         const dayNum = String(new Date().getDate());

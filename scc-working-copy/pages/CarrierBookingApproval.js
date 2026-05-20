@@ -20,9 +20,21 @@ class CarrierBookingApprovalPage {
         await this.frame.locator(this.applyButton).click();
     }
     async selectAndApproveBooking() {
-        await this.frame.locator(this.selectAllCheck).waitFor();
         await this.waitForGridToBeReady();
-        await this.frame.locator(this.selectAllCheck).check();
+        // Check there are rows to approve — empty grid means booking is no longer in Draft
+        const rowCount = await this.frame.locator('#resultTable .ui-grid-body-row').count();
+        if (rowCount === 0) {
+            console.log('[CarrierBookingApproval] No rows in approval grid — booking may already be Submitted/Approved. Skipping.');
+            return;
+        }
+        const checkbox = this.frame.locator(this.selectAllCheck);
+        await checkbox.waitFor();
+        await this.waitForGridToBeReady();
+        // SCC auto-selects rows on load — only click if not already checked
+        const isChecked = await checkbox.isChecked().catch(() => false);
+        if (!isChecked) {
+            await checkbox.click({ force: true });
+        }
         await this.frame.getByRole('button', this.approveBooking).click();
     }
 

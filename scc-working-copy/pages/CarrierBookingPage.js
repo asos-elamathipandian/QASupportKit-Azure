@@ -136,24 +136,19 @@ class CarrierBookingPage {
                     }
                 }
             }
-            console.log(`VB ${vbReference} not found in grid rows, falling back to first row`);
+            console.log(`VB ${vbReference} not found in grid rows — returning Unknown to avoid wrong status`);
+            return 'Unknown'; // do NOT fall back to first row; caller should not trigger approval on Unknown
         }
 
+        // No VBRef provided — fall back to first status cell
         const statusLocator = this.frame.locator(this.statusCell).first();
         try {
             await statusLocator.waitFor({ state: 'visible', timeout: 5000 });
             const statusText = (await statusLocator.textContent()).trim();
-            if (statusText) {
-                return statusText;
-            }
+            if (statusText) return statusText;
             const titleText = await statusLocator.getAttribute('title');
             return titleText ? titleText.trim() : 'Unknown';
         } catch {
-            // Booking Status column may not be visible in the current grid layout
-            console.log('Booking Status column not found in grid. Checking criterion summary...');
-            const criterionText = await this.frame.locator('.summary-section, [class*="criterion"], [class*="summary"]').first().textContent().catch(() => '');
-            if (criterionText.toLowerCase().includes('submitted')) return 'Submitted';
-            if (criterionText.toLowerCase().includes('draft')) return 'Draft';
             return 'Unknown';
         }
     }

@@ -75,6 +75,12 @@ async function navigateToCarrierApproval(scchomePage, sccviewlistPage) {
 }
 
 test('Multi ASN Booking - Create one booking with all ASNs', async ({ page }) => {
+  // Accept ALL dialogs automatically — prevents unhandled dialogs from closing the edit page
+  page.on('dialog', async dialog => {
+    console.log(`[dialog] Auto-accepting: ${dialog.message()}`);
+    await dialog.accept();
+  });
+
   console.log(`Creating a single booking with all ASNs: ${asnFromFile}`);
   console.log(`Using first ASN for booking lookup/edit steps: ${firstAsn}`);
 
