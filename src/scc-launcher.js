@@ -7,10 +7,7 @@
 const { chromium } = require('playwright');
 const fs = require('fs');
 const path = require('path');
-const { execFile } = require('child_process');
-const { promisify } = require('util');
-
-const execFileAsync = promisify(execFile);
+const { spawn } = require('child_process');
 
 const SCC_BASE_URL = 'https://asos.staging.e2open.com/pages/accept?destination=%2fasos%2f';
 const LOCAL_SCC_COPY_DIR = process.env.SCC_LOCAL_COPY_DIR || path.resolve(process.cwd(), 'scc-working-copy');
@@ -62,54 +59,67 @@ function getWorkingAutomationPaths() {
   };
 }
 
-const { exec } = require('child_process');
-
-async function runWorkingSpec(specPath, envVars = {}, timeoutMs = 300000) {
+async function runWorkingSpec(specPath, envVars = {}, timeoutMs = 300000, options = {}) {
   const { root } = getWorkingAutomationPaths();
   const relativeSpecPath = path.relative(root, specPath).replace(/\\/g, '/');
-  
-  // Use local playwright from node_modules directly
-  const playwrightCmd = process.platform === 'win32' 
-    ? '.\\node_modules\\.bin\\playwright.cmd'
-    : './node_modules/.bin/playwright';
-  
-  // Default to headless to match migrated/non-interactive flow.
-  // Set SCC_HEADLESS=false to opt in to visible browser for debugging.
-  const headedArg = SCC_HEADLESS ? '' : '--headed';
+  const onProgress = (options && options.onProgress) || null;
 
-  // Build command string with environment variables set inline for Windows
-  let cmdString;
-  if (process.platform === 'win32') {
-    // On Windows, set env vars in the command string
-    const envStr = Object.entries(envVars)
-      .map(([k, v]) => `set ${k}=${v}`)
-      .join(' & ');
-    cmdString = envStr ? `${envStr} & ${playwrightCmd} test ${relativeSpecPath} ${headedArg}`.trim() : `${playwrightCmd} test ${relativeSpecPath} ${headedArg}`.trim();
-  } else {
-    // On Unix-like systems, use env var prefix
-    const envStr = Object.entries(envVars)
-      .map(([k, v]) => `${k}=${v}`)
-      .join(' ');
-    cmdString = envStr ? `${envStr} ${playwrightCmd} test ${relativeSpecPath} ${headedArg}`.trim() : `${playwrightCmd} test ${relativeSpecPath} ${headedArg}`.trim();
-  }
-  
-  console.log(`[SPEC] Executing in ${root}: ${cmdString.substring(0, 100)}...`);
-  
+  const args = [
+    'playwright', 'test', relativeSpecPath,
+    '--reporter=line',
+    '--workers=1',
+  ];
+  if (!SCC_HEADLESS) args.push('--headed');
+
+  // Pass env vars directly in the env object (no "set VAR=VAL &" chaining)
+  // CI=true prevents Node.js pipe buffering so output streams in real-time
+  const env = Object.assign({}, process.env, { CI: 'true' }, envVars);
+
+  console.log(`[SPEC] Executing in ${root}: npx ${args.join(' ')}`);
+
   return new Promise((resolve, reject) => {
-    exec(cmdString, {
-      cwd: root,
-      timeout: timeoutMs,
-      maxBuffer: 10 * 1024 * 1024,
-      env: Object.assign({}, process.env, envVars),
-    }, (err, stdout, stderr) => {
-      if (stdout) console.log(`[SPEC] stdout: ${stdout}`);
-      if (stderr) console.log(`[SPEC] stderr: ${stderr}`);
-      
-      if (err) {
-        reject(new Error(`Spec execution failed: ${err.message}\n${stderr}`));
+    const child = process.platform === 'win32'
+      ? spawn('cmd.exe', ['/d', '/s', '/c', `npx ${args.join(' ')}`], {
+          cwd: root, shell: false, env,
+        })
+      : spawn('npx', args, {
+          cwd: root, shell: false, env,
+        });
+
+    let stdout = '';
+    let stderr = '';
+
+    child.stdout.on('data', (chunk) => {
+      const text = chunk.toString();
+      stdout += text;
+      if (onProgress) onProgress(text);
+      console.log('[SPEC] stdout:', text.trimEnd());
+    });
+
+    child.stderr.on('data', (chunk) => {
+      const text = chunk.toString();
+      stderr += text;
+      if (onProgress) onProgress(text);
+      console.log('[SPEC] stderr:', text.trimEnd());
+    });
+
+    const killTimer = setTimeout(() => {
+      child.kill();
+      reject(new Error(`Spec execution timed out after ${timeoutMs}ms`));
+    }, timeoutMs);
+
+    child.on('close', (code) => {
+      clearTimeout(killTimer);
+      if (code !== 0) {
+        reject(new Error(`Spec exited with code ${code}:\n${stderr.substring(0, 800)}`));
       } else {
         resolve({ success: true, stdout, stderr });
       }
+    });
+
+    child.on('error', (err) => {
+      clearTimeout(killTimer);
+      reject(new Error(`Spec spawn error: ${err.message}`));
     });
   });
 }
@@ -328,23 +338,29 @@ async function navigateToOrderSearch(page) {
  * Lookup ASNs in SCC Order Search
  * Returns: Array of matching orders
  */
-async function lookupAsn(asnList) {
+async function lookupAsn(asnList, options = {}) {
   if (!Array.isArray(asnList)) {
     asnList = [asnList];
   }
+  const onStep = options.onStep || null;
 
   const paths = getWorkingAutomationPaths();
   const asnString = asnList.join(',');
   console.log(`[SCC] Running working ASN lookup spec for: ${asnString}`);
 
+  if (onStep) onStep(`Looking up ASN${asnList.length > 1 ? 's' : ''}: ${asnString}`);
+  if (onStep) onStep('Launching Playwright browser\u2026');
+
   try {
     await runWorkingSpec(paths.asnLookupSpec, {
       ASN_LOOKUP_VALUE: asnString,
-    }, 240000);
+    }, 240000, options);
 
+    if (onStep) onStep('Playwright test completed, reading results\u2026');
     const result = readJsonIfExists(paths.asnLookupResults);
     const matchCount = Number(result?.totalRecords || 0);
     const found = matchCount > 0;
+    if (onStep) onStep(found ? `\u2705 Found ${matchCount} record${matchCount !== 1 ? 's' : ''}` : '\u26a0\ufe0f ASN not found in SCC');
 
     return {
       success: true,
@@ -355,6 +371,7 @@ async function lookupAsn(asnList) {
       message: found ? 'ASN found' : 'ASN not found',
     };
   } catch (err) {
+    if (onStep) onStep(`\u274c Error: ${err.message.substring(0, 120)}`);
     throw new Error(`ASN lookup failed via working automation: ${err.message}`);
   }
 }
@@ -363,27 +380,36 @@ async function lookupAsn(asnList) {
  * Create single ASN booking in SCC
  * One booking per ASN
  */
-async function createSingleAsnBooking(asnList) {
+async function createSingleAsnBooking(asnList, options = {}) {
   if (!Array.isArray(asnList)) {
     asnList = [asnList];
   }
+  const onStep = options.onStep || null;
 
   const paths = getWorkingAutomationPaths();
   writeAsnsInput(asnList);
   console.log(`[SCC] Running working single-booking spec for ASNs: ${asnList.join(',')}`);
 
+  if (onStep) onStep(`Creating single booking for ${asnList.length} ASN${asnList.length > 1 ? 's' : ''}`);
+  if (onStep) onStep('Launching Playwright browser\u2026');
+
   try {
-    await runWorkingSpec(paths.singleBookingSpec, {}, 600000);
+    await runWorkingSpec(paths.singleBookingSpec, {}, 600000, options);
+
+    if (onStep) onStep('Playwright test completed, reading booking results\u2026');
     const result = readJsonIfExists(paths.bookingResults) || [];
+    const count = Array.isArray(result) ? result.length : asnList.length;
+    if (onStep) onStep(`\u2705 ${count} booking${count !== 1 ? 's' : ''} created successfully`);
 
     return {
       success: true,
       asns: asnList,
-      count: Array.isArray(result) ? result.length : asnList.length,
+      count,
       results: result,
       message: `Single booking flow completed via working automation project`,
     };
   } catch (err) {
+    if (onStep) onStep(`\u274c Error: ${err.message.substring(0, 120)}`);
     throw new Error(`Single booking failed via working automation: ${err.message}`);
   }
 }
@@ -392,27 +418,36 @@ async function createSingleAsnBooking(asnList) {
  * Create multi-ASN booking in SCC
  * All ASNs in one booking
  */
-async function createMultiAsnBooking(asnList) {
+async function createMultiAsnBooking(asnList, options = {}) {
   if (!Array.isArray(asnList)) {
     asnList = [asnList];
   }
+  const onStep = options.onStep || null;
 
   const paths = getWorkingAutomationPaths();
   writeAsnsInput(asnList);
   console.log(`[SCC] Running working multi-booking spec for ASNs: ${asnList.join(',')}`);
 
+  if (onStep) onStep(`Creating multi-ASN booking for ${asnList.length} ASN${asnList.length > 1 ? 's' : ''}`);
+  if (onStep) onStep('Launching Playwright browser\u2026');
+
   try {
-    await runWorkingSpec(paths.multiBookingSpec, {}, 600000);
+    await runWorkingSpec(paths.multiBookingSpec, {}, 600000, options);
+
+    if (onStep) onStep('Playwright test completed, reading booking results\u2026');
     const result = readJsonIfExists(paths.bookingResults) || [];
+    const count = Array.isArray(result) ? result.length : asnList.length;
+    if (onStep) onStep(`\u2705 Multi-ASN booking created with ${count} ASN${count !== 1 ? 's' : ''}`);
 
     return {
       success: true,
       asns: asnList,
-      count: Array.isArray(result) ? result.length : asnList.length,
+      count,
       results: result,
       message: `Multi-ASN booking flow completed via working automation project`,
     };
   } catch (err) {
+    if (onStep) onStep(`\u274c Error: ${err.message.substring(0, 120)}`);
     throw new Error(`Multi-ASN booking failed via working automation: ${err.message}`);
   }
 }
@@ -420,25 +455,32 @@ async function createMultiAsnBooking(asnList) {
 /**
  * Full SCC flow (lookup + booking + submit/approve) via working spec
  */
-async function createFullSccFlow(asnList) {
+async function createFullSccFlow(asnList, options = {}) {
   if (!Array.isArray(asnList)) {
     asnList = [asnList];
   }
+  const onStep = options.onStep || null;
 
   const paths = getWorkingAutomationPaths();
   const asnString = asnList.join(',');
   console.log(`[SCC] Running working full-flow spec for ASNs: ${asnString}`);
 
+  if (onStep) onStep(`Starting full SCC flow for: ${asnString}`);
+  if (onStep) onStep('Launching Playwright browser\u2026');
+
   try {
     await runWorkingSpec(paths.fullFlowSpec, {
       FULL_FLOW_ASN_VALUE: asnString,
-    }, 900000);
+    }, 900000, options);
 
+    if (onStep) onStep('Playwright test completed, reading flow results\u2026');
     const result = readJsonIfExists(paths.fullFlowResults) || {
       ok: true,
       asns: asnString,
       details: [],
     };
+    const rowCount = Array.isArray(result.details) ? result.details.length : 0;
+    if (onStep) onStep(`\u2705 Full SCC flow completed \u2014 ${rowCount} row${rowCount !== 1 ? 's' : ''} processed`);
 
     return {
       success: true,

@@ -412,6 +412,35 @@
     .blob-results-table tr:hover { background: #f8fafc; }
     .blob-results-table input[type="checkbox"] { cursor: pointer; }
     .blob-select-all { cursor: pointer; }
+
+    /* ── Live Commentary Log ── */
+    .live-log {
+      display: none;
+      margin-top: 12px;
+      padding: 10px 14px;
+      background: #1e293b;
+      border-radius: 8px;
+      font-family: "Courier New", monospace;
+      font-size: 0.78rem;
+      color: #94a3b8;
+      max-height: 180px;
+      overflow-y: auto;
+      border: 1px solid #334155;
+    }
+    .live-log .log-entry {
+      padding: 2px 0;
+      line-height: 1.5;
+    }
+    .live-log .log-ts {
+      color: #64748b;
+      margin-right: 8px;
+    }
+    .live-log .log-msg {
+      color: #e2e8f0;
+    }
+    .live-log .log-entry:last-child .log-msg {
+      color: #38bdf8;
+    }
   </style>
 </head>
 <body>
@@ -563,7 +592,6 @@
       </button>
     </div>
     <div id="sccSessionResult" style="display:none; margin-bottom:12px;"></div>
-    <div id="sccLiveStatus" style="display:none; margin-bottom:12px;"></div>
     <div class="form-grid">
       <div class="form-group" style="grid-column: 1 / -1;">
         <label>ASN</label>
@@ -574,58 +602,76 @@
     <button class="btn-lookup" id="btnAsnLookup" onclick="asnLookup()" style="margin-top:14px;">
       &#128269;&nbsp; Check ASN in SCC
     </button>
+    <div class="live-log" id="liveLogLookup"></div>
     <div id="asnLookupResult" style="margin-top:14px;"></div>
   </div>
 
 <script>
-const sccLiveState = {
-  timer: null,
-  startedAt: 0,
-};
+// ── Live progress polling ───────────────────────────────────────────────────
 
-function renderSccLiveStatus({ title, detail, tone }) {
-  const liveDiv = document.getElementById('sccLiveStatus');
-  if (!liveDiv) return;
+let progressPollInterval = null;
+let progressSeenIndex = 0;
+let activeLogElementId = null;
+let progressPollCount = 0;
 
-  const styles = {
-    running: { color: '#1f2937', bg: '#eff6ff', border: '#3b82f6', icon: '⏳' },
-    success: { color: '#065f46', bg: '#ecfdf5', border: '#10b981', icon: '✅' },
-    error: { color: '#991b1b', bg: '#fef2f2', border: '#ef4444', icon: '❌' },
-  };
-
-  const style = styles[tone] || styles.running;
-  liveDiv.style.display = 'block';
-  liveDiv.innerHTML = `<div style='color:${style.color};padding:10px;background:${style.bg};border-left:4px solid ${style.border};border-radius:6px;'><strong>${style.icon} ${title}</strong><div style='margin-top:4px;font-size:0.85rem;'>${detail}</div></div>`;
-}
-
-function startSccLiveStatus(actionName) {
-  if (sccLiveState.timer) clearInterval(sccLiveState.timer);
-  sccLiveState.startedAt = Date.now();
-
-  const update = () => {
-    const elapsedSec = Math.max(1, Math.floor((Date.now() - sccLiveState.startedAt) / 1000));
-    renderSccLiveStatus({
-      title: `${actionName} running`,
-      detail: `Execution in progress on localhost. Elapsed: ${elapsedSec}s`,
-      tone: 'running'
-    });
-  };
-
-  update();
-  sccLiveState.timer = setInterval(update, 1000);
-}
-
-function finishSccLiveStatus(ok, message) {
-  if (sccLiveState.timer) {
-    clearInterval(sccLiveState.timer);
-    sccLiveState.timer = null;
+function startProgressPolling(logElementId) {
+  stopProgressPolling();
+  progressSeenIndex = 0;
+  progressPollCount = 0;
+  activeLogElementId = logElementId;
+  const logEl = document.getElementById(logElementId);
+  if (logEl) {
+    logEl.style.display = "block";
+    logEl.innerHTML = '<div class="log-entry" id="progressWaiting"><span class="log-msg" style="color:#64748b;">Initialising…</span></div>';
   }
+  progressPollInterval = setInterval(pollProgress, 800);
+}
 
-  renderSccLiveStatus({
-    title: ok ? 'SCC action completed' : 'SCC action failed',
-    detail: message || (ok ? 'Completed successfully.' : 'Execution failed.'),
-    tone: ok ? 'success' : 'error'
-  });
+function stopProgressPolling() {
+  if (progressPollInterval) {
+    clearInterval(progressPollInterval);
+    progressPollInterval = null;
+  }
+}
+
+async function stopProgressPollingAndFlush() {
+  stopProgressPolling();
+  // Do one final poll so the last progress entries ("Reading results…", "✅ Found…") are rendered
+  await pollProgress();
+}
+
+async function pollProgress() {
+  progressPollCount++;
+  try {
+    const res = await fetch(`/api/progress?since=${progressSeenIndex}`);
+    const data = await res.json();
+    const logEl = document.getElementById(activeLogElementId);
+    if (!logEl) return;
+
+    if (data.entries && data.entries.length > 0) {
+      // Remove waiting indicator on first real entry
+      const waiting = logEl.querySelector('#progressWaiting');
+      if (waiting) waiting.remove();
+      for (const entry of data.entries) {
+        const div = document.createElement("div");
+        div.className = "log-entry";
+        div.innerHTML = `<span class="log-ts">[${entry.ts}]</span><span class="log-msg">${escapeHtml(entry.message)}</span>`;
+        logEl.appendChild(div);
+      }
+      logEl.scrollTop = logEl.scrollHeight;
+      progressSeenIndex = data.total;
+    } else {
+      // Only show elapsed counter after 15s (browser loading takes ~15s)
+      const secs = Math.round(progressPollCount * 0.8);
+      const waiting = logEl.querySelector('#progressWaiting');
+      if (waiting) {
+        if (secs >= 15) {
+          waiting.innerHTML = `<span class="log-msg" style="color:#64748b;">Playwright running… ${secs}s elapsed</span>`;
+        }
+        // else: keep showing the initial static "Starting… browser loading" message
+      }
+    }
+  } catch (_) { /* ignore polling errors */ }
 }
 
 async function refreshSccSessionStatus() {
@@ -679,14 +725,78 @@ async function clearSccSession() {
 }
 
 // --- Cloud-enabled ASN Lookup ---
+function renderAsnLookupResult(asnList, result) {
+  const raw = result.raw || {};
+  const perAsn = raw.perAsn || {};
+  const totalRecords = raw.totalRecords || result.matchCount || 0;
+  const thStyle = 'padding:5px 8px;text-align:left;font-weight:700;color:#475569;border-bottom:1.5px solid #e2e8f0;white-space:nowrap;';
+  const tdStyle = 'padding:4px 8px;font-family:monospace;font-size:0.78rem;border-bottom:1px solid #f0f0f0;white-space:nowrap;';
+
+  let html = '';
+  for (const asn of asnList) {
+    const info = perAsn[asn] || (asnList.length === 1 ? { found: result.found, records: totalRecords, details: raw.rowDetails || [] } : { found: false, records: 0, details: [] });
+    const records = info.records || 0;
+    const details = info.details || [];
+    const found = info.found || records > 0;
+
+    let tableHtml = '';
+    if (details.length > 0) {
+      tableHtml = `<div style="overflow-x:auto;margin-top:8px;">` +
+        `<table style="border-collapse:collapse;width:100%;min-width:700px;">` +
+        `<thead><tr style="background:#f1f5f9;">` +
+          `<th style="${thStyle}">PO</th>` +
+          `<th style="${thStyle}">SKU</th>` +
+          `<th style="${thStyle}">Option ID</th>` +
+          `<th style="${thStyle}">Units</th>` +
+          `<th style="${thStyle}">PO SKU Qty</th>` +
+          `<th style="${thStyle}">Booked</th>` +
+          `<th style="${thStyle}">Received</th>` +
+          `<th style="${thStyle}">PO Status</th>` +
+          `<th style="${thStyle}">Booking</th>` +
+          `<th style="${thStyle}">Carrier</th>` +
+          `<th style="${thStyle}">VB Ref</th>` +
+        `</tr></thead><tbody>` +
+        details.map(d =>
+          `<tr>` +
+            `<td style="${tdStyle}">${escapeHtml(d.po||'—')}</td>` +
+            `<td style="${tdStyle}">${escapeHtml(d.sku||'—')}</td>` +
+            `<td style="${tdStyle}">${escapeHtml(d.optionId||'—')}</td>` +
+            `<td style="${tdStyle}">${escapeHtml(d.units||'—')}</td>` +
+            `<td style="${tdStyle}">${escapeHtml(d.poSkuQty||'—')}</td>` +
+            `<td style="${tdStyle}">${escapeHtml(d.bookedUnits||'—')}</td>` +
+            `<td style="${tdStyle}">${escapeHtml(d.receivedUnits||'—')}</td>` +
+            `<td style="${tdStyle}">${escapeHtml(d.poStatus||'—')}</td>` +
+            `<td style="${tdStyle}">${escapeHtml(d.bookingStatus||'—')}</td>` +
+            `<td style="${tdStyle}">${escapeHtml(d.carrier||'—')}</td>` +
+            `<td style="${tdStyle};font-weight:600;color:#1e40af;">${escapeHtml(d.vbRef||'—')}</td>` +
+          `</tr>`
+        ).join('') +
+        `</tbody></table></div>`;
+    }
+
+    if (found) {
+      html += `<div style="margin-bottom:10px;">` +
+        `<div style="font-size:0.88rem;color:#15803d;font-weight:600;">✅ ASN <strong style="font-family:monospace;">${escapeHtml(asn)}</strong> — Found in SCC (${records} record${records!==1?'s':''})</div>` +
+        tableHtml + `</div>`;
+    } else {
+      html += `<div style="margin-bottom:10px;">` +
+        `<div style="font-size:0.88rem;color:#92400e;font-weight:600;">⚠️ ASN <strong style="font-family:monospace;">${escapeHtml(asn)}</strong> — Not found in SCC</div>` +
+        `</div>`;
+    }
+  }
+  html += `<div style="font-size:0.82rem;color:#6b7280;margin-top:4px;">${totalRecords} total record${totalRecords!==1?'s':''} across ${asnList.length} ASN${asnList.length!==1?'s':''}.</div>`;
+  return html;
+}
+
 async function asnLookup() {
   const asn = document.getElementById('asnLookupInput').value.trim();
   if (!asn) return alert('Please enter one or more ASNs');
+  const asnList = [...new Set(asn.split(',').map(s => s.trim()).filter(Boolean))];
   const btn = document.getElementById('btnAsnLookup');
   const resultDiv = document.getElementById('asnLookupResult');
   btn.disabled = true;
-  startSccLiveStatus('ASN lookup');
-  resultDiv.innerHTML = '<div style="padding:10px; color:#666;"><strong>⏳ Checking ASN availability in SCC (auto-login if needed)...</strong></div>';
+  startProgressPolling('liveLogLookup');
+  resultDiv.innerHTML = '';
   try {
     const res = await fetch('/api/scc/asn-lookup', {
       method: 'POST',
@@ -695,24 +805,16 @@ async function asnLookup() {
     });
     const data = await res.json();
     if (data.ok) {
-      const found = Boolean(data.result.found || (Number(data.result.matchCount || 0) > 0));
-      const msg = found ? 'ASN found' : 'ASN not found';
-      const matchCount = data.result.matchCount || 0;
-      const color = found ? '#047857' : '#92400e';
-      const bg = found ? '#f0fdf4' : '#fffbeb';
-      const border = found ? '#10b981' : '#f59e0b';
-      resultDiv.innerHTML = `<div style='color:${color};padding:12px;background:${bg};border-left:4px solid ${border};border-radius:6px;'><strong>${found ? '✅' : '⚠️'} ${msg}</strong><div style='margin-top:8px;font-size:0.85rem;'>${matchCount} order(s) found</div></div>`;
-      finishSccLiveStatus(true, `ASN lookup completed. ${matchCount} order(s) found.`);
+      resultDiv.innerHTML = renderAsnLookupResult(asnList, data.result);
     } else {
       const error = data.error || 'ASN lookup failed';
       resultDiv.innerHTML = `<div style='color:#b91c1c;padding:12px;background:#fef2f2;border-left:4px solid #ef4444;border-radius:6px;'><strong>❌ ${error}</strong></div>`;
-      finishSccLiveStatus(false, error);
     }
   } catch (e) {
     resultDiv.innerHTML = `<div style='color:#b91c1c;padding:12px;background:#fef2f2;border-left:4px solid #ef4444;border-radius:6px;'><strong>❌ Error:</strong> ${e.message}</div>`;
-    finishSccLiveStatus(false, e.message);
   } finally {
     btn.disabled = false;
+    await stopProgressPollingAndFlush();
   }
 }
 
@@ -723,8 +825,8 @@ async function bookingCreateSingle() {
   const btn = document.getElementById('btnBookingSingle');
   const resultDiv = document.getElementById('bookingResult');
   btn.disabled = true;
-  startSccLiveStatus('Single booking creation');
-  resultDiv.innerHTML = '<div style="padding:10px; color:#666;"><strong>⏳ Creating single booking(s) (auto-login if needed)...</strong></div>';
+  startProgressPolling('liveLogBooking');
+  resultDiv.innerHTML = '';
   try {
     const res = await fetch('/api/scc/booking/create-single', {
       method: 'POST',
@@ -736,17 +838,15 @@ async function bookingCreateSingle() {
       const msg = data.result.message || 'Booking created';
       const count = data.result.count || 1;
       resultDiv.innerHTML = `<div style='color:#047857;padding:12px;background:#f0fdf4;border-left:4px solid #10b981;border-radius:6px;'><strong>✅ ${msg}</strong><div style='margin-top:8px;font-size:0.85rem;'>${count} booking(s) created</div></div>`;
-      finishSccLiveStatus(true, `${msg} (${count} booking(s)).`);
     } else {
       const error = data.error || 'Booking creation failed';
       resultDiv.innerHTML = `<div style='color:#b91c1c;padding:12px;background:#fef2f2;border-left:4px solid #ef4444;border-radius:6px;'><strong>❌ ${error}</strong></div>`;
-      finishSccLiveStatus(false, error);
     }
   } catch (e) {
     resultDiv.innerHTML = `<div style='color:#b91c1c;padding:12px;background:#fef2f2;border-left:4px solid #ef4444;border-radius:6px;'><strong>❌ Error:</strong> ${e.message}</div>`;
-    finishSccLiveStatus(false, e.message);
   } finally {
     btn.disabled = false;
+    await stopProgressPollingAndFlush();
   }
 }
 
@@ -756,8 +856,8 @@ async function bookingCreateMulti() {
   const btn = document.getElementById('btnBookingMulti');
   const resultDiv = document.getElementById('bookingResult');
   btn.disabled = true;
-  startSccLiveStatus('Multi-ASN booking creation');
-  resultDiv.innerHTML = '<div style="padding:10px; color:#666;"><strong>⏳ Creating multi-ASN booking...</strong></div>';
+  startProgressPolling('liveLogBooking');
+  resultDiv.innerHTML = '';
   try {
     const res = await fetch('/api/scc/booking/create-multi', {
       method: 'POST',
@@ -769,17 +869,14 @@ async function bookingCreateMulti() {
       const msg = data.result.message || 'Multi-ASN booking created';
       const count = data.result.count || 1;
       resultDiv.innerHTML = `<div style='color:#047857;padding:12px;background:#f0fdf4;border-left:4px solid #10b981;border-radius:6px;'><strong>✅ ${msg}</strong><div style='margin-top:8px;font-size:0.85rem;'>${count} ASN(s) in 1 booking</div></div>`;
-      finishSccLiveStatus(true, `${msg} (${count} ASN(s)).`);
     } else {
       const error = data.error || 'Booking creation failed';
       resultDiv.innerHTML = `<div style='color:#b91c1c;padding:12px;background:#fef2f2;border-left:4px solid #ef4444;border-radius:6px;'><strong>❌ ${error}</strong></div>`;
-      finishSccLiveStatus(false, error);
     }
   } catch (e) {
-    resultDiv.innerHTML = `<div style='color:#b91c1c;padding:12px;background:#fef2f2;border-left:4px solid #ef4444;border-radius:6px;'><strong>❌ Error:</strong> ${e.message}</div>`;
-    finishSccLiveStatus(false, e.message);
+    resultDiv.innerHTML = `<div style='color:#b91c1c;padding:12px;background:#fef2f2;border-left:4px solid #ef4444;border-radius:6px;'><strong>&#10060; Error:</strong> ${e.message}</div>`;
   } finally {
-    btn.disabled = false;
+    await stopProgressPollingAndFlush();
   }
 }
 
@@ -790,8 +887,8 @@ async function fullSccFlow() {
   const btn = document.getElementById('btnFullSccFlow');
   const resultDiv = document.getElementById('fullSccResult');
   btn.disabled = true;
-  startSccLiveStatus('Full SCC flow');
-  resultDiv.innerHTML = '<div style="padding:10px; color:#666;"><strong>⏳ Running full SCC flow...</strong></div>';
+  startProgressPolling('liveLogFullFlow');
+  resultDiv.innerHTML = '';
   try {
     const res = await fetch('/api/full-scc-flow', {
       method: 'POST',
@@ -804,12 +901,11 @@ async function fullSccFlow() {
     const detailsCount = Array.isArray(data?.result?.result?.details) ? data.result.result.details.length : 0;
     const statusText = data?.result?.result?.ok === false ? 'completed with warnings' : 'completed successfully';
     resultDiv.innerHTML = `<div style='color:#047857;padding:12px;background:#f0fdf4;border-left:4px solid #10b981;border-radius:6px;'><strong>✅ Full SCC flow ${statusText}</strong><div style='margin-top:8px;font-size:0.85rem;'>${data.result.message || ''}<br/>Rows processed: ${detailsCount}</div></div>`;
-    finishSccLiveStatus(true, `Full SCC flow ${statusText}. Rows processed: ${detailsCount}.`);
   } catch (e) {
     resultDiv.innerHTML = `<div style='color:#b91c1c;padding:12px;background:#fef2f2;border-left:4px solid #ef4444;border-radius:6px;'><strong>❌ Error:</strong> ${e.message}</div>`;
-    finishSccLiveStatus(false, e.message);
   } finally {
     btn.disabled = false;
+    await stopProgressPollingAndFlush();
   }
 }
 </script>
@@ -934,6 +1030,7 @@ async function fullSccFlow() {
         <span class="btn-label-sub">All ASNs combined in one booking</span>
       </button>
     </div>
+    <div class="live-log" id="liveLogBooking"></div>
     <div id="bookingResult" style="margin-top:14px;"></div>
   </div>
 
@@ -948,6 +1045,11 @@ async function fullSccFlow() {
       </div>
     </div>
     <button class="btn-full-flow" id="btnFullSccFlow" onclick="fullSccFlow()" style="margin-top:14px;">
+      &#9889;&nbsp; Full SCC Flow
+      <span class="btn-label-sub">ASN Lookup + Single Booking Creation + Edit + Submit + Approve</span>
+    </button>
+    <div class="live-log" id="liveLogFullFlow"></div>
+    <div id="fullSccResult" style="margin-top:14px;"></div>
       &#9889;&nbsp; Full SCC Flow
       <span class="btn-label-sub">ASN Lookup + Single Booking Creation + Edit + Submit + Approve</span>
     </button>

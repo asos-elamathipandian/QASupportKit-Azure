@@ -72,6 +72,110 @@ function validate(body, fields) {
   return missing.length ? `Missing required fields: ${missing.join(", ")}` : null;
 }
 
+// ── Live progress log ─────────────────────────────────────────────────────────
+
+let progressLog = [];
+
+function clearProgress() {
+  progressLog = [];
+}
+
+function addProgress(message) {
+  const entry = { ts: new Date().toLocaleTimeString(), message };
+  progressLog.push(entry);
+  console.log(`[PROGRESS] ${entry.ts} — ${message}`);
+}
+
+// Keywords to pick up from Playwright stdout/stderr as progress updates
+const PROGRESS_PATTERNS = [
+  // Explicit progress marker (tests can use: console.log("PROGRESS: message"))
+  { re: /PROGRESS:\s*(.+)/i, extract: (m) => m[1].trim() },
+
+  // Actual prefixes used by Playwright specs
+  { re: /\[asn-lookup\]\s*(.+)/i, extract: (m) => m[1].trim() },
+  { re: /\[booking-step\]\s*(.+)/i, extract: (m) => m[1].trim() },
+  { re: /\[full-flow\]\s*(.+)/i, extract: (m) => m[1].trim() },
+
+  // Key data markers from specs
+  { re: /ASN_LOOKUP_RESULTS?:\s*(.+)/i, extract: (m) => "ASN lookup complete" },
+  { re: /FULL_FLOW_RESULT:\s*/i, extract: () => "Full flow result received" },
+  { re: /VB Reference:\s*(VB-\S+)/i, extract: (m) => `VB Reference: ${m[1]}` },
+  { re: /Booking Status:\s*(\w+)/i, extract: (m) => `Booking status: ${m[1]}` },
+  { re: /Booking completed for ASN:\s*(.+)/i, extract: (m) => `Booking completed for ASN: ${m[1].trim()}` },
+  { re: /Multi-ASN booking completed/i, extract: () => "Multi-ASN booking completed" },
+  { re: /Step\s*(\d+)/i, extract: (m) => `Step ${m[1]} in progress…` },
+
+  // Common Playwright / browser actions
+  { re: /navigating to|goto\(|page\.goto/i, extract: () => "Navigating to portal…" },
+  { re: /logging in|login|signed in|authenticated|credentials/i, extract: () => "Logging in to SCC…" },
+  { re: /searching|order search|search.*page/i, extract: () => "Searching records…" },
+  { re: /found (\d+) record/i, extract: (m) => `Found ${m[1]} record(s)` },
+  { re: /creating.*booking|create.*booking|new booking/i, extract: () => "Creating new booking…" },
+  { re: /draft.*created|booking.*draft/i, extract: () => "Draft VB created" },
+  { re: /editing|edit.*booking/i, extract: () => "Editing VB details…" },
+  { re: /adding.*asn|asn.*added/i, extract: () => "Adding ASN to booking…" },
+  { re: /submitting|submit.*booking/i, extract: () => "Submitting VB…" },
+  { re: /approv/i, extract: () => "Processing approval…" },
+  { re: /approved/i, extract: () => "VB approved ✓" },
+
+  // Playwright test runner output
+  { re: /(\d+) passed/i, extract: (m) => `${m[1]} test(s) passed ✓` },
+  { re: /(\d+) failed/i, extract: (m) => `${m[1]} test(s) failed ✕` },
+  { re: /timed?\s*out/i, extract: () => "Operation timed out" },
+];
+
+// Noise lines to skip (Playwright runner boilerplate)
+const NOISE_PATTERNS = [
+  /^\s*$/,
+  /^Running \d+ test/i,
+  /^npx playwright/i,
+  /^Using.*config/i,
+  /^\s*at\s+/,           // stack traces
+  /^node_modules/,
+  /^\d+\s*\|/,           // source code lines in error output
+  /^=+$/,                // separator lines
+];
+
+function parseStdoutForProgress(data) {
+  const text = data.toString();
+  const lines = text.split("\n").map((l) => l.trim()).filter(Boolean);
+  for (const line of lines) {
+    // Skip noise
+    if (NOISE_PATTERNS.some((p) => p.test(line))) continue;
+
+    let matched = false;
+    for (const pat of PROGRESS_PATTERNS) {
+      const m = line.match(pat.re);
+      if (m) {
+        const msg = pat.extract(m);
+        // Avoid duplicate consecutive messages
+        if (progressLog.length === 0 || progressLog[progressLog.length - 1].message !== msg) {
+          addProgress(msg);
+        }
+        matched = true;
+        break;
+      }
+    }
+
+    // If no pattern matched but line contains a console.log from the spec, show it raw
+    if (!matched && line.length > 5 && line.length < 200) {
+      // Only show lines that look like intentional log output (contains letters, not just symbols)
+      if (/[a-zA-Z]{3,}/.test(line) && !/^[\s\d.:]+$/.test(line)) {
+        const msg = line.substring(0, 150);
+        if (progressLog.length === 0 || progressLog[progressLog.length - 1].message !== msg) {
+          addProgress(msg);
+        }
+      }
+    }
+  }
+}
+
+app.get("/api/progress", (req, res) => {
+  const since = parseInt(req.query.since, 10) || 0;
+  const entries = progressLog.slice(since);
+  res.json({ entries, total: progressLog.length });
+});
+
 // ── Individual endpoints ──────────────────────────────────────────────────────
 
 // Step 1: Generate VBKCON XML and return for review (no upload yet)
@@ -777,7 +881,9 @@ app.post("/api/scc/asn-lookup", async (req, res) => {
     }
 
     console.log(`[API] ASN Lookup requested for: ${asnList.join(',')}`);
-    const result = await lookupAsn(asnList);
+    clearProgress();
+    addProgress('Starting ASN lookup…');
+    const result = await lookupAsn(asnList, { onProgress: parseStdoutForProgress, onStep: addProgress });
     res.json({ ok: true, result });
   } catch (err) {
     console.error('[API] ASN Lookup error:', err.message);
@@ -804,7 +910,9 @@ app.post("/api/scc/booking/create-single", async (req, res) => {
     }
 
     console.log(`[API] Single ASN booking requested for: ${asnList.join(',')}`);
-    const result = await createSingleAsnBooking(asnList);
+    clearProgress();
+    addProgress('Starting single booking creation…');
+    const result = await createSingleAsnBooking(asnList, { onProgress: parseStdoutForProgress, onStep: addProgress });
     res.json({ ok: true, result });
   } catch (err) {
     console.error('[API] Single ASN Booking error:', err.message);
@@ -831,7 +939,9 @@ app.post("/api/scc/booking/create-multi", async (req, res) => {
     }
 
     console.log(`[API] Multi-ASN booking requested for: ${asnList.join(',')}`);
-    const result = await createMultiAsnBooking(asnList);
+    clearProgress();
+    addProgress('Starting multi-ASN booking creation…');
+    const result = await createMultiAsnBooking(asnList, { onProgress: parseStdoutForProgress, onStep: addProgress });
     res.json({ ok: true, result });
   } catch (err) {
     console.error('[API] Multi-ASN Booking error:', err.message);
@@ -913,16 +1023,14 @@ app.post("/api/full-scc-flow", async (req, res) => {
     }
 
     console.log(`[API] Full SCC flow requested for: ${asnList.join(',')}`);
-    const result = await createFullSccFlow(asnList);
+    clearProgress();
+    addProgress('Starting full SCC flow…');
+    const result = await createFullSccFlow(asnList, { onProgress: parseStdoutForProgress, onStep: addProgress });
     res.json({ ok: true, result });
   } catch (err) {
     console.error('[API] Full SCC Flow error:', err.message);
     res.status(500).json({ ok: false, error: err.message });
   }
-});
-
-app.get("/api/progress", (req, res) => {
-  res.json({ entries: [], total: 0 });
 });
 
 app.post("/api/cancel", (req, res) => {
