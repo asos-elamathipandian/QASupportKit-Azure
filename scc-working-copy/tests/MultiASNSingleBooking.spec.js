@@ -121,14 +121,15 @@ test('Multi ASN Booking - Create one booking with all ASNs', async ({ page }) =>
   const { vbReference, bookingStatus } = await retryStep('fetch booking outcome', async () => {
     await carrierbookingPage.expandandClearFilter();
     await carrierbookingPage.searchWithAsn(firstAsn);
-    const vbRef = await carrierbookingPage.getVBReference();
-    const status = await carrierbookingPage.getBookingStatus();
-    return { vbReference: vbRef, bookingStatus: status };
+    return await carrierbookingPage.getActiveBookingResult({ waitForNonDraft: true });
   }, 3, 2000);
 
   console.log(`VB Reference: ${vbReference}`);
   console.log(`Booking Status: ${bookingStatus}`);
-  fs.writeFileSync(RESULTS_FILE, JSON.stringify([{ asn: asnFromFile, vbReference, bookingStatus }], null, 2), 'utf-8');
+  // Write one entry per ASN so the result table shows the correct count
+  const asnEntries = asnFromFile.split(',').map(a => a.trim()).filter(a => a.length > 0);
+  const resultsToWrite = asnEntries.map(asn => ({ asn, vbReference, bookingStatus }));
+  fs.writeFileSync(RESULTS_FILE, JSON.stringify(resultsToWrite, null, 2), 'utf-8');
 
   // Approve if status is Draft
   if (bookingStatus.toLowerCase() === 'draft') {

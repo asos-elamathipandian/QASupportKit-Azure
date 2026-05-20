@@ -818,6 +818,31 @@ async function asnLookup() {
   }
 }
 
+// --- Booking result renderer ---
+function renderBookingResult(results, label) {
+  if (!Array.isArray(results) || results.length === 0) {
+    return `<div style='color:#047857;padding:12px;background:#f0fdf4;border-left:4px solid #10b981;border-radius:6px;'><strong>&#x2705; ${label}</strong><div style='margin-top:6px;font-size:0.85rem;color:#555;'>No detailed results available.</div></div>`;
+  }
+  const thStyle = 'padding:5px 10px;text-align:left;font-weight:700;color:#475569;border-bottom:1.5px solid #e2e8f0;white-space:nowrap;';
+  const tdStyle = 'padding:5px 10px;font-family:monospace;font-size:0.8rem;border-bottom:1px solid #f0f0f0;white-space:nowrap;';
+  const rows = results.map(r => {
+    const status = String(r.bookingStatus || '—');
+    const statusColor = /approved/i.test(status) ? '#15803d' : /submitted/i.test(status) ? '#1d4ed8' : /draft/i.test(status) ? '#92400e' : '#374151';
+    return `<tr>
+      <td style="${tdStyle}">${escapeHtml(r.asn||'—')}</td>
+      <td style="${tdStyle};font-weight:600;color:#1e40af;">${escapeHtml(r.vbReference||'—')}</td>
+      <td style="${tdStyle};font-weight:600;color:${statusColor};">${escapeHtml(status)}</td>
+    </tr>`;
+  }).join('');
+  return `<div style='color:#047857;padding:10px 14px 6px;background:#f0fdf4;border-left:4px solid #10b981;border-radius:6px;margin-bottom:8px;'><strong>&#x2705; ${label}</strong></div>` +
+    `<div style="overflow-x:auto;"><table style="border-collapse:collapse;width:100%;">` +
+    `<thead><tr style="background:#f1f5f9;">` +
+      `<th style="${thStyle}">ASN</th>` +
+      `<th style="${thStyle}">VB Reference</th>` +
+      `<th style="${thStyle}">Booking Status</th>` +
+    `</tr></thead><tbody>${rows}</tbody></table></div>`;
+}
+
 // --- Carrier Booking - Single ASN per Booking ---
 async function bookingCreateSingle() {
   const asn = document.getElementById('bookingAsnInput').value.trim();
@@ -835,15 +860,15 @@ async function bookingCreateSingle() {
     });
     const data = await res.json();
     if (data.ok) {
-      const msg = data.result.message || 'Booking created';
-      const count = data.result.count || 1;
-      resultDiv.innerHTML = `<div style='color:#047857;padding:12px;background:#f0fdf4;border-left:4px solid #10b981;border-radius:6px;'><strong>✅ ${msg}</strong><div style='margin-top:8px;font-size:0.85rem;'>${count} booking(s) created</div></div>`;
+      const results = data.result.results || [];
+      const label = `Single booking completed — ${results.length} ASN${results.length !== 1 ? 's' : ''}`;
+      resultDiv.innerHTML = renderBookingResult(results, label);
     } else {
       const error = data.error || 'Booking creation failed';
-      resultDiv.innerHTML = `<div style='color:#b91c1c;padding:12px;background:#fef2f2;border-left:4px solid #ef4444;border-radius:6px;'><strong>❌ ${error}</strong></div>`;
+      resultDiv.innerHTML = `<div style='color:#b91c1c;padding:12px;background:#fef2f2;border-left:4px solid #ef4444;border-radius:6px;'><strong>&#10060; ${error}</strong></div>`;
     }
   } catch (e) {
-    resultDiv.innerHTML = `<div style='color:#b91c1c;padding:12px;background:#fef2f2;border-left:4px solid #ef4444;border-radius:6px;'><strong>❌ Error:</strong> ${e.message}</div>`;
+    resultDiv.innerHTML = `<div style='color:#b91c1c;padding:12px;background:#fef2f2;border-left:4px solid #ef4444;border-radius:6px;'><strong>&#10060; Error:</strong> ${e.message}</div>`;
   } finally {
     btn.disabled = false;
     await stopProgressPollingAndFlush();
@@ -866,16 +891,17 @@ async function bookingCreateMulti() {
     });
     const data = await res.json();
     if (data.ok) {
-      const msg = data.result.message || 'Multi-ASN booking created';
-      const count = data.result.count || 1;
-      resultDiv.innerHTML = `<div style='color:#047857;padding:12px;background:#f0fdf4;border-left:4px solid #10b981;border-radius:6px;'><strong>✅ ${msg}</strong><div style='margin-top:8px;font-size:0.85rem;'>${count} ASN(s) in 1 booking</div></div>`;
+      const results = data.result.results || [];
+      const label = `Multi-ASN booking completed — ${results.length} ASN${results.length !== 1 ? 's' : ''} in 1 booking`;
+      resultDiv.innerHTML = renderBookingResult(results, label);
     } else {
       const error = data.error || 'Booking creation failed';
-      resultDiv.innerHTML = `<div style='color:#b91c1c;padding:12px;background:#fef2f2;border-left:4px solid #ef4444;border-radius:6px;'><strong>❌ ${error}</strong></div>`;
+      resultDiv.innerHTML = `<div style='color:#b91c1c;padding:12px;background:#fef2f2;border-left:4px solid #ef4444;border-radius:6px;'><strong>&#10060; ${error}</strong></div>`;
     }
   } catch (e) {
     resultDiv.innerHTML = `<div style='color:#b91c1c;padding:12px;background:#fef2f2;border-left:4px solid #ef4444;border-radius:6px;'><strong>&#10060; Error:</strong> ${e.message}</div>`;
   } finally {
+    btn.disabled = false;
     await stopProgressPollingAndFlush();
   }
 }

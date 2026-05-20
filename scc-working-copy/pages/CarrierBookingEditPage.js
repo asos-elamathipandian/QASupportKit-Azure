@@ -69,7 +69,9 @@ class CarrierBookingEditPage {
         await this.waitForGridToBeReady();
         await this.frame.locator(this.selectEditedBookingResult).check();
         await this.safeClick(this.frame.getByRole('button', this.submitBookingAfterEdit));
-
+        // Wait for SCC to process the submission — overlay may appear briefly then clear
+        await this.frame.locator(this.loadingOverlay).waitFor({ state: 'visible', timeout: 5000 }).catch(() => {});
+        await this.waitForGridToBeReady();
     }
 }
 module.exports = { CarrierBookingEditPage }

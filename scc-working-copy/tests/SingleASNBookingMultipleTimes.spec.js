@@ -126,9 +126,7 @@ test('Single ASN Booking - Create separate booking for each ASN', async ({ page 
     const { vbReference, bookingStatus } = await retryStep(`fetch outcome for ASN ${currentASN}`, async () => {
       await carrierbookingPage.expandandClearFilter();
       await carrierbookingPage.searchWithAsn(currentASN);
-      const vbRef = await carrierbookingPage.getVBReference();
-      const status = await carrierbookingPage.getBookingStatus();
-      return { vbReference: vbRef, bookingStatus: status };
+      return await carrierbookingPage.getActiveBookingResult({ waitForNonDraft: true });
     }, 3, 2000);
 
     console.log(`VB Reference: ${vbReference}`);

@@ -59,7 +59,57 @@ class CarrierBookingPage {
         await this.frame.locator(this.vbValue).first().waitFor({ timeout: 10000 });
         return (await this.frame.locator(this.vbValue).first().textContent()).trim();
     }
-    async getBookingStatus(vbReference) {
+
+    // Returns { vbReference, bookingStatus } for the first active (non-cancelled) booking row.
+    // Retries up to 4 × 2 s when waitForNonDraft is true so SCC has time to flip Draft→Submitted.
+    async getActiveBookingResult({ waitForNonDraft = false } = {}) {
+        const maxAttempts = waitForNonDraft ? 4 : 1;
+        for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+            await this.waitForGridToBeReady();
+            const rows = this.frame.locator('#resultTable .ui-grid-body-row');
+            await rows.first().waitFor({ state: 'visible', timeout: 10000 }).catch(() => {});
+            const rowCount = await rows.count();
+            for (let i = 0; i < rowCount; i++) {
+                const row = rows.nth(i);
+                const statusCell = row.locator('[id^="resultfield_appvbStatus"]');
+                if (await statusCell.count() === 0) continue;
+                const status = (await statusCell.first().textContent({ timeout: 2000 }).catch(() => '')).trim();
+                // Skip stale cancelled / rejected / voided bookings
+                if (/cancelled|rejected|voided/i.test(status)) continue;
+                const vbCell = row.locator('[title*="VB-000"]');
+                if (await vbCell.count() === 0) continue;
+                const vbReference = (await vbCell.first().textContent({ timeout: 2000 }).catch(() => '')).trim();
+                if (!vbReference) continue;
+                if (waitForNonDraft && /^draft$/i.test(status)) {
+                    console.log(`[getActiveBookingResult] ${vbReference} is still Draft on attempt ${attempt}, waiting 2s…`);
+                    break; // break inner loop to retry outer
+                }
+                return { vbReference, bookingStatus: status };
+            }
+            if (attempt < maxAttempts) {
+                await new Promise(resolve => setTimeout(resolve, 2000));
+            }
+        }
+        // Fallback: return first row regardless of status
+        const vbReference = (await this.frame.locator(this.vbValue).first().textContent().catch(() => 'Unknown')).trim();
+        const bookingStatus = (await this.frame.locator(this.statusCell).first().textContent().catch(() => 'Unknown')).trim() || 'Unknown';
+        return { vbReference, bookingStatus };
+    }
+
+    async getBookingStatus(vbReference, { waitForNonDraft = false } = {}) {
+        const maxAttempts = waitForNonDraft ? 4 : 1;
+        let status = 'Unknown';
+        for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+            status = await this._readBookingStatus(vbReference);
+            if (!waitForNonDraft || status.toLowerCase() !== 'draft') break;
+            console.log(`[getBookingStatus] Status is Draft on attempt ${attempt}, waiting 2s for SCC to process submission…`);
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            await this.waitForGridToBeReady();
+        }
+        return status;
+    }
+
+    async _readBookingStatus(vbReference) {
         await this.waitForGridToBeReady();
 
         // If a VB reference is provided, find the matching row's status
