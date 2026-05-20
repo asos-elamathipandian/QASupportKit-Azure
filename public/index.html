@@ -911,9 +911,8 @@ async function fullSccFlow() {
 </script>
 
   <!-- ── Send ADO Status Email ── -->
-  <div class="card" style="background:#e3f2fd; border-left:4px solid #0078D4; position:relative; overflow:hidden;">
-    <div style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%) rotate(-30deg); font-size:1.8rem; font-weight:900; color:rgba(0,0,0,0.08); white-space:nowrap; pointer-events:none; letter-spacing:0.15em; text-transform:uppercase; z-index:0;">Half Baked</div>
-    <div class="card-title" style="color:#0078D4; position:relative; z-index:1;">&#128231; ADO Test Status Email</div>
+  <div class="card" style="background:#e3f2fd; border-left:4px solid #0078D4;">
+    <div class="card-title" style="color:#0078D4;">&#128231; ADO Test Status Email</div>
     <p style="font-size:0.82rem; color:#555; margin:6px 0 12px 0;">
       Preview &amp; send the latest AIM Test Execution Progress &amp; Bug Report email (queries ADO shared queries, test plans/suites).
     </p>
@@ -1050,10 +1049,6 @@ async function fullSccFlow() {
     </button>
     <div class="live-log" id="liveLogFullFlow"></div>
     <div id="fullSccResult" style="margin-top:14px;"></div>
-      &#9889;&nbsp; Full SCC Flow
-      <span class="btn-label-sub">ASN Lookup + Single Booking Creation + Edit + Submit + Approve</span>
-    </button>
-    <div id="fullSccResult" style="margin-top:14px;"></div>
   </div>
 
 </main>
@@ -1155,21 +1150,25 @@ async function fullSccFlow() {
     const asnLookupCard = byTitle('ASN Lookup in E2Open SCC');
     const bookingCard = byTitle('Carrier Booking Creation');
     const fullFlowCard = byTitle('Full SCC Flow');
-    const xmlCard = byTitle('Carrier/WMS Milestones XML Generator');
+    const xmlCard = byTitle('Carrier & WMS Events');
     const resultsCard = byTitle('Results');
     const blobOutboundCard = byTitle('Blob search- E2open 856 outbound');
     const blobAsnCard = byTitle('E2Open ASN Search');
     const blobPoCard = byTitle('E2Open PO Feed Search');
     const blobCarrierCard = byTitle('PO Carrier Feed Search');
 
+    // Make blob search visible
+    if (blobOutboundCard) blobOutboundCard.style.display = '';
+
     const ordered = [
-      asnCreateCard,
-      asnLookupCard,
-      bookingCard,
-      fullFlowCard,
-      xmlCard,
-      resultsCard,
-      adoCard,
+      asnCreateCard,       // 1. Raise ASN link
+      asnLookupCard,       // 2. ASN lookup
+      bookingCard,         // 2. Carrier booking creation
+      fullFlowCard,        // 2. Full SCC flow
+      xmlCard,             // 3. Carrier & WMS milestones
+      resultsCard,         // 3. Results
+      blobOutboundCard,    // 4. Blob search
+      adoCard,             // 5. Status email
     ].filter(Boolean);
 
     ordered.forEach((card) => main.appendChild(card));
