@@ -1,31 +1,12 @@
 {
-  "totalRecords": 2,
+  "totalRecords": 1,
   "perAsn": {
-    "45870000002759": {
+    "45870000002761": {
       "found": true,
       "records": 1,
       "details": [
         {
-          "po": "500034227294",
-          "sku": "123478460",
-          "optionId": "123478454",
-          "units": "10.00",
-          "poSkuQty": "10.00",
-          "bookedUnits": "0.00",
-          "receivedUnits": "",
-          "poStatus": "Approved",
-          "bookingStatus": "",
-          "vbRef": "",
-          "carrier": "European Nom Carrier"
-        }
-      ]
-    },
-    "45870000002760": {
-      "found": true,
-      "records": 1,
-      "details": [
-        {
-          "po": "500034227295",
+          "po": "500034227296",
           "sku": "123478460",
           "optionId": "123478454",
           "units": "10.00",
@@ -42,22 +23,8 @@
   },
   "rowDetails": [
     {
-      "asn": "45870000002760",
-      "po": "500034227295",
-      "sku": "123478460",
-      "optionId": "123478454",
-      "units": "10.00",
-      "poSkuQty": "10.00",
-      "bookedUnits": "0.00",
-      "receivedUnits": "",
-      "poStatus": "Approved",
-      "bookingStatus": "",
-      "vbRef": "",
-      "carrier": "European Nom Carrier"
-    },
-    {
-      "asn": "45870000002759",
-      "po": "500034227294",
+      "asn": "45870000002761",
+      "po": "500034227296",
       "sku": "123478460",
       "optionId": "123478454",
       "units": "10.00",

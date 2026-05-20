@@ -60,31 +60,27 @@ function getWorkingAutomationPaths() {
 }
 
 async function runWorkingSpec(specPath, envVars = {}, timeoutMs = 300000, options = {}) {
-  const { root } = getWorkingAutomationPaths();
-  const relativeSpecPath = path.relative(root, specPath).replace(/\\/g, '/');
+  // Run from scc-working-copy so specs resolve asns.txt, playwright.config.js, etc. correctly
+  const specCwd = LOCAL_SCC_COPY_DIR;
+  const relativeSpecPath = path.relative(specCwd, specPath).replace(/\\/g, '/');
   const onProgress = (options && options.onProgress) || null;
 
-  const args = [
-    'playwright', 'test', relativeSpecPath,
-    '--reporter=line',
-    '--workers=1',
-  ];
-  if (!SCC_HEADLESS) args.push('--headed');
+  // Playwright binary lives in the root project's node_modules (not scc-working-copy)
+  const rootDir = path.resolve(__dirname, '..');
+  const playwrightBin = process.platform === 'win32'
+    ? path.join(rootDir, 'node_modules', '.bin', 'playwright.cmd')
+    : path.join(rootDir, 'node_modules', '.bin', 'playwright');
 
-  // Pass env vars directly in the env object (no "set VAR=VAL &" chaining)
-  // CI=true prevents Node.js pipe buffering so output streams in real-time
+  const headedFlag = SCC_HEADLESS ? '' : ' --headed';
+  const cmdString = `"${playwrightBin}" test "${relativeSpecPath}" --reporter=line --workers=1${headedFlag}`;
+
+  // CI=true enables real-time stdout flushing through the pipe
   const env = Object.assign({}, process.env, { CI: 'true' }, envVars);
 
-  console.log(`[SPEC] Executing in ${root}: npx ${args.join(' ')}`);
+  console.log(`[SPEC] Executing in ${specCwd}: ${cmdString}`);
 
   return new Promise((resolve, reject) => {
-    const child = process.platform === 'win32'
-      ? spawn('cmd.exe', ['/d', '/s', '/c', `npx ${args.join(' ')}`], {
-          cwd: root, shell: false, env,
-        })
-      : spawn('npx', args, {
-          cwd: root, shell: false, env,
-        });
+    const child = spawn(cmdString, [], { cwd: specCwd, shell: true, env });
 
     let stdout = '';
     let stderr = '';
@@ -111,7 +107,13 @@ async function runWorkingSpec(specPath, envVars = {}, timeoutMs = 300000, option
     child.on('close', (code) => {
       clearTimeout(killTimer);
       if (code !== 0) {
-        reject(new Error(`Spec exited with code ${code}:\n${stderr.substring(0, 800)}`));
+        // Filter Node.js deprecation warnings / stack traces — show last meaningful lines
+        const meaningful = (stdout + '\n' + stderr)
+          .split('\n')
+          .filter(l => l.trim() && !/DeprecationWarning|DEP\d+|\(Use `node|^\s+at /i.test(l))
+          .slice(-30)
+          .join('\n');
+        reject(new Error(`Spec exited with code ${code}:\n${meaningful.substring(0, 1500)}`));
       } else {
         resolve({ success: true, stdout, stderr });
       }
