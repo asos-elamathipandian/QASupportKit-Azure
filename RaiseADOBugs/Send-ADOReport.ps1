@@ -38,8 +38,10 @@ $bugQueryId  = $config.AzureDevOps.BugQueryId
 $testQueryId = $config.AzureDevOps.TestPlanQueryId
 $testPlanId  = $config.AzureDevOps.TestPlanId
 $testSuiteId = $config.AzureDevOps.TestSuiteId
-$tstmTestPlanId  = $config.AzureDevOps.TstmTestPlanId
-$tstmTestSuiteId = $config.AzureDevOps.TstmTestSuiteId
+$cr147TestPlanId  = $config.AzureDevOps.Cr147TestPlanId
+$cr147TestSuiteId = $config.AzureDevOps.Cr147TestSuiteId
+$cr140TestPlanId  = $config.AzureDevOps.Cr140TestPlanId
+$cr140TestSuiteId = $config.AzureDevOps.Cr140TestSuiteId
 $patEnvVar  = $config.AzureDevOps.PatTokenEnvVar
 
 $recipients = $config.Email.Recipients
@@ -697,7 +699,8 @@ function Format-TestPointsToHtml {
 function Get-TodaysHighlights {
     param(
         [array]$TestPoints,
-        [array]$TstmTestPoints,
+        [array]$Cr147TestPoints,
+        [array]$Cr140TestPoints,
         [array]$TestPlanItems,
         [array]$Bugs,
         [hashtable]$Headers
@@ -720,16 +723,12 @@ function Get-TodaysHighlights {
     }
 
     if ($todayTestUpdates.Count -gt 0) {
-        # Group by configuration (acts as suite grouping)
-        $byConfig = $todayTestUpdates | Group-Object { if ($_.configuration) { $_.configuration.name } else { "Default" } }
-        foreach ($cg in $byConfig) {
-            $byOutcome = $cg.Group | Group-Object { if ([string]::IsNullOrWhiteSpace($_.outcome) -or $_.outcome -eq 'Unspecified') { 'Not Run' } else { $_.outcome } }
-            $outcomeSummary = ($byOutcome | ForEach-Object { "$($_.Count) $($_.Name)" }) -join ", "
-            $highlights += @{
-                Icon = "&#9989;"
-                Category = "Test Execution (CR144)"
-                Text = "<strong>$($cg.Name)</strong>: $($cg.Group.Count) test case(s) updated - $outcomeSummary"
-            }
+        $byOutcome = $todayTestUpdates | Group-Object { if ([string]::IsNullOrWhiteSpace($_.outcome) -or $_.outcome -eq 'Unspecified') { 'Not Run' } else { $_.outcome } }
+        $outcomeSummary = ($byOutcome | ForEach-Object { "$($_.Count) $($_.Name)" }) -join ", "
+        $highlights += @{
+            Icon = "&#9989;"
+            Category = "Test Execution (CR144)"
+            Text = "$($todayTestUpdates.Count) test case(s) updated today - $outcomeSummary"
         }
     } else {
         $highlights += @{
@@ -739,33 +738,58 @@ function Get-TodaysHighlights {
         }
     }
 
-    # --- TSTM Test Case Highlights ---
-    $todayTstmUpdates = @()
-    foreach ($tp in $TstmTestPoints) {
+    # --- CR147 Test Case Highlights ---
+    $todayCr147Updates = @()
+    foreach ($tp in $Cr147TestPoints) {
         $lastRunDate = $null
         if ($tp.lastResultDetails -and $tp.lastResultDetails.dateCompleted) {
             $lastRunDate = (Get-Date $tp.lastResultDetails.dateCompleted).Date
         }
         if ($lastRunDate -eq $today) {
-            $todayTstmUpdates += $tp
+            $todayCr147Updates += $tp
         }
     }
 
-    if ($todayTstmUpdates.Count -gt 0) {
-        $byConfig = $todayTstmUpdates | Group-Object { if ($_.configuration) { $_.configuration.name } else { "Default" } }
-        foreach ($cg in $byConfig) {
-            $byOutcome = $cg.Group | Group-Object { if ([string]::IsNullOrWhiteSpace($_.outcome) -or $_.outcome -eq 'Unspecified') { 'Not Run' } else { $_.outcome } }
-            $outcomeSummary = ($byOutcome | ForEach-Object { "$($_.Count) $($_.Name)" }) -join ", "
-            $highlights += @{
-                Icon = "&#9989;"
-                Category = "Test Execution (TSTM)"
-                Text = "<strong>$($cg.Name)</strong>: $($cg.Group.Count) test case(s) updated - $outcomeSummary"
-            }
+    if ($todayCr147Updates.Count -gt 0) {
+        $byOutcome = $todayCr147Updates | Group-Object { if ([string]::IsNullOrWhiteSpace($_.outcome) -or $_.outcome -eq 'Unspecified') { 'Not Run' } else { $_.outcome } }
+        $outcomeSummary = ($byOutcome | ForEach-Object { "$($_.Count) $($_.Name)" }) -join ", "
+        $highlights += @{
+            Icon = "&#9989;"
+            Category = "Test Execution (CR147)"
+            Text = "$($todayCr147Updates.Count) test case(s) updated today - $outcomeSummary"
         }
     } else {
         $highlights += @{
             Icon = "&#128203;"
-            Category = "Test Execution (TSTM)"
+            Category = "Test Execution (CR147)"
+            Text = "No test executions recorded today"
+        }
+    }
+
+    # --- CR140 Test Case Highlights ---
+    $todayCr140Updates = @()
+    foreach ($tp in $Cr140TestPoints) {
+        $lastRunDate = $null
+        if ($tp.lastResultDetails -and $tp.lastResultDetails.dateCompleted) {
+            $lastRunDate = (Get-Date $tp.lastResultDetails.dateCompleted).Date
+        }
+        if ($lastRunDate -eq $today) {
+            $todayCr140Updates += $tp
+        }
+    }
+
+    if ($todayCr140Updates.Count -gt 0) {
+        $byOutcome = $todayCr140Updates | Group-Object { if ([string]::IsNullOrWhiteSpace($_.outcome) -or $_.outcome -eq 'Unspecified') { 'Not Run' } else { $_.outcome } }
+        $outcomeSummary = ($byOutcome | ForEach-Object { "$($_.Count) $($_.Name)" }) -join ", "
+        $highlights += @{
+            Icon = "&#9989;"
+            Category = "Test Execution (CR140)"
+            Text = "$($todayCr140Updates.Count) test case(s) updated today - $outcomeSummary"
+        }
+    } else {
+        $highlights += @{
+            Icon = "&#128203;"
+            Category = "Test Execution (CR140)"
             Text = "No test executions recorded today"
         }
     }
@@ -984,10 +1008,15 @@ Write-Host "Querying CR144 Test Plan (Plan=$testPlanId, Suite=$testSuiteId)..." 
 [array]$testPoints = @(Get-TestPointResults -PlanId $testPlanId -SuiteId $testSuiteId -Headers $headers)
 Write-Host "  Found $($testPoints.Count) CR144 test points." -ForegroundColor Green
 
-# Step 2b: Query TSTM Test Plan donut from Test Points API
-Write-Host "Querying TSTM Test Plan (Plan=$tstmTestPlanId, Suite=$tstmTestSuiteId)..." -ForegroundColor Yellow
-[array]$tstmTestPoints = @(Get-TestPointResults -PlanId $tstmTestPlanId -SuiteId $tstmTestSuiteId -Headers $headers)
-Write-Host "  Found $($tstmTestPoints.Count) TSTM test points." -ForegroundColor Green
+# Step 2b: Query CR147 Test Plan
+Write-Host "Querying CR147 Test Plan (Plan=$cr147TestPlanId, Suite=$cr147TestSuiteId)..." -ForegroundColor Yellow
+[array]$cr147TestPoints = @(Get-TestPointResults -PlanId $cr147TestPlanId -SuiteId $cr147TestSuiteId -Headers $headers)
+Write-Host "  Found $($cr147TestPoints.Count) CR147 test points." -ForegroundColor Green
+
+# Step 2c: Query CR140 Test Plan
+Write-Host "Querying CR140 Test Plan (Plan=$cr140TestPlanId, Suite=$cr140TestSuiteId)..." -ForegroundColor Yellow
+[array]$cr140TestPoints = @(Get-TestPointResults -PlanId $cr140TestPlanId -SuiteId $cr140TestSuiteId -Headers $headers)
+Write-Host "  Found $($cr140TestPoints.Count) CR140 test points." -ForegroundColor Green
 
 # Step 3: Query Test Plan items from shared query (Report-Testplan)
 Write-Host "Querying Test Plan items from shared query..." -ForegroundColor Yellow
@@ -999,10 +1028,11 @@ Write-Host "Building HTML report..." -ForegroundColor Yellow
 
 # Generate today's highlights
 Write-Host "Generating today's highlights..." -ForegroundColor Yellow
-$todaysHighlights = Get-TodaysHighlights -TestPoints $testPoints -TstmTestPoints $tstmTestPoints -TestPlanItems $testItems -Bugs $bugs -Headers $headers
+$todaysHighlights = Get-TodaysHighlights -TestPoints $testPoints -Cr147TestPoints $cr147TestPoints -Cr140TestPoints $cr140TestPoints -TestPlanItems $testItems -Bugs $bugs -Headers $headers
 
 $cr144Chart = Get-TestOutcomeDonutChart -TestPoints $testPoints -ChartTitle "CR144 Test Cases Stats"
-$tstmChart = Get-TestOutcomeDonutChart -TestPoints $tstmTestPoints -ChartTitle "TSTM Suite Test Cases Stats"
+$cr147Chart = Get-TestOutcomeDonutChart -TestPoints $cr147TestPoints -ChartTitle "CR147 Test Cases Stats"
+$cr140Chart = Get-TestOutcomeDonutChart -TestPoints $cr140TestPoints -ChartTitle "CR140 Test Cases Stats"
 $testTable = Format-TestPlanItemsToHtml -WorkItems $testItems -Headers $headers
 $bugChart = Get-DonutChart -WorkItems $bugs -ChartTitle "Bug Stats" -CenterLabel "Resolved"
 $bugTable = Format-WorkItemsToHtml -WorkItems $bugs -TableTitle "Bug Report" -AccentColor "#D32F2F" -Headers $headers
@@ -1033,8 +1063,9 @@ $htmlBody = @"
                 $testTable
                 <table cellpadding="0" cellspacing="0" border="0" style="width:100%;margin-top:20px;">
                     <tr>
-                        <td style="width:50%;vertical-align:top;padding-right:10px;">$cr144Chart</td>
-                        <td style="width:50%;vertical-align:top;padding-left:10px;">$tstmChart</td>
+                        <td style="width:33%;vertical-align:top;padding-right:8px;">$cr144Chart</td>
+                        <td style="width:33%;vertical-align:top;padding:0 4px;">$cr147Chart</td>
+                        <td style="width:33%;vertical-align:top;padding-left:8px;">$cr140Chart</td>
                     </tr>
                 </table>
             </div>
