@@ -1,8 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { Regression_TA_LoginPage } from '../pages/Regression_TA_LoginPage.js';
 
-const fs = require('fs');
-const path = require('path');
 const { FileReader } = require('./utils/FileReader.js');
 const { SCCHomepage } = require('../pages/SCCHomePage.js');
 const { SCCViewListPage } = require('../pages/SCCViewListPage.js');
@@ -16,9 +14,7 @@ const loginData = require('../tests-examples/Regression_TA_loginData.json');
 const asnFilePath = "tests\\asns.txt";
 const fileReader = new FileReader(asnFilePath);
 const asnFromFile = fileReader.getFileContents();
-const firstAsn = asnFromFile.split(',').map(a => a.trim()).filter(a => a.length > 0)[0] || asnFromFile;
-const RESULTS_FILE = path.join(__dirname, '..', 'booking-results.json');
-test.setTimeout(240 * 1000);
+test.setTimeout(240 * 1000); // Overall test timeout
 
 async function retryStep(label, action, attempts = 2, delayMs = 1500) {
   let lastError;
@@ -74,10 +70,50 @@ async function navigateToCarrierApproval(scchomePage, sccviewlistPage) {
   });
 }
 
-test('Multi ASN Booking - Create one booking with all ASNs', async ({ page }) => {
-  console.log(`Creating a single booking with all ASNs: ${asnFromFile}`);
-  console.log(`Using first ASN for booking lookup/edit steps: ${firstAsn}`);
+async function createBookingFromOrderSearch(ordersearchPage, listenDialog) {
+  await retryStep('search ASN and create booking', async () => {
+    await ordersearchPage.clearFilter();
+    await ordersearchPage.fillasnAndSearch(asnFromFile);
+    await acceptDialogIfPresent(listenDialog);
+    await ordersearchPage.selectAndCreateBooking();
+    await ordersearchPage.closeResult();
+  });
+}
 
+async function editAndSubmitBooking(carrierbookingPage, carrierbookingeditPage, listenDialog) {
+  await retryStep('edit and submit booking', async () => {
+    await carrierbookingPage.expandandClearFilter();
+    await carrierbookingPage.searchWithasnAndstatus(asnFromFile);
+    await carrierbookingPage.selectAndEditBooking();
+    await carrierbookingeditPage.editCarrierBookingDetails();
+    await carrierbookingeditPage.editCarrierHeaderDetails();
+    await acceptDialogIfPresent(listenDialog);
+    await carrierbookingeditPage.saveSubmitAfterEdit();
+    await acceptDialogIfPresent(listenDialog);
+  }, 2, 2000);
+}
+
+async function fetchBookingOutcome(carrierbookingPage) {
+  return retryStep('fetch booking outcome', async () => {
+    await carrierbookingPage.expandandClearFilter();
+    await carrierbookingPage.searchWithAsn(asnFromFile);
+
+    const vbReference = await carrierbookingPage.getVBReference();
+    const bookingStatus = await carrierbookingPage.getBookingStatus();
+    return { vbReference, bookingStatus };
+  }, 3, 2000);
+}
+
+async function approveDraftBooking(scchomePage, sccviewlistPage, ordersearchPage, carrierbookingapprovalPage) {
+  await retryStep('approve draft booking', async () => {
+    await navigateToCarrierApproval(scchomePage, sccviewlistPage);
+    await ordersearchPage.clearFilter();
+    await carrierbookingapprovalPage.fillasnAndSearch(asnFromFile);
+    await carrierbookingapprovalPage.selectAndApproveBooking();
+  }, 2, 2500);
+}
+
+test('Process Multiple ASNs', async ({ page }) => {
   const loginPage = new Regression_TA_LoginPage(page);
 
   await loginPage.goToLogin();
@@ -93,57 +129,23 @@ test('Multi ASN Booking - Create one booking with all ASNs', async ({ page }) =>
   const carrierbookingPage = new CarrierBookingPage(page, frame);
   const carrierbookingeditPage = new CarrierBookingEditPage(frame);
   const carrierbookingapprovalPage = new CarrierBookingApprovalPage(frame);
-
-  // Search all ASNs and create one booking
+  // Booking flow is isolated to this spec so shared Regression flows remain untouched.
   await navigateToOrderSearch(scchomePage, sccviewlistPage, listenDialog);
-  await retryStep('search ASN and create booking', async () => {
-    await ordersearchPage.clearFilter();
-    await ordersearchPage.fillasnAndSearch(asnFromFile);
-    await acceptDialogIfPresent(listenDialog);
-    await ordersearchPage.selectAndCreateBooking();
-    await ordersearchPage.closeResult();
-  });
+  await createBookingFromOrderSearch(ordersearchPage, listenDialog);
 
-  // Edit and submit booking
   await navigateToCarrierBooking(scchomePage, sccviewlistPage, listenDialog);
-  await retryStep('edit and submit booking', async () => {
-    await carrierbookingPage.expandandClearFilter();
-    await carrierbookingPage.searchWithasnAndstatus(firstAsn);
-    await carrierbookingPage.selectAndEditBooking();
-    await carrierbookingeditPage.editCarrierBookingDetails();
-    await carrierbookingeditPage.editCarrierHeaderDetails();
-    await acceptDialogIfPresent(listenDialog);
-    await carrierbookingeditPage.saveSubmitAfterEdit();
-    await acceptDialogIfPresent(listenDialog);
-  }, 2, 2000);
+  await editAndSubmitBooking(carrierbookingPage, carrierbookingeditPage, listenDialog);
 
-  // Fetch booking outcome
-  const { vbReference, bookingStatus } = await retryStep('fetch booking outcome', async () => {
-    await carrierbookingPage.expandandClearFilter();
-    await carrierbookingPage.searchWithAsn(firstAsn);
-    const vbRef = await carrierbookingPage.getVBReference();
-    const status = await carrierbookingPage.getBookingStatus();
-    return { vbReference: vbRef, bookingStatus: status };
-  }, 3, 2000);
-
+  const { vbReference, bookingStatus } = await fetchBookingOutcome(carrierbookingPage);
   console.log(`VB Reference: ${vbReference}`);
   console.log(`Booking Status: ${bookingStatus}`);
-  fs.writeFileSync(RESULTS_FILE, JSON.stringify([{ asn: asnFromFile, vbReference, bookingStatus }], null, 2), 'utf-8');
 
-  // Approve if status is Draft
   if (bookingStatus.toLowerCase() === 'draft') {
     console.log('Status is Draft. Proceeding with approval flow.');
-    await retryStep('approve draft booking', async () => {
-      await navigateToCarrierApproval(scchomePage, sccviewlistPage);
-      await ordersearchPage.clearFilter();
-      await carrierbookingapprovalPage.fillasnAndSearch(firstAsn);
-      await carrierbookingapprovalPage.selectAndApproveBooking();
-    }, 2, 2500);
+    await approveDraftBooking(scchomePage, sccviewlistPage, ordersearchPage, carrierbookingapprovalPage);
   } else if (bookingStatus.toLowerCase() === 'submitted') {
     console.log('Status is Submitted. Skipping approval flow.');
   } else {
     console.log(`Unexpected booking status: ${bookingStatus}. Skipping approval flow.`);
   }
-
-  console.log('Multi-ASN booking completed successfully.');
 });

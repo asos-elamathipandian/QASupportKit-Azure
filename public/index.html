@@ -1,11 +1,11 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <!-- Ace Editor CDN for XML syntax highlighting -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.3/ace.js"></script>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Smart Data Assistant-ASOS Inbound</title>
+  <title>ASOS-E2Open Data ToolKit : ASN/PO/SKU updates, ASN lookups, Carrier Booking, Carrier & WMS Milestones</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -417,7 +417,7 @@
 <body>
 
 <header>
-  <h1>Smart Data Assistant-ASOS Inbound</h1>
+  <h1>ASOS-E2Open Data ToolKit : ASN/PO/SKU updates, ASN lookups, Carrier Booking, Carrier & WMS Milestones</h1>
   <button class="btn-reset-all" onclick="resetAll()" title="Reset all inputs, results and logs">&#8635; Reset</button>
 </header>
 
@@ -438,7 +438,7 @@
 
   <!-- ── Carrier & WMS Events ── -->
   <div class="card">
-    <div class="card-title">Carrier/WMS Milestones XML Generator</div>
+    <div class="card-title">Carrier &amp; WMS Events</div>
     
     <!-- Input Fields -->
     <div class="form-grid">
@@ -536,7 +536,7 @@
   </div>
 
   <!-- ── E2Open Outbound Message Search ── -->
-  <div class="card">
+  <div class="card" style="display:none;">
     <div class="card-title">&#9729; Blob search- E2open 856 outbound</div>
     <div class="form-grid">
       <div class="form-group" style="grid-column: 1 / -1;">
@@ -563,6 +563,7 @@
       </button>
     </div>
     <div id="sccSessionResult" style="display:none; margin-bottom:12px;"></div>
+    <div id="sccLiveStatus" style="display:none; margin-bottom:12px;"></div>
     <div class="form-grid">
       <div class="form-group" style="grid-column: 1 / -1;">
         <label>ASN</label>
@@ -576,9 +577,57 @@
     <div id="asnLookupResult" style="margin-top:14px;"></div>
   </div>
 
-</main>
-
 <script>
+const sccLiveState = {
+  timer: null,
+  startedAt: 0,
+};
+
+function renderSccLiveStatus({ title, detail, tone }) {
+  const liveDiv = document.getElementById('sccLiveStatus');
+  if (!liveDiv) return;
+
+  const styles = {
+    running: { color: '#1f2937', bg: '#eff6ff', border: '#3b82f6', icon: '⏳' },
+    success: { color: '#065f46', bg: '#ecfdf5', border: '#10b981', icon: '✅' },
+    error: { color: '#991b1b', bg: '#fef2f2', border: '#ef4444', icon: '❌' },
+  };
+
+  const style = styles[tone] || styles.running;
+  liveDiv.style.display = 'block';
+  liveDiv.innerHTML = `<div style='color:${style.color};padding:10px;background:${style.bg};border-left:4px solid ${style.border};border-radius:6px;'><strong>${style.icon} ${title}</strong><div style='margin-top:4px;font-size:0.85rem;'>${detail}</div></div>`;
+}
+
+function startSccLiveStatus(actionName) {
+  if (sccLiveState.timer) clearInterval(sccLiveState.timer);
+  sccLiveState.startedAt = Date.now();
+
+  const update = () => {
+    const elapsedSec = Math.max(1, Math.floor((Date.now() - sccLiveState.startedAt) / 1000));
+    renderSccLiveStatus({
+      title: `${actionName} running`,
+      detail: `Execution in progress on localhost. Elapsed: ${elapsedSec}s`,
+      tone: 'running'
+    });
+  };
+
+  update();
+  sccLiveState.timer = setInterval(update, 1000);
+}
+
+function finishSccLiveStatus(ok, message) {
+  if (sccLiveState.timer) {
+    clearInterval(sccLiveState.timer);
+    sccLiveState.timer = null;
+  }
+
+  renderSccLiveStatus({
+    title: ok ? 'SCC action completed' : 'SCC action failed',
+    detail: message || (ok ? 'Completed successfully.' : 'Execution failed.'),
+    tone: ok ? 'success' : 'error'
+  });
+}
+
 async function refreshSccSessionStatus() {
   const resultDiv = document.getElementById('sccSessionResult');
   if (!resultDiv) return;
@@ -636,6 +685,7 @@ async function asnLookup() {
   const btn = document.getElementById('btnAsnLookup');
   const resultDiv = document.getElementById('asnLookupResult');
   btn.disabled = true;
+  startSccLiveStatus('ASN lookup');
   resultDiv.innerHTML = '<div style="padding:10px; color:#666;"><strong>⏳ Checking ASN availability in SCC (auto-login if needed)...</strong></div>';
   try {
     const res = await fetch('/api/scc/asn-lookup', {
@@ -652,12 +702,15 @@ async function asnLookup() {
       const bg = found ? '#f0fdf4' : '#fffbeb';
       const border = found ? '#10b981' : '#f59e0b';
       resultDiv.innerHTML = `<div style='color:${color};padding:12px;background:${bg};border-left:4px solid ${border};border-radius:6px;'><strong>${found ? '✅' : '⚠️'} ${msg}</strong><div style='margin-top:8px;font-size:0.85rem;'>${matchCount} order(s) found</div></div>`;
+      finishSccLiveStatus(true, `ASN lookup completed. ${matchCount} order(s) found.`);
     } else {
       const error = data.error || 'ASN lookup failed';
       resultDiv.innerHTML = `<div style='color:#b91c1c;padding:12px;background:#fef2f2;border-left:4px solid #ef4444;border-radius:6px;'><strong>❌ ${error}</strong></div>`;
+      finishSccLiveStatus(false, error);
     }
   } catch (e) {
     resultDiv.innerHTML = `<div style='color:#b91c1c;padding:12px;background:#fef2f2;border-left:4px solid #ef4444;border-radius:6px;'><strong>❌ Error:</strong> ${e.message}</div>`;
+    finishSccLiveStatus(false, e.message);
   } finally {
     btn.disabled = false;
   }
@@ -670,6 +723,7 @@ async function bookingCreateSingle() {
   const btn = document.getElementById('btnBookingSingle');
   const resultDiv = document.getElementById('bookingResult');
   btn.disabled = true;
+  startSccLiveStatus('Single booking creation');
   resultDiv.innerHTML = '<div style="padding:10px; color:#666;"><strong>⏳ Creating single booking(s) (auto-login if needed)...</strong></div>';
   try {
     const res = await fetch('/api/scc/booking/create-single', {
@@ -682,26 +736,27 @@ async function bookingCreateSingle() {
       const msg = data.result.message || 'Booking created';
       const count = data.result.count || 1;
       resultDiv.innerHTML = `<div style='color:#047857;padding:12px;background:#f0fdf4;border-left:4px solid #10b981;border-radius:6px;'><strong>✅ ${msg}</strong><div style='margin-top:8px;font-size:0.85rem;'>${count} booking(s) created</div></div>`;
+      finishSccLiveStatus(true, `${msg} (${count} booking(s)).`);
     } else {
       const error = data.error || 'Booking creation failed';
       resultDiv.innerHTML = `<div style='color:#b91c1c;padding:12px;background:#fef2f2;border-left:4px solid #ef4444;border-radius:6px;'><strong>❌ ${error}</strong></div>`;
+      finishSccLiveStatus(false, error);
     }
   } catch (e) {
     resultDiv.innerHTML = `<div style='color:#b91c1c;padding:12px;background:#fef2f2;border-left:4px solid #ef4444;border-radius:6px;'><strong>❌ Error:</strong> ${e.message}</div>`;
+    finishSccLiveStatus(false, e.message);
   } finally {
     btn.disabled = false;
   }
 }
 
 async function bookingCreateMulti() {
-  const resultDiv = document.getElementById('bookingResult');
-  resultDiv.innerHTML = `<div style='color:#92400e;padding:12px;background:#fffbeb;border-left:4px solid #f59e0b;border-radius:6px;'><strong>⚠️ Multi-ASN booking is temporarily disabled.</strong><div style='margin-top:8px;font-size:0.85rem;'>Completed localhost features are ASN lookup and single ASN booking.</div></div>`;
-  return;
-
   const asn = document.getElementById('bookingAsnInput').value.trim();
   if (!asn) return alert('Please enter one or more ASNs');
   const btn = document.getElementById('btnBookingMulti');
+  const resultDiv = document.getElementById('bookingResult');
   btn.disabled = true;
+  startSccLiveStatus('Multi-ASN booking creation');
   resultDiv.innerHTML = '<div style="padding:10px; color:#666;"><strong>⏳ Creating multi-ASN booking...</strong></div>';
   try {
     const res = await fetch('/api/scc/booking/create-multi', {
@@ -714,70 +769,93 @@ async function bookingCreateMulti() {
       const msg = data.result.message || 'Multi-ASN booking created';
       const count = data.result.count || 1;
       resultDiv.innerHTML = `<div style='color:#047857;padding:12px;background:#f0fdf4;border-left:4px solid #10b981;border-radius:6px;'><strong>✅ ${msg}</strong><div style='margin-top:8px;font-size:0.85rem;'>${count} ASN(s) in 1 booking</div></div>`;
+      finishSccLiveStatus(true, `${msg} (${count} ASN(s)).`);
     } else {
       const error = data.error || 'Booking creation failed';
       resultDiv.innerHTML = `<div style='color:#b91c1c;padding:12px;background:#fef2f2;border-left:4px solid #ef4444;border-radius:6px;'><strong>❌ ${error}</strong></div>`;
+      finishSccLiveStatus(false, error);
     }
   } catch (e) {
     resultDiv.innerHTML = `<div style='color:#b91c1c;padding:12px;background:#fef2f2;border-left:4px solid #ef4444;border-radius:6px;'><strong>❌ Error:</strong> ${e.message}</div>`;
+    finishSccLiveStatus(false, e.message);
   } finally {
     btn.disabled = false;
   }
 }
 
-// --- Full SCC Flow (placeholder for future) ---
+// --- Full SCC Flow ---
 async function fullSccFlow() {
   const asn = document.getElementById('fullSccAsnInput').value.trim();
   if (!asn) return alert('Please enter one or more ASNs');
   const btn = document.getElementById('btnFullSccFlow');
   const resultDiv = document.getElementById('fullSccResult');
   btn.disabled = true;
+  startSccLiveStatus('Full SCC flow');
   resultDiv.innerHTML = '<div style="padding:10px; color:#666;"><strong>⏳ Running full SCC flow...</strong></div>';
   try {
-    // For now, run ASN lookup first
-    const lookupRes = await fetch('/api/scc/asn-lookup', {
+    const res = await fetch('/api/full-scc-flow', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ asn })
     });
-    const lookupData = await lookupRes.json();
-    if (!lookupData.ok) throw new Error(lookupData.error || 'ASN lookup failed');
-    
-    // Then create single booking
-    const bookingRes = await fetch('/api/scc/booking/create-single', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ asn })
-    });
-    const bookingData = await bookingRes.json();
-    if (!bookingData.ok) throw new Error(bookingData.error || 'Booking creation failed');
-    
-    resultDiv.innerHTML = `<div style='color:#047857;padding:12px;background:#f0fdf4;border-left:4px solid #10b981;border-radius:6px;'><strong>✅ Full SCC flow completed successfully</strong><div style='margin-top:8px;font-size:0.85rem;'><div>• ASN Lookup: ${lookupData.result.matchCount} order(s) found</div><div>• Booking Creation: ${bookingData.result.count} booking(s) created</div></div></div>`;
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || 'Full SCC flow failed');
+
+    const detailsCount = Array.isArray(data?.result?.result?.details) ? data.result.result.details.length : 0;
+    const statusText = data?.result?.result?.ok === false ? 'completed with warnings' : 'completed successfully';
+    resultDiv.innerHTML = `<div style='color:#047857;padding:12px;background:#f0fdf4;border-left:4px solid #10b981;border-radius:6px;'><strong>✅ Full SCC flow ${statusText}</strong><div style='margin-top:8px;font-size:0.85rem;'>${data.result.message || ''}<br/>Rows processed: ${detailsCount}</div></div>`;
+    finishSccLiveStatus(true, `Full SCC flow ${statusText}. Rows processed: ${detailsCount}.`);
   } catch (e) {
     resultDiv.innerHTML = `<div style='color:#b91c1c;padding:12px;background:#fef2f2;border-left:4px solid #ef4444;border-radius:6px;'><strong>❌ Error:</strong> ${e.message}</div>`;
+    finishSccLiveStatus(false, e.message);
   } finally {
     btn.disabled = false;
   }
 }
 </script>
 
-  <!-- ── ADO Status Email (LOCAL ONLY) ── -->
-  <div class="card local-only-card" style="background:#e3f2fd; border-left:4px solid #0078D4;">
-    <span class="local-only-badge">&#128274; Local Only</span>
-    <div class="card-title" style="color:#0078D4;">&#128231; ADO Test Status Email</div>
+  <!-- ── Send ADO Status Email ── -->
+  <div class="card" style="background:#e3f2fd; border-left:4px solid #0078D4; position:relative; overflow:hidden;">
+    <div style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%) rotate(-30deg); font-size:1.8rem; font-weight:900; color:rgba(0,0,0,0.08); white-space:nowrap; pointer-events:none; letter-spacing:0.15em; text-transform:uppercase; z-index:0;">Half Baked</div>
+    <div class="card-title" style="color:#0078D4; position:relative; z-index:1;">&#128231; ADO Test Status Email</div>
     <p style="font-size:0.82rem; color:#555; margin:6px 0 12px 0;">
-      Preview &amp; send the latest AIM Test Execution Progress &amp; Bug Report email. Requires Outlook COM &mdash; available on local version only.
+      Preview &amp; send the latest AIM Test Execution Progress &amp; Bug Report email (queries ADO shared queries, test plans/suites).
     </p>
-    <div id="adoDirectSendStatus" style="font-size:0.85rem; color:#555; margin-bottom:10px; min-height:20px;"></div>
     <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-      <button onclick="previewAdoEmail()"
+      <button id="btnPreviewEmail" onclick="previewStatusEmail()"
               style="background:#0078D4; color:white; font-weight:600; padding:8px 20px; border:none; border-radius:4px; cursor:pointer;">
         &#128065; Preview Report
       </button>
-      <button onclick="previewAndSendAdoEmail()"
+      <button id="btnSendEmail" onclick="sendStatusEmail()"
               style="background:#2e7d32; color:white; font-weight:600; padding:8px 20px; border:none; border-radius:4px; cursor:pointer;">
         &#9993; Send Email
       </button>
+      <span id="emailStatus" style="font-size:0.82rem;"></span>
+    </div>
+  </div>
+
+  <!-- ── Preview Modal ── -->
+  <div id="previewModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:9999; justify-content:center; align-items:center;">
+    <div style="background:white; width:90%; max-width:1000px; height:85vh; border-radius:8px; display:flex; flex-direction:column; box-shadow:0 8px 32px rgba(0,0,0,0.3);">
+      <div style="display:flex; justify-content:space-between; align-items:center; padding:12px 20px; border-bottom:1px solid #e0e0e0; background:#f5f5f5; border-radius:8px 8px 0 0;">
+        <span style="font-weight:700; font-size:0.95rem; color:#0078D4;">&#128065; Email Preview</span>
+        <div style="display:flex; gap:10px; align-items:center;">
+          <button id="btnToggleEdit" onclick="toggleEditMode()"
+                  style="background:#FF8F00; color:white; font-weight:600; padding:6px 16px; border:none; border-radius:4px; cursor:pointer; font-size:0.82rem;">
+            &#9998; Edit
+          </button>
+          <span id="editIndicator" style="font-size:0.75rem; color:#FF8F00; font-weight:600; display:none;">Editing</span>
+          <button onclick="sendFromPreview()"
+                  style="background:#2e7d32; color:white; font-weight:600; padding:6px 16px; border:none; border-radius:4px; cursor:pointer; font-size:0.82rem;">
+            &#9993; Send Email Now
+          </button>
+          <button onclick="closePreview()"
+                  style="background:#666; color:white; font-weight:600; padding:6px 16px; border:none; border-radius:4px; cursor:pointer; font-size:0.82rem;">
+            &#10005; Close
+          </button>
+        </div>
+      </div>
+      <iframe id="previewFrame" style="flex:1; border:none; border-radius:0 0 8px 8px;"></iframe>
     </div>
   </div>
 
@@ -789,57 +867,48 @@ async function fullSccFlow() {
   </div>
 
   <!-- ── E2Open ASN Search (LOCAL ONLY) ── -->
-  <div class="card" style="opacity:0.6; border:2px dashed #ffc107;">
+  <div class="card" style="display:none;">
     <div class="card-title">&#9729; E2Open ASN Search</div>
-    <p style="font-size:0.82rem; color:#856404; margin-bottom:12px; background:#fff8e1; padding:8px; border-radius:4px;">
-      ⚠️ Temporarily disabled pending authentication stabilization
-    </p>
     <div class="form-grid">
       <div class="form-group" style="grid-column: 1 / -1;">
         <label for="blobAsnE2">ASN</label>
-        <input id="blobAsnE2" type="text" placeholder="e.g. 49870000001418" disabled />
+        <input id="blobAsnE2" type="text" placeholder="e.g. 49870000001418" />
         <span class="field-hint">Search E2Open ASN storage for XML files where filename and content match this ASN.</span>
       </div>
     </div>
-    <button class="btn-blob-search" id="btnBlobSearchAsn" onclick="searchBlobsAsn()" disabled style="margin-top:14px;">
+    <button class="btn-blob-search" id="btnBlobSearchAsn" onclick="searchBlobsAsn()" style="margin-top:14px;">
       &#9729;&nbsp; Search E2Open ASN
     </button>
     <div id="blobResultAsn" style="margin-top:14px;"></div>
   </div>
 
   <!-- ── E2Open PO Feed Search (LOCAL ONLY) ── -->
-  <div class="card" style="opacity:0.6; border:2px dashed #ffc107;">
+  <div class="card" style="display:none;">
     <div class="card-title">&#9729; E2Open PO Feed Search</div>
-    <p style="font-size:0.82rem; color:#856404; margin-bottom:12px; background:#fff8e1; padding:8px; border-radius:4px;">
-      ⚠️ Temporarily disabled pending authentication stabilization
-    </p>
     <div class="form-grid">
       <div class="form-group" style="grid-column: 1 / -1;">
         <label for="blobPoE2">PO</label>
-        <input id="blobPoE2" type="text" placeholder="e.g. 500034216385" disabled />
+        <input id="blobPoE2" type="text" placeholder="e.g. 500034216385" />
         <span class="field-hint">Search E2Open PO feed storage for XML files where filename and content match this PO.</span>
       </div>
     </div>
-    <button class="btn-blob-search" id="btnBlobSearchPo" onclick="searchBlobsPo()" disabled style="margin-top:14px;">
+    <button class="btn-blob-search" id="btnBlobSearchPo" onclick="searchBlobsPo()" style="margin-top:14px;">
       &#9729;&nbsp; Search E2Open PO Feed
     </button>
     <div id="blobResultPo" style="margin-top:14px;"></div>
   </div>
 
   <!-- ── PO Carrier Feed Search (LOCAL ONLY) ── -->
-  <div class="card" style="opacity:0.6; border:2px dashed #ffc107;">
+  <div class="card" style="display:none;">
     <div class="card-title">&#9729; PO Carrier Feed Search</div>
-    <p style="font-size:0.82rem; color:#856404; margin-bottom:12px; background:#fff8e1; padding:8px; border-radius:4px;">
-      ⚠️ Temporarily disabled pending authentication stabilization
-    </p>
     <div class="form-grid">
       <div class="form-group" style="grid-column: 1 / -1;">
         <label for="blobCarrierAsn">ASN</label>
-        <input id="blobCarrierAsn" type="text" placeholder="e.g. 49870000001418" disabled />
+        <input id="blobCarrierAsn" type="text" placeholder="e.g. 49870000001418" />
         <span class="field-hint">Search carrier feed storage for XML files matching this ASN across all carrier folders.</span>
       </div>
     </div>
-    <button class="btn-blob-search" id="btnBlobSearchCarrier" onclick="searchBlobsCarrierFeed()" disabled style="margin-top:14px;">
+    <button class="btn-blob-search" id="btnBlobSearchCarrier" onclick="searchBlobsCarrierFeed()" style="margin-top:14px;">
       &#9729;&nbsp; Search Carrier Feed
     </button>
     <div id="blobResultCarrier" style="margin-top:14px;"></div>
@@ -848,22 +917,19 @@ async function fullSccFlow() {
   <!-- ── Booking Creation (LOCAL ONLY) ── -->
   <div class="card" style="opacity:0.6; border:2px dashed #ffc107;">
     <div class="card-title">Carrier Booking Creation</div>
-    <p style="font-size:0.82rem; color:#856404; margin-bottom:12px; background:#fff8e1; padding:8px; border-radius:4px;">
-      ⚠️ Temporarily disabled pending Playwright automation stabilization
-    </p>
     <div class="form-grid">
       <div class="form-group" style="grid-column: 1 / -1;">
         <label>ASN for Booking</label>
-        <input id="bookingAsnInput" type="text" placeholder="e.g. 49870000001275 or ASN1,ASN2,ASN3" disabled />
+        <input id="bookingAsnInput" type="text" placeholder="e.g. 49870000001275 or ASN1,ASN2,ASN3" />
         <span class="field-hint">Enter one or more ASNs (comma-separated) for booking.</span>
       </div>
     </div>
     <div class="booking-buttons">
-      <button class="btn-booking-single" id="btnBookingSingle" onclick="bookingCreateSingle()" disabled title="Temporarily disabled pending Playwright automation stabilization">
+      <button class="btn-booking-single" id="btnBookingSingle" onclick="bookingCreateSingle()">
         &#9654;&nbsp; Single ASN per Booking
         <span class="btn-label-sub">One booking per ASN, login once</span>
       </button>
-      <button class="btn-booking-multi" id="btnBookingMulti" onclick="bookingCreateMulti()" disabled title="Temporarily disabled pending Playwright automation stabilization">
+      <button class="btn-booking-multi" id="btnBookingMulti" onclick="bookingCreateMulti()">
         &#9654;&nbsp; All ASNs &times; One Booking
         <span class="btn-label-sub">All ASNs combined in one booking</span>
       </button>
@@ -874,17 +940,14 @@ async function fullSccFlow() {
   <!-- ── Full SCC Flow (LOCAL ONLY) ── -->
   <div class="card" style="opacity:0.6; border:2px dashed #ffc107;">
     <div class="card-title">Full SCC Flow &mdash; One-Click Booking</div>
-    <p style="font-size:0.82rem; color:#856404; margin-bottom:12px; background:#fff8e1; padding:8px; border-radius:4px;">
-      ⚠️ Temporarily disabled pending Playwright automation stabilization
-    </p>
     <div class="form-grid">
       <div class="form-group" style="grid-column: 1 / -1;">
         <label>ASN</label>
-        <input id="fullSccAsnInput" type="text" placeholder="e.g. 49870000001275 or ASN1,ASN2,ASN3" disabled />
+        <input id="fullSccAsnInput" type="text" placeholder="e.g. 49870000001275 or ASN1,ASN2,ASN3" />
         <span class="field-hint">Enter one or more ASNs (comma-separated) for full SCC flow.</span>
       </div>
     </div>
-    <button class="btn-full-flow" id="btnFullSccFlow" onclick="fullSccFlow()" disabled title="Temporarily disabled pending Playwright automation stabilization" style="margin-top:14px;">
+    <button class="btn-full-flow" id="btnFullSccFlow" onclick="fullSccFlow()" style="margin-top:14px;">
       &#9889;&nbsp; Full SCC Flow
       <span class="btn-label-sub">ASN Lookup + Single Booking Creation + Edit + Submit + Approve</span>
     </button>
@@ -935,13 +998,90 @@ async function fullSccFlow() {
     }
   }
   
+  function enableUnifiedFeaturesAndOrder() {
+    const idsToEnable = [
+      'bookingAsnInput', 'btnBookingSingle', 'btnBookingMulti',
+      'fullSccAsnInput', 'btnFullSccFlow'
+    ];
+
+    idsToEnable.forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.disabled = false;
+        el.removeAttribute('disabled');
+      }
+    });
+
+    // Remove disabled visual treatment from WIP cards now that features are migrated.
+    document.querySelectorAll('.card[style*="opacity:0.6"]').forEach((card) => {
+      card.style.opacity = '1';
+      card.style.border = '1px solid #e5e7eb';
+    });
+
+    // Remove local-only lock styling so status email is active in unified local flow.
+    const adoCard = Array.from(document.querySelectorAll('.card')).find((card) =>
+      (card.textContent || '').includes('ADO Test Status Email')
+    );
+    if (adoCard) {
+      adoCard.classList.remove('local-only-card');
+      const badge = adoCard.querySelector('.local-only-badge');
+      if (badge) badge.style.display = 'none';
+    }
+
+    // Hide old WIP heading block (separator + label) to avoid confusion.
+    const wipLabel = Array.from(document.querySelectorAll('span')).find((el) =>
+      (el.textContent || '').includes('WORK IN PROGRESS')
+    );
+    if (wipLabel && wipLabel.parentElement) {
+      const wipWrap = wipLabel.parentElement;
+      const hr = wipWrap.previousElementSibling;
+      wipWrap.style.display = 'none';
+      if (hr && hr.tagName === 'HR') hr.style.display = 'none';
+    }
+
+    // Reorder cards to the requested 1->7 sequence.
+    const main = document.querySelector('main.container');
+    if (!main) return;
+
+    const cards = Array.from(main.querySelectorAll(':scope > .card'));
+    const byTitle = (text) => cards.find((card) => {
+      const title = card.querySelector('.card-title');
+      return title && (title.textContent || '').toLowerCase().includes(text.toLowerCase());
+    });
+
+    const asnCreateCard = cards.find((card) => card.querySelector('a[href*="self-service.azurewebsites.net"]'));
+    const asnLookupCard = byTitle('ASN Lookup in E2Open SCC');
+    const bookingCard = byTitle('Carrier Booking Creation');
+    const fullFlowCard = byTitle('Full SCC Flow');
+    const xmlCard = byTitle('Carrier/WMS Milestones XML Generator');
+    const resultsCard = byTitle('Results');
+    const blobOutboundCard = byTitle('Blob search- E2open 856 outbound');
+    const blobAsnCard = byTitle('E2Open ASN Search');
+    const blobPoCard = byTitle('E2Open PO Feed Search');
+    const blobCarrierCard = byTitle('PO Carrier Feed Search');
+
+    const ordered = [
+      asnCreateCard,
+      asnLookupCard,
+      bookingCard,
+      fullFlowCard,
+      xmlCard,
+      resultsCard,
+      adoCard,
+    ].filter(Boolean);
+
+    ordered.forEach((card) => main.appendChild(card));
+  }
+
   // Initialize when DOM is ready
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
+      enableUnifiedFeaturesAndOrder();
       initSccStatus();
       refreshSccSessionStatus();
     });
   } else {
+    enableUnifiedFeaturesAndOrder();
     initSccStatus();
     refreshSccSessionStatus();
   }
@@ -1523,8 +1663,6 @@ async function fullSccFlow() {
   }
 </script>
 
-</main>
-
 <!-- GPM XML Review Modal -->
 <div id="gpmReviewModal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(30,41,59,0.32);z-index:1000;align-items:center;justify-content:center;">
   <div style="background:white;padding:28px 32px;border-radius:14px;box-shadow:0 8px 32px rgba(0,0,0,0.18);max-width:700px;width:96vw;max-height:90vh;overflow:auto;">
@@ -1539,43 +1677,7 @@ async function fullSccFlow() {
   </div>
 </div>
 
-<!-- ADO Preview & Send Modal -->
-<div id="adoPreviewModal" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,0.45);z-index:1200;align-items:stretch;justify-content:stretch;padding:12px;box-sizing:border-box;">
-  <div style="background:white;padding:20px;border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,0.22);width:100%;height:100%;display:flex;flex-direction:column;box-sizing:border-box;min-height:0;">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:10px;">
-      <div style="font-size:1.05rem;font-weight:700;color:#0f172a;">📧 ADO Test Status Email Preview</div>
-      <button onclick="closeAdoPreviewModal()" style="background:#e5e7eb;border:none;border-radius:8px;padding:6px 12px;font-weight:700;cursor:pointer;white-space:nowrap;">✕ Close</button>
-    </div>
-    <div style="flex:1;min-height:0;overflow:hidden;border:1px solid #cbd5e1;border-radius:8px;background:#fff;margin-bottom:12px;">
-      <iframe id="adoPreviewFrame" style="width:100%;height:100%;border:none;display:block;"></iframe>
-    </div>
-    <div style="display:flex;gap:10px;align-items:center;justify-content:flex-end;padding:10px;background:#f3f4f6;border-radius:8px;">
-      <span id="adoPreviewStatus" style="margin-right:auto;font-size:0.88rem;color:#555;"></span>
-      <button onclick="openAdoEditModal()" style="background:#2563eb;color:white;border:none;border-radius:8px;padding:8px 16px;font-weight:700;cursor:pointer;white-space:nowrap;">✎ Edit Email</button>
-      <button id="adoSendBtn" onclick="sendAdoEmail()" style="background:#15803d;color:white;border:none;border-radius:8px;padding:8px 16px;font-weight:700;cursor:pointer;white-space:nowrap;">✉ Send Email</button>
-    </div>
-  </div>
-</div>
 
-<!-- ADO Edit Modal -->
-<div id="adoEditModal" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,0.45);z-index:1300;align-items:stretch;justify-content:stretch;padding:12px;box-sizing:border-box;">
-  <div style="background:white;padding:20px;border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,0.22);width:100%;height:100%;display:flex;flex-direction:column;box-sizing:border-box;min-height:0;">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:10px;">
-      <div style="font-size:1.05rem;font-weight:700;color:#0f172a;">✎ Edit Email Content</div>
-      <button onclick="closeAdoEditModal()" style="background:#e5e7eb;border:none;border-radius:8px;padding:6px 12px;font-weight:700;cursor:pointer;">✕ Close</button>
-    </div>
-    <label style="display:block;font-size:0.85rem;font-weight:700;color:#334155;margin-bottom:6px;">Subject Line</label>
-    <input id="adoEditSubject" type="text" style="width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:8px;margin-bottom:12px;font-size:0.95rem;" />
-    <label style="display:block;font-size:0.85rem;font-weight:700;color:#334155;margin-bottom:6px;">Email Content</label>
-    <div id="adoEditBody" contenteditable="true" spellcheck="false" style="width:100%;flex:1;min-height:0;padding:14px;border:1px solid #cbd5e1;border-radius:8px;background:#fff;overflow:auto;font-family:Segoe UI,Arial,sans-serif;font-size:0.95rem;line-height:1.5;margin-bottom:12px;"></div>
-    <div style="display:flex;gap:10px;align-items:center;justify-content:flex-end;padding:10px;background:#f3f4f6;border-radius:8px;">
-      <span id="adoEditStatus" style="margin-right:auto;font-size:0.88rem;color:#555;"></span>
-      <button onclick="closeAdoEditModal()" style="background:#9ca3af;color:white;border:none;border-radius:8px;padding:8px 16px;font-weight:700;cursor:pointer;">Cancel</button>
-      <button id="adoUpdateBtn" onclick="updateAndPreviewAdoEmail()" style="background:#2563eb;color:white;border:none;border-radius:8px;padding:8px 16px;font-weight:700;cursor:pointer;">✓ Update Preview</button>
-      <button id="adoSendEditedBtn" onclick="sendAdoEditedEmail()" style="background:#15803d;color:white;border:none;border-radius:8px;padding:8px 16px;font-weight:700;cursor:pointer;">✉ Send Edited</button>
-    </div>
-  </div>
-</div>
 
 <script>
 
@@ -1657,342 +1759,146 @@ function confirmAndUploadGpm() {
     });
 }
 
-// ── ADO Email Preview & Send ──────────────────────────────────────────────────
-let adoEmailCache = { subject: '', html: '' };
+  // ── ADO Status Email: Preview & Send ───────────────────────────────────
+  let isEditMode = false;
+  let originalPreviewHtml = "";
 
-function syncAdoPreviewFromEdit() {
-  const subject = document.getElementById('adoEditSubject').value || '';
-  const html = document.getElementById('adoEditBody').innerHTML || '';
-
-  adoEmailCache.subject = subject;
-  adoEmailCache.html = html;
-
-  const frame = document.getElementById('adoPreviewFrame');
-  if (frame) {
-    frame.srcdoc = html;
-  }
-}
-
-function openAdoPreviewModal(subject, html) {
-  adoEmailCache.subject = subject || '';
-  adoEmailCache.html = html || '';
-  
-  // Render email in iframe
-  const frame = document.getElementById('adoPreviewFrame');
-  frame.srcdoc = html;
-  
-  document.getElementById('adoPreviewStatus').textContent = `Ready to send. Click "✎ Edit Email" to modify, or "✉ Send Email" to send directly.`;
-  document.getElementById('adoPreviewModal').style.display = 'flex';
-}
-
-function closeAdoPreviewModal() {
-  document.getElementById('adoPreviewModal').style.display = 'none';
-}
-
-function openAdoEditModal() {
-  document.getElementById('adoEditSubject').value = adoEmailCache.subject || '';
-  document.getElementById('adoEditBody').innerHTML = adoEmailCache.html || '';
-  document.getElementById('adoEditStatus').textContent = 'Make changes to the subject or HTML, then click "✓ Update Preview" to see changes.';
-  document.getElementById('adoEditModal').style.display = 'flex';
-
-  const subjectInput = document.getElementById('adoEditSubject');
-  const bodyInput = document.getElementById('adoEditBody');
-  subjectInput.oninput = syncAdoPreviewFromEdit;
-  bodyInput.oninput = syncAdoPreviewFromEdit;
-}
-
-function closeAdoEditModal() {
-  document.getElementById('adoEditModal').style.display = 'none';
-}
-
-async function updateAndPreviewAdoEmail() {
-  const subject = document.getElementById('adoEditSubject').value || '';
-  const html = document.getElementById('adoEditBody').innerHTML || '';
-  
-  if (!html) {
-    alert('Email content cannot be empty');
-    return;
+  async function previewStatusEmail() {
+    const btn = document.getElementById("btnPreviewEmail");
+    const status = document.getElementById("emailStatus");
+    btn.disabled = true;
+    btn.textContent = "⏳ Generating preview...";
+    status.textContent = "";
+    isEditMode = false;
+    updateEditUI();
+    try {
+      const res = await fetch("/api/preview-status-email", { method: "POST" });
+      const data = await res.json();
+      if (data.ok && data.html) {
+        originalPreviewHtml = data.html;
+        const frame = document.getElementById("previewFrame");
+        frame.srcdoc = data.html;
+        const modal = document.getElementById("previewModal");
+        modal.style.display = "flex";
+        status.style.color = "#2e7d32";
+        status.textContent = "✅ Preview loaded";
+      } else {
+        status.style.color = "#d32f2f";
+        status.textContent = "❌ " + (data.error || "Preview failed");
+      }
+    } catch (err) {
+      status.style.color = "#d32f2f";
+      status.textContent = "❌ " + err.message;
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "👁 Preview Report";
+    }
   }
 
-  syncAdoPreviewFromEdit();
-  document.getElementById('adoEditStatus').textContent = '✓ Preview updated. Click "✉ Send Edited" to send or close to go back.';
-}
-
-async function sendAdoEmail() {
-  const subject = adoEmailCache.subject || '';
-  const html = adoEmailCache.html || '';
-  
-  if (!html) {
-    alert('No email content to send');
-    return;
+  function toggleEditMode() {
+    const frame = document.getElementById("previewFrame");
+    const frameDoc = frame.contentDocument || frame.contentWindow.document;
+    isEditMode = !isEditMode;
+    if (frameDoc && frameDoc.body) {
+      frameDoc.designMode = isEditMode ? "on" : "off";
+    }
+    updateEditUI();
   }
-  
-  const sendBtn = document.getElementById('adoSendBtn');
-  sendBtn.disabled = true;
-  sendBtn.textContent = '⏳ Sending...';
-  
-  document.getElementById('adoPreviewStatus').textContent = 'Sending email...';
-  
-  try {
-    console.log('[ADO] Sending email via /api/send-status-email');
-    const res = await fetch('/api/send-status-email', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ subject, html })
-    });
-    const result = await res.json();
-    
-    if (result.ok) {
-      console.log('[ADO] Email sent successfully via', result.transport);
-      document.getElementById('adoPreviewStatus').textContent = `✅ Email sent successfully,please check Inbox!`;
-      setTimeout(() => closeAdoPreviewModal(), 1500);
+
+  function updateEditUI() {
+    const btn = document.getElementById("btnToggleEdit");
+    const indicator = document.getElementById("editIndicator");
+    if (isEditMode) {
+      btn.textContent = "🔒 Lock";
+      btn.style.background = "#d32f2f";
+      indicator.style.display = "inline";
     } else {
-      console.error('[ADO] Email send failed:', result.error);
-      document.getElementById('adoPreviewStatus').textContent = `❌ ${result.error || 'Failed to send email'}`;
+      btn.textContent = "✏ Edit";
+      btn.style.background = "#FF8F00";
+      indicator.style.display = "none";
     }
-  } catch (e) {
-    console.error('[ADO] Email send error:', e.message, e);
-    document.getElementById('adoPreviewStatus').textContent = `❌ ${e.message}`;
-  } finally {
-    sendBtn.disabled = false;
-    sendBtn.textContent = '✉ Send Email';
   }
-}
 
-async function previewAdoEmail() {
-  const previewBtn = document.querySelector('button[onclick="previewAdoEmail()"]');
-  previewBtn.disabled = true;
-  previewBtn.textContent = '⏳ Loading...';
-  
-  try {
-    console.log('[ADO] Fetching email preview...');
-    const res = await fetch('/api/preview-status-email', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({})
-    });
-    const result = await res.json();
-    
-    if (result.ok) {
-      console.log('[ADO] Preview loaded successfully');
-      openAdoPreviewModal(result.subject, result.html);
-    } else {
-      alert(`❌ Preview failed: ${result.error || 'Unknown error'}`);
+  function getPreviewHtml() {
+    const frame = document.getElementById("previewFrame");
+    const frameDoc = frame.contentDocument || frame.contentWindow.document;
+    if (frameDoc) {
+      // Temporarily turn off designMode to get clean HTML
+      const wasEditing = frameDoc.designMode === "on";
+      if (wasEditing) frameDoc.designMode = "off";
+      const html = "<!DOCTYPE html>\n<html>\n" + frameDoc.documentElement.innerHTML + "\n</html>";
+      if (wasEditing) frameDoc.designMode = "on";
+      return html;
     }
-  } catch (e) {
-    console.error('[ADO] Preview error:', e);
-    alert(`❌ Preview error: ${e.message}`);
-  } finally {
-    previewBtn.disabled = false;
-    previewBtn.textContent = '👁️ Preview Report';
+    return originalPreviewHtml;
   }
-}
 
-async function previewAndSendAdoEmail() {
-  const sendBtn = document.querySelector('button[onclick="previewAndSendAdoEmail()"]');
-  const statusDiv = document.getElementById('adoDirectSendStatus');
-  console.log('[ADO] previewAndSendAdoEmail called, statusDiv:', statusDiv);
-  
-  sendBtn.disabled = true;
-  sendBtn.textContent = '⏳ Sending...';
-  statusDiv.textContent = 'Sending email...';
-  statusDiv.style.color = '#2563eb';
-  statusDiv.style.fontWeight = 'bold';
-  
-  try {
-    console.log('[ADO] Fetching email to send...');
-    const res = await fetch('/api/preview-status-email', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({})
-    });
-    const result = await res.json();
-    console.log('[ADO] Preview response:', result);
-    
-    if (!result.ok) {
-      statusDiv.textContent = `❌ Failed to fetch email: ${result.error || 'Unknown error'}`;
-      statusDiv.style.color = '#dc2626';
-      return;
+  async function sendStatusEmail() {
+    const btn = document.getElementById("btnSendEmail");
+    const status = document.getElementById("emailStatus");
+    btn.disabled = true;
+    btn.textContent = "⏳ Sending...";
+    status.textContent = "";
+    try {
+      const res = await fetch("/api/send-status-email", { method: "POST" });
+      const data = await res.json();
+      if (data.ok) {
+        status.style.color = "#2e7d32";
+        status.textContent = "✅ " + data.message;
+      } else {
+        status.style.color = "#d32f2f";
+        status.textContent = "❌ " + (data.error || "Failed to send");
+      }
+    } catch (err) {
+      status.style.color = "#d32f2f";
+      status.textContent = "❌ " + err.message;
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "✉ Send Email";
     }
-    
-    console.log('[ADO] Sending email via /api/send-status-email');
-    const sendRes = await fetch('/api/send-status-email', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ subject: result.subject, html: result.html })
-    });
-    const sendResult = await sendRes.json();
-    console.log('[ADO] Send response:', sendResult);
-    
-    if (sendResult.ok) {
-      console.log('[ADO] Email sent successfully via', sendResult.transport);
-      statusDiv.textContent = `✅ Email sent successfully,please check Inbox!`;
-      statusDiv.style.color = '#16a34a';
-      statusDiv.style.fontSize = '0.95rem';
-    } else {
-      console.log('[ADO] Send failed:', sendResult.error);
-      statusDiv.textContent = `❌ Send failed: ${sendResult.error || 'Unknown error'}`;
-      statusDiv.style.color = '#dc2626';
-    }
-  } catch (e) {
-    console.error('[ADO] Send error:', e);
-    statusDiv.textContent = `❌ Error: ${e.message}`;
-    statusDiv.style.color = '#dc2626';
-  } finally {
-    sendBtn.disabled = false;
-    sendBtn.textContent = '✉️ Send Email';
   }
-}
 
-async function sendAdoEditedEmail() {
-  const subject = document.getElementById('adoEditSubject').value || '';
-  const html = document.getElementById('adoEditBody').innerHTML || '';
-  
-  if (!html) {
-    alert('Email content cannot be empty');
-    return;
-  }
-  
-  const sendBtn = document.getElementById('adoSendEditedBtn');
-  sendBtn.disabled = true;
-  sendBtn.textContent = '⏳ Sending...';
-  
-  document.getElementById('adoEditStatus').textContent = 'Sending email...';
-  
-  try {
-    console.log('[ADO] Sending edited email via /api/send-status-email');
-    const res = await fetch('/api/send-status-email', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ subject, html })
-    });
-    const result = await res.json();
-    
-    if (result.ok) {
-      console.log('[ADO] Edited email sent successfully via', result.transport);
-      document.getElementById('adoEditStatus').textContent = `✅ Email sent successfully via ${result.transport || 'Outlook'}!`;
-      setTimeout(() => {
-        closeAdoEditModal();
-        closeAdoPreviewModal();
-      }, 1500);
-    } else {
-      console.error('[ADO] Edited email send failed:', result.error);
-      document.getElementById('adoEditStatus').textContent = `❌ ${result.error || 'Failed to send email'}`;
-    }
-  } catch (e) {
-    console.error('[ADO] Edited email send error:', e.message, e);
-    document.getElementById('adoEditStatus').textContent = `❌ ${e.message}`;
-  } finally {
-    sendBtn.disabled = false;
-    sendBtn.textContent = '✉ Send Edited';
-  }
-}
-
-async function initializeAdoStatus() {
-  try {
-    const response = await fetch('/api/ado-status');
-    const data = await response.json();
-    console.log('[ADO] Status check:', data);
-    
-    const adoTitle = Array.from(document.querySelectorAll('.card-title')).find((el) =>
-      (el.textContent || '').toLowerCase().includes('ado test status email')
-    );
-    const adoCard = adoTitle ? adoTitle.closest('.card') : null;
-
-    if (!adoCard) {
-      console.warn('[ADO] Email card not found');
-      return;
-    }
-    
-    if (data.available) {
-      console.log('[ADO] Email feature is available, enabling...');
-      // Enable the ADO card
-      adoCard.classList.remove('local-only-card');
-      adoCard.style.opacity = '1';
-      adoCard.style.pointerEvents = 'auto';
-      adoCard.style.userSelect = 'auto';
-      
-      // Remove local-only badge
-      const badge = adoCard.querySelector('.local-only-badge');
-      if (badge) badge.style.display = 'none';
-      
-      // Enable buttons
-      const buttons = adoCard.querySelectorAll('button');
-      console.log(`[ADO] Found ${buttons.length} buttons to enable`);
-      buttons.forEach((btn, idx) => {
-        btn.disabled = false;
-        btn.removeAttribute('disabled');
-        btn.style.opacity = '1';
-        btn.style.cursor = 'pointer';
-        console.log(`[ADO] Enabled button ${idx}: ${btn.textContent}`);
+  async function sendFromPreview() {
+    const editedHtml = getPreviewHtml();
+    closePreview();
+    const btn = document.getElementById("btnSendEmail");
+    const status = document.getElementById("emailStatus");
+    btn.disabled = true;
+    btn.textContent = "⏳ Sending...";
+    status.textContent = "";
+    try {
+      const res = await fetch("/api/send-edited-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ html: editedHtml })
       });
-      
-      // Add event listeners to buttons
-      const previewBtn = Array.from(buttons).find(b => b.textContent.includes('Preview'));
-      const sendBtn = Array.from(buttons).find(b => b.textContent.includes('Send'));
-      
-      if (previewBtn) {
-        previewBtn.onclick = async () => {
-          previewBtn.disabled = true;
-          previewBtn.textContent = '⏳ Loading...';
-          try {
-            const res = await fetch('/api/preview-status-email', { method: 'POST' });
-            const result = await res.json();
-            if (result.ok) {
-              openAdoPreviewModal(result.subject, result.html);
-            } else {
-              alert('❌ Error: ' + (result.error || 'Failed to load preview'));
-            }
-          } catch (e) {
-            alert('❌ Error: ' + e.message);
-          } finally {
-            previewBtn.disabled = false;
-            previewBtn.textContent = '👁 Preview Report';
-          }
-        };
+      const data = await res.json();
+      if (data.ok) {
+        status.style.color = "#2e7d32";
+        status.textContent = "✅ " + data.message;
+      } else {
+        status.style.color = "#d32f2f";
+        status.textContent = "❌ " + (data.error || "Failed to send");
       }
-      
-      if (sendBtn) {
-        sendBtn.onclick = async () => {
-          sendBtn.disabled = true;
-          sendBtn.textContent = '⏳ Sending...';
-          try {
-            const res = await fetch('/api/preview-status-email', { method: 'POST' });
-            const result = await res.json();
-            if (result.ok) {
-              adoEmailCache.subject = result.subject;
-              adoEmailCache.html = result.html;
-              await sendAdoEmail();
-            } else {
-              alert('❌ Error: ' + (result.error || 'Failed to load email'));
-            }
-          } catch (e) {
-            alert('❌ Error: ' + e.message);
-          } finally {
-            sendBtn.disabled = false;
-            sendBtn.textContent = '✉ Send Email';
-          }
-        };
-      }
-    } else {
-      console.error('[ADO] Email feature is NOT available. Issues:', data.issues);
-      const issueText = (data.issues || []).join('\n- ');
-      const description = adoCard.querySelector('p');
-      if (description && issueText) {
-        description.textContent = `ADO setup required. Issues:\n- ${data.issues.join('\n- ')}`;
-      }
+    } catch (err) {
+      status.style.color = "#d32f2f";
+      status.textContent = "❌ " + err.message;
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "✉ Send Email";
     }
-  } catch (e) {
-    console.error('[ADO] Failed to check ADO status:', e.message, e);
   }
-}
 
-// Initialize on page load
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initializeAdoStatus);
-} else {
-  initializeAdoStatus();
-}
+  function closePreview() {
+    document.getElementById("previewModal").style.display = "none";
+  }
+
+  // Close modal on Escape key
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") closePreview();
+  });
+
+  
 </script>
 </body>
 </html>

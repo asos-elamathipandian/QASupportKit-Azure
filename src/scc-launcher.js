@@ -42,7 +42,7 @@ const SCC_CREDS = loadSccCredentials();
 const SCC_USERNAME = SCC_CREDS.username;
 const SCC_EMAIL = SCC_CREDS.email;
 const SCC_PASSWORD = SCC_CREDS.password;
-const SCC_HEADLESS = String(process.env.SCC_HEADLESS || 'false').toLowerCase() === 'true';
+const SCC_HEADLESS = String(process.env.SCC_HEADLESS || 'true').toLowerCase() === 'true';
 const SCC_SESSION_STATE_FILE = process.env.SCC_SESSION_STATE_FILE || path.resolve(process.cwd(), 'state', 'scc-storage-state.json');
 const SCC_MENU_TOGGLE_SELECTOR = '.eto-header__menu-toggle';
 const SCC_SESSION_MAX_AGE_MS = Number(process.env.SCC_SESSION_MAX_AGE_MS || 30 * 60 * 1000);
@@ -54,9 +54,11 @@ function getWorkingAutomationPaths() {
     asnLookupSpec: path.join(LOCAL_SCC_COPY_DIR, 'tests', 'ASNLookup.spec.js'),
     singleBookingSpec: path.join(LOCAL_SCC_COPY_DIR, 'tests', 'SingleASNBookingMultipleTimes.spec.js'),
     multiBookingSpec: path.join(LOCAL_SCC_COPY_DIR, 'tests', 'MultiASNSingleBooking.spec.js'),
+    fullFlowSpec: path.join(LOCAL_SCC_COPY_DIR, 'tests', 'FullSCCFlow.spec.js'),
     asnsFile: path.join(LOCAL_SCC_COPY_DIR, 'tests', 'asns.txt'),
     asnLookupResults: path.join(LOCAL_SCC_COPY_DIR, 'asn-lookup-results.json'),
     bookingResults: path.join(LOCAL_SCC_COPY_DIR, 'booking-results.json'),
+    fullFlowResults: path.join(LOCAL_SCC_COPY_DIR, 'full-scc-flow-results.json'),
   };
 }
 
@@ -71,8 +73,9 @@ async function runWorkingSpec(specPath, envVars = {}, timeoutMs = 300000) {
     ? '.\\node_modules\\.bin\\playwright.cmd'
     : './node_modules/.bin/playwright';
   
-  // Always run headed for local interactive troubleshooting.
-  const headedArg = '--headed';
+  // Default to headless to match migrated/non-interactive flow.
+  // Set SCC_HEADLESS=false to opt in to visible browser for debugging.
+  const headedArg = SCC_HEADLESS ? '' : '--headed';
 
   // Build command string with environment variables set inline for Windows
   let cmdString;
@@ -81,13 +84,13 @@ async function runWorkingSpec(specPath, envVars = {}, timeoutMs = 300000) {
     const envStr = Object.entries(envVars)
       .map(([k, v]) => `set ${k}=${v}`)
       .join(' & ');
-    cmdString = envStr ? `${envStr} & ${playwrightCmd} test ${relativeSpecPath} ${headedArg}` : `${playwrightCmd} test ${relativeSpecPath} ${headedArg}`;
+    cmdString = envStr ? `${envStr} & ${playwrightCmd} test ${relativeSpecPath} ${headedArg}`.trim() : `${playwrightCmd} test ${relativeSpecPath} ${headedArg}`.trim();
   } else {
     // On Unix-like systems, use env var prefix
     const envStr = Object.entries(envVars)
       .map(([k, v]) => `${k}=${v}`)
       .join(' ');
-    cmdString = envStr ? `${envStr} ${playwrightCmd} test ${relativeSpecPath} ${headedArg}` : `${playwrightCmd} test ${relativeSpecPath} ${headedArg}`;
+    cmdString = envStr ? `${envStr} ${playwrightCmd} test ${relativeSpecPath} ${headedArg}`.trim() : `${playwrightCmd} test ${relativeSpecPath} ${headedArg}`.trim();
   }
   
   console.log(`[SPEC] Executing in ${root}: ${cmdString.substring(0, 100)}...`);
@@ -414,6 +417,40 @@ async function createMultiAsnBooking(asnList) {
   }
 }
 
+/**
+ * Full SCC flow (lookup + booking + submit/approve) via working spec
+ */
+async function createFullSccFlow(asnList) {
+  if (!Array.isArray(asnList)) {
+    asnList = [asnList];
+  }
+
+  const paths = getWorkingAutomationPaths();
+  const asnString = asnList.join(',');
+  console.log(`[SCC] Running working full-flow spec for ASNs: ${asnString}`);
+
+  try {
+    await runWorkingSpec(paths.fullFlowSpec, {
+      FULL_FLOW_ASN_VALUE: asnString,
+    }, 900000);
+
+    const result = readJsonIfExists(paths.fullFlowResults) || {
+      ok: true,
+      asns: asnString,
+      details: [],
+    };
+
+    return {
+      success: true,
+      asns: asnList,
+      result,
+      message: 'Full SCC flow completed via working automation project',
+    };
+  } catch (err) {
+    throw new Error(`Full SCC flow failed via working automation: ${err.message}`);
+  }
+}
+
 module.exports = {
   isCloudRuntime,
   getSccAvailability,
@@ -423,4 +460,5 @@ module.exports = {
   lookupAsn,
   createSingleAsnBooking,
   createMultiAsnBooking,
+  createFullSccFlow,
 };

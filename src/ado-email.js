@@ -663,8 +663,40 @@ async function sendAdoReportEmail(options = {}) {
   }
 }
 
+async function sendEditedAdoReportEmail(options = {}) {
+  const { html, subjectOverride } = options;
+  if (!html || !String(html).trim()) {
+    throw new Error('Edited email HTML is required');
+  }
+
+  const availability = getAdoAvailability();
+  if (!availability.available) {
+    throw new Error(`ADO email is not configured: ${availability.issues.join('; ')}`);
+  }
+
+  const reportsDir = path.join(__dirname, '../RaiseADOBugs/reports');
+  if (!fs.existsSync(reportsDir)) {
+    fs.mkdirSync(reportsDir, { recursive: true });
+  }
+
+  const stamp = new Date().toISOString().replace(/[-:TZ.]/g, '').slice(0, 14);
+  const savedPath = path.join(reportsDir, `ADO_Report_${stamp}_edited.html`);
+  fs.writeFileSync(savedPath, html, 'utf8');
+
+  const dateLabel = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+  const subjectToSend = subjectOverride || `${subject} - ${dateLabel}`;
+
+  const result = await sendAdoReportEmail({ htmlOverride: html, subjectOverride: subjectToSend });
+  return {
+    transport: result.transport,
+    savedPath,
+    subject: subjectToSend,
+  };
+}
+
 module.exports = { 
   sendAdoReportEmail, 
   getAdoAvailability, 
-  generateAdoReportHtml 
+  generateAdoReportHtml,
+  sendEditedAdoReportEmail,
 };

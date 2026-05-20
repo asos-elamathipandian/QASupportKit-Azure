@@ -35,6 +35,7 @@ const {
   lookupAsn,
   createSingleAsnBooking,
   createMultiAsnBooking,
+  createFullSccFlow,
 } = require("./scc-launcher");
 
 loadEnvironment();
@@ -792,10 +793,19 @@ app.post("/api/scc/booking/create-single", async (req, res) => {
       return res.status(503).json({ ok: false, error: availability.issues[0] || 'SCC unavailable' });
     }
 
-    return res.status(501).json({
-      ok: false,
-      error: 'Single ASN booking is temporarily disabled on localhost pending Playwright automation stabilization. Available: ASN lookup. Coming soon: booking workflows.'
-    });
+    const { asn } = req.body;
+    if (!asn || !String(asn).trim()) {
+      return res.status(400).json({ ok: false, error: 'asn is required' });
+    }
+
+    const asnList = String(asn).split(',').map(a => a.trim()).filter(a => a);
+    if (asnList.length === 0) {
+      return res.status(400).json({ ok: false, error: 'valid ASN list required' });
+    }
+
+    console.log(`[API] Single ASN booking requested for: ${asnList.join(',')}`);
+    const result = await createSingleAsnBooking(asnList);
+    res.json({ ok: true, result });
   } catch (err) {
     console.error('[API] Single ASN Booking error:', err.message);
     res.status(500).json({ ok: false, error: err.message });
@@ -810,46 +820,105 @@ app.post("/api/scc/booking/create-multi", async (req, res) => {
       return res.status(503).json({ ok: false, error: availability.issues[0] || 'SCC unavailable' });
     }
 
-    return res.status(501).json({
-      ok: false,
-      error: 'Multi-ASN booking is temporarily disabled on localhost pending Playwright automation stabilization. Available: ASN lookup. Coming soon: booking workflows.'
-    });
+    const { asn } = req.body;
+    if (!asn || !String(asn).trim()) {
+      return res.status(400).json({ ok: false, error: 'asn is required' });
+    }
+
+    const asnList = String(asn).split(',').map(a => a.trim()).filter(a => a);
+    if (asnList.length === 0) {
+      return res.status(400).json({ ok: false, error: 'valid ASN list required' });
+    }
+
+    console.log(`[API] Multi-ASN booking requested for: ${asnList.join(',')}`);
+    const result = await createMultiAsnBooking(asnList);
+    res.json({ ok: true, result });
   } catch (err) {
     console.error('[API] Multi-ASN Booking error:', err.message);
     res.status(500).json({ ok: false, error: err.message });
   }
 });
 
-// --- Legacy placeholder endpoints (kept for backward compatibility) ---
-// These will be removed in a future version
-app.post("/api/asn-lookup", (req, res) => {
-  const { asn } = req.body;
-  // TODO: Implement real cloud lookup logic here
-  if (!asn || !asn.trim()) return res.status(400).json({ ok: false, error: "asn is required" });
-  res.json({ ok: true, result: `Lookup for ASN(s): ${asn} (cloud placeholder)` });
+// --- Backward-compatible SCC aliases ---
+app.post("/api/asn-lookup", async (req, res) => {
+  try {
+    const { asn } = req.body;
+    if (!asn || !String(asn).trim()) return res.status(400).json({ ok: false, error: 'asn is required' });
+
+    const availability = getSccAvailability();
+    if (!availability.available) {
+      return res.status(503).json({ ok: false, error: availability.issues[0] || 'SCC unavailable' });
+    }
+
+    const asnList = String(asn).split(',').map(a => a.trim()).filter(a => a);
+    const result = await lookupAsn(asnList);
+    res.json({ ok: true, result });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
 });
 
-// --- Cloud-enabled Carrier Booking ---
-app.post("/api/booking/create-single", (req, res) => {
-  const { asn } = req.body;
-  // TODO: Implement real cloud booking logic here
-  if (!asn || !asn.trim()) return res.status(400).json({ ok: false, error: "asn is required" });
-  res.json({ ok: true, result: `Single booking created for ASN(s): ${asn} (cloud placeholder)` });
+app.post("/api/booking/create-single", async (req, res) => {
+  try {
+    const { asn } = req.body;
+    if (!asn || !String(asn).trim()) return res.status(400).json({ ok: false, error: 'asn is required' });
+
+    const availability = getSccAvailability();
+    if (!availability.available) {
+      return res.status(503).json({ ok: false, error: availability.issues[0] || 'SCC unavailable' });
+    }
+
+    const asnList = String(asn).split(',').map(a => a.trim()).filter(a => a);
+    const result = await createSingleAsnBooking(asnList);
+    res.json({ ok: true, result });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
 });
 
-app.post("/api/booking/create-multi", (req, res) => {
-  const { asn } = req.body;
-  // TODO: Implement real cloud multi-booking logic here
-  if (!asn || !asn.trim()) return res.status(400).json({ ok: false, error: "asn is required" });
-  res.json({ ok: true, result: `Multi-ASN booking created for ASN(s): ${asn} (cloud placeholder)` });
+app.post("/api/booking/create-multi", async (req, res) => {
+  try {
+    const { asn } = req.body;
+    if (!asn || !String(asn).trim()) return res.status(400).json({ ok: false, error: 'asn is required' });
+
+    const availability = getSccAvailability();
+    if (!availability.available) {
+      return res.status(503).json({ ok: false, error: availability.issues[0] || 'SCC unavailable' });
+    }
+
+    const asnList = String(asn).split(',').map(a => a.trim()).filter(a => a);
+    const result = await createMultiAsnBooking(asnList);
+    res.json({ ok: true, result });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
 });
 
-// --- Cloud-enabled Full SCC Flow ---
-app.post("/api/full-scc-flow", (req, res) => {
-  const { asn } = req.body;
-  // TODO: Implement real cloud full SCC flow logic here
-  if (!asn || !asn.trim()) return res.status(400).json({ ok: false, error: "asn is required" });
-  res.json({ ok: true, result: `Full SCC flow completed for ASN(s): ${asn} (cloud placeholder)` });
+// --- Full SCC Flow (localhost automation) ---
+app.post("/api/full-scc-flow", async (req, res) => {
+  try {
+    const availability = getSccAvailability();
+    if (!availability.available) {
+      return res.status(503).json({ ok: false, error: availability.issues[0] || 'SCC unavailable' });
+    }
+
+    const { asn } = req.body;
+    if (!asn || !String(asn).trim()) {
+      return res.status(400).json({ ok: false, error: 'asn is required' });
+    }
+
+    const asnList = String(asn).split(',').map(a => a.trim()).filter(a => a);
+    if (asnList.length === 0) {
+      return res.status(400).json({ ok: false, error: 'valid ASN list required' });
+    }
+
+    console.log(`[API] Full SCC flow requested for: ${asnList.join(',')}`);
+    const result = await createFullSccFlow(asnList);
+    res.json({ ok: true, result });
+  } catch (err) {
+    console.error('[API] Full SCC Flow error:', err.message);
+    res.status(500).json({ ok: false, error: err.message });
+  }
 });
 
 app.get("/api/progress", (req, res) => {
@@ -861,7 +930,7 @@ app.post("/api/cancel", (req, res) => {
 });
 
 // ADO Email Report (enabled when config and env are valid)
-const { sendAdoReportEmail, getAdoAvailability, generateAdoReportHtml } = require("./ado-email");
+const { sendAdoReportEmail, sendEditedAdoReportEmail, getAdoAvailability, generateAdoReportHtml } = require("./ado-email");
 
 app.get("/api/ado-status", (req, res) => {
   res.json(getAdoAvailability());
@@ -881,6 +950,22 @@ app.post("/api/send-status-email", async (req, res) => {
     const { html, subject } = req.body || {};
     const result = await sendAdoReportEmail({ htmlOverride: html, subjectOverride: subject });
     res.json({ ok: true, message: "ADO status email sent.", transport: result.transport });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+app.post("/api/send-edited-email", async (req, res) => {
+  try {
+    const { html, subject } = req.body || {};
+    const result = await sendEditedAdoReportEmail({ html, subjectOverride: subject });
+    res.json({
+      ok: true,
+      message: "Edited ADO status email sent.",
+      transport: result.transport,
+      savedPath: result.savedPath,
+      subject: result.subject,
+    });
   } catch (e) {
     res.status(500).json({ ok: false, error: e.message });
   }
