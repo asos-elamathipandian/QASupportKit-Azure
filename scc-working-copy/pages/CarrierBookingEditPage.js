@@ -36,10 +36,11 @@ class CarrierBookingEditPage {
 
         // Fill cartons for all rows — no Apply All per row (avoid mid-fill navigation)
         for (let i = 0; i < recordCount; i++) {
-            await this.safeClick(this.frame.locator(this.numOfCartons).nth(i));
+            const cartonCell = this.frame.locator(this.numOfCartons).nth(i);
+            await this.safeClick(cartonCell);
             await new Promise(r => setTimeout(r, 400));
-            // Use nth(i) so each row's input is targeted individually
-            await this.frame.getByPlaceholder('#,##').nth(i).fill('1').catch(async () => {
+            // Target the input inside this specific cell (only one inline editor opens at a time)
+            await cartonCell.locator('input').first().fill('1').catch(async () => {
                 await this.frame.getByPlaceholder('#,##').first().fill('1');
             });
         }
