@@ -111,6 +111,7 @@ test('Single ASN Booking - Create separate booking for each ASN', async ({ page 
 
     // Navigate to Carrier Booking and edit
     await navigateToCarrierBooking(scchomePage, sccviewlistPage, listenDialog);
+    let submittedVbRef = null;
     await retryStep(`edit booking for ASN ${currentASN}`, async () => {
       await carrierbookingPage.expandandClearFilter();
       await carrierbookingPage.searchWithasnAndstatus(currentASN);
@@ -118,14 +119,19 @@ test('Single ASN Booking - Create separate booking for each ASN', async ({ page 
       await carrierbookingeditPage.editCarrierBookingDetails();
       await carrierbookingeditPage.editCarrierHeaderDetails();
       await acceptDialogIfPresent(listenDialog);
-      await carrierbookingeditPage.saveSubmitAfterEdit();
+      submittedVbRef = await carrierbookingeditPage.saveSubmitAfterEdit();
       await acceptDialogIfPresent(listenDialog);
     }, 2, 2000);
 
-    // Fetch booking outcome
+    // Fetch booking outcome — target the specific VBRef we just submitted
     const { vbReference, bookingStatus } = await retryStep(`fetch outcome for ASN ${currentASN}`, async () => {
       await carrierbookingPage.expandandClearFilter();
       await carrierbookingPage.searchWithAsn(currentASN);
+      if (submittedVbRef) {
+        await carrierbookingPage.waitForGridToBeReady();
+        const status = await carrierbookingPage.getBookingStatus(submittedVbRef, { waitForNonDraft: true });
+        return { vbReference: submittedVbRef, bookingStatus: status };
+      }
       return await carrierbookingPage.getActiveBookingResult({ waitForNonDraft: true });
     }, 3, 2000);
 

@@ -68,10 +68,14 @@ class CarrierBookingEditPage {
         await this.safeClick(this.frame.getByRole('button', this.saveAfterEdit));
         await this.waitForGridToBeReady();
         await this.frame.locator(this.selectEditedBookingResult).check();
+        // Capture the VB reference of the booking we are about to submit
+        const vbReference = await this.frame.locator('[title*="VB-000"]').first()
+            .textContent({ timeout: 5000 }).then(t => t.trim()).catch(() => null);
         await this.safeClick(this.frame.getByRole('button', this.submitBookingAfterEdit));
         // Wait for SCC to process the submission — overlay may appear briefly then clear
         await this.frame.locator(this.loadingOverlay).waitFor({ state: 'visible', timeout: 5000 }).catch(() => {});
         await this.waitForGridToBeReady();
+        return vbReference;
     }
 }
 module.exports = { CarrierBookingEditPage }

@@ -61,7 +61,8 @@ class CarrierBookingPage {
     }
 
     // Returns { vbReference, bookingStatus } for the first active (non-cancelled) booking row.
-    // Retries up to 4 × 2 s when waitForNonDraft is true so SCC has time to flip Draft→Submitted.
+    // When waitForNonDraft:true, scans ALL rows for a Submitted/Approved booking first;
+    // only retries (up to 4×2s) when every active row is still Draft.
     async getActiveBookingResult({ waitForNonDraft = false } = {}) {
         const maxAttempts = waitForNonDraft ? 4 : 1;
         for (let attempt = 1; attempt <= maxAttempts; attempt++) {
@@ -69,6 +70,7 @@ class CarrierBookingPage {
             const rows = this.frame.locator('#resultTable .ui-grid-body-row');
             await rows.first().waitFor({ state: 'visible', timeout: 10000 }).catch(() => {});
             const rowCount = await rows.count();
+            let firstDraftResult = null; // best fallback if no non-Draft row is found
             for (let i = 0; i < rowCount; i++) {
                 const row = rows.nth(i);
                 const statusCell = row.locator('[id^="resultfield_appvbStatus"]');
@@ -81,13 +83,18 @@ class CarrierBookingPage {
                 const vbReference = (await vbCell.first().textContent({ timeout: 2000 }).catch(() => '')).trim();
                 if (!vbReference) continue;
                 if (waitForNonDraft && /^draft$/i.test(status)) {
-                    console.log(`[getActiveBookingResult] ${vbReference} is still Draft on attempt ${attempt}, waiting 2s…`);
-                    break; // break inner loop to retry outer
+                    // Keep this as fallback but keep scanning — a Submitted row may be further down
+                    if (!firstDraftResult) firstDraftResult = { vbReference, bookingStatus: status };
+                    continue;
                 }
                 return { vbReference, bookingStatus: status };
             }
-            if (attempt < maxAttempts) {
+            // All active rows are still Draft — wait and retry
+            if (firstDraftResult && attempt < maxAttempts) {
+                console.log(`[getActiveBookingResult] All active rows are Draft (e.g. ${firstDraftResult.vbReference}), waiting 2s… (attempt ${attempt}/${maxAttempts})`);
                 await new Promise(resolve => setTimeout(resolve, 2000));
+            } else if (firstDraftResult) {
+                return firstDraftResult; // gave up waiting, return best available
             }
         }
         // Fallback: return first row regardless of status
