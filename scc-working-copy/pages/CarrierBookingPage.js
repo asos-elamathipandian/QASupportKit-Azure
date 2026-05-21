@@ -16,7 +16,7 @@ class CarrierBookingPage {
     }
 
     async waitForGridToBeReady() {
-        await this.frame.locator(this.loadingOverlay).waitFor({ state: 'hidden', timeout: 15000 });
+        await this.frame.locator(this.loadingOverlay).waitFor({ state: 'hidden', timeout: 60000 });
     }
 
     async expandandClearFilter() {
@@ -159,7 +159,8 @@ class CarrierBookingPage {
         await selectAll.waitFor({ state: 'visible', timeout: 15000 });
 
         for (let attempt = 1; attempt <= 8; attempt += 1) {
-            await this.waitForGridToBeReady();
+            // Short overlay check inside loop — page is already loaded, just polling for button state
+            await this.frame.locator(this.loadingOverlay).waitFor({ state: 'hidden', timeout: 10000 }).catch(() => {});
 
             // Ensure at least one row is selected before trying Edit.
             await selectAll.check({ force: true }).catch(async () => {
@@ -172,6 +173,8 @@ class CarrierBookingPage {
 
             if (!isDisabled) {
                 await editButton.click();
+                // Wait for the edit form to finish loading before returning
+                await this.waitForGridToBeReady();
                 return;
             }
 

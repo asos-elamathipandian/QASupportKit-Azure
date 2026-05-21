@@ -375,7 +375,10 @@ async function lookupAsn(asnList, options = {}) {
     if (onStep) onStep('Playwright test completed, reading results\u2026');
     const result = readJsonIfExists(paths.asnLookupResults);
     const matchCount = Number(result?.totalRecords || 0);
-    const found = matchCount > 0;
+    const perAsn = result?.perAsn || {};
+    // Use per-ASN match data when available; fall back to totalRecords only if perAsn is empty
+    const anyFound = asnList.some(asn => perAsn[asn]?.found === true);
+    const found = Object.keys(perAsn).length > 0 ? anyFound : matchCount > 0;
     if (onStep) onStep(found ? `\u2705 Found ${matchCount} record${matchCount !== 1 ? 's' : ''}` : '\u26a0\ufe0f ASN not found in SCC');
 
     return {
@@ -410,7 +413,7 @@ async function createSingleAsnBooking(asnList, options = {}) {
   if (onStep) onStep('Launching Playwright browser\u2026');
 
   try {
-    await runWorkingSpec(paths.singleBookingSpec, {}, 600000, options);
+    await runWorkingSpec(paths.singleBookingSpec, {}, 1200000, options);
 
     if (onStep) onStep('Playwright test completed, reading booking results\u2026');
     const result = readJsonIfExists(paths.bookingResults) || [];

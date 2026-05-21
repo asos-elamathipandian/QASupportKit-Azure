@@ -14,7 +14,7 @@ class OrderSearchPage {
     }
 
     async waitForGridToBeReady() {
-        await this.frame.locator(this.loadingOverlay).waitFor({ state: 'hidden', timeout: 15000 });
+        await this.frame.locator(this.loadingOverlay).waitFor({ state: 'hidden', timeout: 60000 });
     }
 
     async clearFilter() {
@@ -44,7 +44,8 @@ class OrderSearchPage {
         await selectAll.waitFor({ state: 'visible', timeout: 15000 });
 
         for (let attempt = 1; attempt <= 5; attempt += 1) {
-            await this.waitForGridToBeReady();
+            // Short overlay check inside loop — page is already loaded, just polling for interactivity
+            await this.frame.locator(this.loadingOverlay).waitFor({ state: 'hidden', timeout: 10000 }).catch(() => {});
 
             try {
                 await selectAll.check({ timeout: 3000 });

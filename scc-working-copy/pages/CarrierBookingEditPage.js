@@ -1,6 +1,7 @@
 class CarrierBookingEditPage {
-    constructor(frame) {
+    constructor(frame, page = null) {
         this.frame = frame;
+        this.page = page;
         this.loadingOverlay = '#loading.ui-loading-overlay';
         this.editrecordRows = '[id^="resultfield_appvbitemNoOfCarton_APP_PO--"]';
         this.numOfCartons = '[id^="resultfield_appvbitemNoOfCarton_APP_PO--"]';
@@ -20,7 +21,7 @@ class CarrierBookingEditPage {
     }
 
     async waitForGridToBeReady() {
-        await this.frame.locator(this.loadingOverlay).waitFor({ state: 'hidden', timeout: 15000 });
+        await this.frame.locator(this.loadingOverlay).waitFor({ state: 'hidden', timeout: 60000 });
     }
 
     async safeClick(locator) {
@@ -32,26 +33,46 @@ class CarrierBookingEditPage {
     }
 
     async editCarrierBookingDetails() {
+        // Ensure the outer page has finished any navigation before touching iframe content.
+        // This prevents 'Target page, context or browser has been closed' on locator.fill.
+        if (this.page) await this.page.waitForLoadState('domcontentloaded').catch(() => {});
+        // Ensure the edit form has fully loaded before interacting with inline editors
+        await this.waitForGridToBeReady();
+        // Wait for the first editable row to be present and visible
+        await this.frame.locator(this.editrecordRows).first().waitFor({ state: 'visible', timeout: 30000 });
         const recordCount = await this.frame.locator(this.editrecordRows).count();
 
-        // Fill cartons for all rows — no Apply All per row (avoid mid-fill navigation)
+        // Fill cartons for all rows.
+        // SCC's inline editor input is NOT a DOM child of the resultfield_ cell — it appears
+        // as a sibling/overlay. After safeClick the input is already focused, so use
+        // keyboard to clear + type, which works regardless of DOM structure.
         for (let i = 0; i < recordCount; i++) {
             const cartonCell = this.frame.locator(this.numOfCartons).nth(i);
             await this.safeClick(cartonCell);
-            await new Promise(r => setTimeout(r, 400));
-            // Target the input inside this specific cell (only one inline editor opens at a time)
-            await cartonCell.locator('input').first().fill('1').catch(async () => {
-                await this.frame.getByPlaceholder('#,##').first().fill('1');
-            });
+            await new Promise(r => setTimeout(r, 500));
+            if (this.page) {
+                await this.page.keyboard.press('Control+a');
+                await this.page.keyboard.type('1');
+            } else {
+                // Fallback when page not available: fill directly on the resultfield_ element
+                await cartonCell.fill('1').catch(async () => {
+                    await this.frame.getByPlaceholder('#,##0').first().fill('1');
+                });
+            }
         }
 
         // Fill weights for all rows — no Apply All per row
         for (let i = 0; i < recordCount; i++) {
             await this.safeClick(this.frame.locator(this.weightField).nth(i));
             await this.safeClick(this.frame.locator(this.fillweightField).nth(i));
-            await this.frame.locator(this.fillweightField).nth(i).fill('0.01').catch(async () => {
-                await this.frame.getByPlaceholder('#,##').first().fill('0.01');
-            });
+            if (this.page) {
+                await this.page.keyboard.press('Control+a');
+                await this.page.keyboard.type('0.01');
+            } else {
+                await this.frame.locator(this.fillweightField).nth(i).fill('0.01').catch(async () => {
+                    await this.frame.getByPlaceholder('#,##0.##').first().fill('0.01');
+                });
+            }
         }
 
         // Single Apply All at the end to confirm all entered values

@@ -74,7 +74,7 @@ async function navigateToCarrierApproval(scchomePage, sccviewlistPage) {
 }
 
 test('Single ASN Booking - Create separate booking for each ASN', async ({ page }) => {
-  test.setTimeout(240 * 1000 * asnList.length);
+  test.setTimeout(600 * 1000 * asnList.length);
   const bookingResults = [];
 
   // Accept ALL dialogs automatically — prevents unhandled dialogs from closing the edit page
@@ -97,7 +97,7 @@ test('Single ASN Booking - Create separate booking for each ASN', async ({ page 
   const listenDialog = new ListenDialog(page);
   const ordersearchPage = new OrderSearchPage(page, frame);
   const carrierbookingPage = new CarrierBookingPage(page, frame);
-  const carrierbookingeditPage = new CarrierBookingEditPage(frame);
+  const carrierbookingeditPage = new CarrierBookingEditPage(frame, page);
   const carrierbookingapprovalPage = new CarrierBookingApprovalPage(frame);
 
   // Loop through each ASN and create a separate booking
