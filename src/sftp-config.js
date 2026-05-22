@@ -68,10 +68,14 @@ function buildProdSftpConfigFromEnv(env) {
     readyTimeout: 30000,
   };
 
-  const inlineKey = env.PROD_SFTP_PRIVATE_KEY; // key content pasted directly (Azure)
+  const inlineKey = env.PROD_SFTP_PRIVATE_KEY; // key content for Azure (base64-encoded or raw)
 
   if (inlineKey) {
-    connectionOptions.privateKey = inlineKey.replace(/\\n/g, "\n");
+    // Decode base64 if the value doesn't look like a PEM header
+    const decoded = inlineKey.startsWith("-----")
+      ? inlineKey.replace(/\\n/g, "\n")
+      : Buffer.from(inlineKey, "base64").toString("utf8");
+    connectionOptions.privateKey = decoded;
     if (passphrase) connectionOptions.passphrase = passphrase;
   } else if (privateKeyPath) {
     const absoluteKeyPath = path.resolve(privateKeyPath);
