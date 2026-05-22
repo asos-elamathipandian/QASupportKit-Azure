@@ -456,6 +456,123 @@
     .live-log .log-entry:last-child .log-msg {
       color: #38bdf8;
     }
+
+    /* ── PROD SFTP Upload Card ─────────────────────────────────────────── */
+    .prod-drop-zone {
+      border: 2.5px dashed #dc2626;
+      border-radius: 10px;
+      padding: 30px 20px;
+      text-align: center;
+      cursor: pointer;
+      background: #fff5f5;
+      color: #991b1b;
+      font-weight: 600;
+      font-size: 0.93rem;
+      margin: 16px 0;
+      user-select: none;
+      transition: background 0.2s, border-color 0.2s;
+    }
+    .prod-drop-zone.dragover {
+      background: #fee2e2;
+      border-color: #b91c1c;
+    }
+    .prod-file-queue { display: flex; flex-direction: column; gap: 7px; margin-bottom: 16px; }
+    .prod-file-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 14px;
+      background: #fef2f2;
+      border: 1px solid #fca5a5;
+      border-radius: 8px;
+      font-size: 0.87rem;
+      font-family: "Courier New", monospace;
+      color: #991b1b;
+    }
+    .prod-remove-btn {
+      background: none;
+      border: none;
+      color: #dc2626;
+      cursor: pointer;
+      font-size: 1rem;
+      padding: 0 4px;
+      line-height: 1;
+    }
+    .btn-prod-upload {
+      width: 100%;
+      padding: 13px;
+      background: #dc2626;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 0.97rem;
+      font-weight: 700;
+      cursor: pointer;
+      letter-spacing: 0.03em;
+      transition: background 0.2s;
+    }
+    .btn-prod-upload:hover { background: #b91c1c; }
+    .btn-prod-upload:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* PROD Confirm Modal */
+    .prod-modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100vw; height: 100vh;
+      background: rgba(40, 10, 10, 0.5);
+      z-index: 2000;
+      align-items: center;
+      justify-content: center;
+    }
+    .prod-modal-overlay.open { display: flex; }
+    .prod-modal-box {
+      background: white;
+      border-radius: 14px;
+      padding: 28px 32px;
+      box-shadow: 0 8px 40px rgba(220,38,38,0.22);
+      max-width: 500px;
+      width: 96vw;
+      border-top: 5px solid #dc2626;
+    }
+    .prod-modal-title { font-size: 1.1rem; font-weight: 800; color: #dc2626; margin-bottom: 12px; }
+    .prod-modal-list {
+      background: #fef2f2;
+      border-radius: 7px;
+      padding: 10px 14px;
+      margin: 12px 0;
+      font-family: "Courier New", monospace;
+      font-size: 0.85rem;
+      color: #7f1d1d;
+      list-style: none;
+      max-height: 180px;
+      overflow-y: auto;
+    }
+    .prod-modal-list li { padding: 3px 0; }
+    .prod-modal-list li::before { content: "• "; color: #dc2626; }
+    .prod-modal-warning {
+      font-size: 0.88rem;
+      color: #b45309;
+      background: #fef3c7;
+      border-left: 4px solid #f59e0b;
+      border-radius: 6px;
+      padding: 8px 12px;
+      margin: 12px 0;
+      font-weight: 600;
+    }
+    .prod-modal-buttons { display: flex; gap: 12px; justify-content: flex-end; margin-top: 18px; }
+    .btn-prod-cancel {
+      background: #e5e7eb; color: #374151; border: none; border-radius: 8px;
+      padding: 9px 20px; font-weight: 700; cursor: pointer; font-size: 0.93rem;
+    }
+    .btn-prod-cancel:hover { background: #d1d5db; }
+    .btn-prod-confirm {
+      background: #dc2626; color: white; border: none; border-radius: 8px;
+      padding: 9px 20px; font-weight: 700; cursor: pointer; font-size: 0.93rem;
+      transition: background 0.2s;
+    }
+    .btn-prod-confirm:hover { background: #b91c1c; }
+    .btn-prod-confirm:disabled { opacity: 0.5; cursor: not-allowed; }
   </style>
 </head>
 <body>
@@ -2083,5 +2200,222 @@ function confirmAndUploadGpm() {
 
   
 </script>
+<script>
+// ── PROD SFTP Direct Upload — fully isolated from all existing upload flows ───
+let prodFileQueue = []; // [{ name: string, content: string }]
+
+function prodDragOver(e) {
+  e.preventDefault();
+  document.getElementById('prodDropZone').classList.add('dragover');
+}
+
+function prodDragLeave(e) {
+  document.getElementById('prodDropZone').classList.remove('dragover');
+}
+
+function prodDrop(e) {
+  e.preventDefault();
+  document.getElementById('prodDropZone').classList.remove('dragover');
+  prodAddFiles(Array.from(e.dataTransfer.files));
+}
+
+function prodFileSelected(e) {
+  prodAddFiles(Array.from(e.target.files));
+  e.target.value = ''; // allow re-selecting same file
+}
+
+function prodAddFiles(files) {
+  files.forEach(file => {
+    if (prodFileQueue.some(f => f.name === file.name)) return; // deduplicate
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      prodFileQueue.push({ name: file.name, content: ev.target.result });
+      prodRenderQueue();
+    };
+    reader.readAsText(file);
+  });
+}
+
+function prodRenderQueue() {
+  const container = document.getElementById('prodFileQueue');
+  const btn = document.getElementById('btnProdUpload');
+  if (prodFileQueue.length === 0) {
+    container.innerHTML = '';
+    btn.disabled = true;
+    return;
+  }
+  container.innerHTML = prodFileQueue.map((f, i) =>
+    `<div class="prod-file-item">
+       <span>📄 ${escapeHtml(f.name)}</span>
+       <button class="prod-remove-btn" onclick="prodRemoveFile(${i})" title="Remove">✕</button>
+     </div>`
+  ).join('');
+  btn.disabled = false;
+}
+
+function prodRemoveFile(index) {
+  prodFileQueue.splice(index, 1);
+  prodRenderQueue();
+}
+
+function prodConfirmUpload() {
+  if (prodFileQueue.length === 0) return;
+  document.getElementById('prodConfirmCount').textContent = prodFileQueue.length;
+  document.getElementById('prodConfirmList').innerHTML =
+    prodFileQueue.map(f => `<li>${escapeHtml(f.name)}</li>`).join('');
+  document.getElementById('prodModalStatus').textContent = '';
+  document.getElementById('btnProdConfirm').disabled = false;
+  document.getElementById('prodConfirmModal').classList.add('open');
+}
+
+function closeProdModal() {
+  document.getElementById('prodConfirmModal').classList.remove('open');
+}
+
+async function prodDoUpload() {
+  const confirmBtn = document.getElementById('btnProdConfirm');
+  confirmBtn.disabled = true;
+  document.getElementById('prodModalStatus').textContent = '⏳ Uploading…';
+
+  // Close modal so user sees live results
+  document.getElementById('prodConfirmModal').classList.remove('open');
+
+  const resultsDiv = document.getElementById('prodUploadResults');
+  resultsDiv.innerHTML = '';
+
+  const filesToUpload = [...prodFileQueue];
+
+  // Show in-progress rows for all files immediately
+  filesToUpload.forEach(f => {
+    resultsDiv.insertAdjacentHTML('beforeend',
+      `<div id="prod-row-${prodSafeId(f.name)}"
+            style="padding:10px 14px;border-radius:8px;background:#eff6ff;border-left:4px solid #3b82f6;font-size:0.87rem;display:flex;align-items:center;gap:10px;">
+         <div class="spinner"></div>
+         <span style="font-family:monospace;">${escapeHtml(f.name)}</span>
+         <span style="color:#3b82f6;">Uploading to PROD SFTP…</span>
+       </div>`
+    );
+  });
+
+  // Upload one at a time — sequential to avoid overwhelming SFTP
+  for (const f of filesToUpload) {
+    const rowEl = document.getElementById('prod-row-' + prodSafeId(f.name));
+    try {
+      const res = await fetch('/api/prod-upload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fileName: f.name, xml: f.content }),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        rowEl.style.background = '#f0fdf4';
+        rowEl.style.borderLeftColor = '#22c55e';
+        rowEl.innerHTML =
+          `<span style="font-size:1.1rem;">✅</span>
+           <div>
+             <div style="font-family:monospace;font-size:0.87rem;color:#166534;font-weight:600;">${escapeHtml(f.name)}</div>
+             <div style="font-size:0.78rem;color:#6b7280;margin-top:2px;">📤 ${escapeHtml(data.remotePath || '')}</div>
+           </div>`;
+      } else {
+        rowEl.style.background = '#fef2f2';
+        rowEl.style.borderLeftColor = '#ef4444';
+        rowEl.innerHTML =
+          `<span style="font-size:1.1rem;">❌</span>
+           <div>
+             <div style="font-family:monospace;font-size:0.87rem;color:#991b1b;">${escapeHtml(f.name)}</div>
+             <div style="font-size:0.82rem;color:#ef4444;margin-top:2px;font-weight:600;">${escapeHtml(data.error || 'Upload failed')}</div>
+           </div>`;
+      }
+    } catch (e) {
+      rowEl.style.background = '#fef2f2';
+      rowEl.style.borderLeftColor = '#ef4444';
+      rowEl.innerHTML =
+        `<span style="font-size:1.1rem;">❌</span>
+         <div>
+           <div style="font-family:monospace;font-size:0.87rem;color:#991b1b;">${escapeHtml(f.name)}</div>
+           <div style="font-size:0.82rem;color:#ef4444;margin-top:2px;font-weight:600;">${escapeHtml(e.message)}</div>
+         </div>`;
+    }
+  }
+
+  // Clear queue after all uploads complete
+  prodFileQueue = [];
+  prodRenderQueue();
+}
+
+function prodSafeId(name) {
+  return name.replace(/[^a-zA-Z0-9]/g, '_');
+}
+</script>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     PROD SFTP DIRECT UPLOAD — fully isolated from all existing upload features
+     ═══════════════════════════════════════════════════════════════════════════ -->
+  <div class="card" id="prod-sftp-card" style="border:2.5px solid #dc2626;position:relative;padding-top:0;">
+
+    <!-- Red warning banner across the top of the card -->
+    <div style="background:#dc2626;color:white;border-radius:10px 10px 0 0;margin:-24px -28px 20px;padding:11px 20px;display:flex;align-items:center;gap:10px;">
+      <span style="font-size:1.3rem;">⚠️</span>
+      <span style="font-weight:800;font-size:1rem;letter-spacing:0.05em;">WARNING — PRODUCTION</span>
+      <span style="font-size:0.8rem;opacity:0.88;margin-left:6px;">Files uploaded here go directly to E2open PROD SFTP</span>
+    </div>
+
+    <div class="card-title" style="color:#dc2626;">PROD SFTP Direct Upload</div>
+
+    <p style="font-size:0.88rem;color:#6b7280;margin-bottom:16px;line-height:1.65;">
+      Drop your pre-modified XML files (VBKCON, BST, Carrier Shipment, or any other message type) onto
+      the zone below. You will be asked to <strong>confirm</strong> before anything is sent to
+      <strong style="color:#dc2626;">E2open PRODUCTION SFTP</strong>.
+    </p>
+
+    <!-- Drag-and-drop zone -->
+    <div class="prod-drop-zone" id="prodDropZone"
+         onclick="document.getElementById('prodFileInput').click()"
+         ondragover="prodDragOver(event)"
+         ondragleave="prodDragLeave(event)"
+         ondrop="prodDrop(event)">
+      📂&nbsp; Drag &amp; drop XML files here, or <u>click to browse</u>
+    </div>
+    <input type="file" id="prodFileInput" multiple accept=".xml,text/xml,application/xml"
+           style="display:none;" onchange="prodFileSelected(event)">
+
+    <!-- Queued files -->
+    <div class="prod-file-queue" id="prodFileQueue"></div>
+
+    <!-- Upload trigger button -->
+    <button class="btn-prod-upload" id="btnProdUpload" onclick="prodConfirmUpload()" disabled>
+      ⬆&nbsp; Send to PROD SFTP
+    </button>
+
+    <!-- Per-file upload results (shown after confirmation & upload) -->
+    <div id="prodUploadResults" style="margin-top:16px;display:flex;flex-direction:column;gap:8px;"></div>
+  </div>
+</div>
+
+<!-- ── PROD Confirmation Modal ─────────────────────────────────────────────── -->
+<div class="prod-modal-overlay" id="prodConfirmModal">
+  <div class="prod-modal-box">
+    <div class="prod-modal-title">⚠️ Confirm PRODUCTION Upload</div>
+    <p style="font-size:0.93rem;color:#374151;">
+      You are about to upload <strong id="prodConfirmCount">0</strong> file(s) to:
+    </p>
+    <div style="background:#fef2f2;border-radius:7px;padding:9px 14px;margin:8px 0;font-size:0.9rem;color:#7f1d1d;font-weight:700;">
+      🔴&nbsp; E2open PRODUCTION SFTP
+    </div>
+    <ul class="prod-modal-list" id="prodConfirmList"></ul>
+    <div class="prod-modal-warning">
+      ⚠&nbsp; This will immediately deliver files into the <strong>live production system</strong>.
+      This action cannot be undone.
+    </div>
+    <div class="prod-modal-buttons">
+      <button class="btn-prod-cancel" onclick="closeProdModal()">Cancel</button>
+      <button class="btn-prod-confirm" id="btnProdConfirm" onclick="prodDoUpload()">
+        Confirm &amp; Upload to PROD
+      </button>
+    </div>
+    <div id="prodModalStatus" style="margin-top:10px;font-size:0.88rem;"></div>
+  </div>
+</div>
+
 </body>
 </html>

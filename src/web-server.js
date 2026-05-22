@@ -18,7 +18,7 @@ const { writeAsnFeedFile } = require("./asn-feed");
 const { writeGpmFile } = require("./gpm");
 const { writePoFeedFile } = require("./po-feed");
 const { uploadFileToSftp } = require("./sftp");
-const { buildSftpConfigFromEnv } = require("./sftp-config");
+const { buildSftpConfigFromEnv, buildProdSftpConfigFromEnv } = require("./sftp-config");
 const { searchBlobsByAsn, searchBlobsByAsnNameAndContent, searchBlobsByPoNameAndContent, searchBlobsCarrierFeedByAsn, downloadBlobs } = require("./blob-search");
 const {
   getAbvCounterFile,
@@ -588,6 +588,39 @@ app.post("/api/generate/all", async (req, res) => {
   }
 
   res.json({ ok: Object.values(results).every((r) => r.ok), results });
+});
+
+// ── PROD SFTP Upload (fully isolated — uses PROD_SFTP_* env vars only) ────────
+
+async function uploadToProd(filePath) {
+  const sftpConfig = buildProdSftpConfigFromEnv(process.env);
+  const result = await uploadFileToSftp({
+    localFilePath: filePath,
+    remoteDir: sftpConfig.remoteDir,
+    connectionOptions: sftpConfig.connectionOptions,
+  });
+  return result.remotePath;
+}
+
+// Accept pre-modified XML files from the browser, save, then push to PROD SFTP
+app.post("/api/prod-upload", async (req, res) => {
+  const err = validate(req.body, ["fileName", "xml"]);
+  if (err) return res.status(400).json({ ok: false, error: err });
+  try {
+    const { fileName, xml } = req.body;
+    // Reject any path traversal attempt
+    const safeFileName = path.basename(fileName);
+    if (!safeFileName || safeFileName !== fileName) {
+      return res.status(400).json({ ok: false, error: "Invalid file name" });
+    }
+    const outputDir = getOutputDir(process.env);
+    const filePath = path.join(outputDir, safeFileName);
+    fs.writeFileSync(filePath, xml, "utf8");
+    const remotePath = await uploadToProd(filePath);
+    res.json({ ok: true, fileName: safeFileName, uploaded: true, remotePath });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
 });
 
 // ── Blob Search & Download ────────────────────────────────────────────────────

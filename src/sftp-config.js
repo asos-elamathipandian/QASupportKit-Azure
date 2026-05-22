@@ -44,6 +44,51 @@ function buildSftpConfigFromEnv(env) {
   };
 }
 
+// ── PROD SFTP config — reads PROD_SFTP_* env vars, fully isolated ────────────
+function buildProdSftpConfigFromEnv(env) {
+  const host = env.PROD_SFTP_HOST;
+  const port = Number(env.PROD_SFTP_PORT || "22");
+  const username = env.PROD_SFTP_USERNAME;
+  const remoteDir = env.PROD_SFTP_REMOTE_DIR;
+
+  const privateKeyPath = env.PROD_SFTP_PRIVATE_KEY_PATH;
+  const passphrase = env.PROD_SFTP_PASSPHRASE;
+  const password = env.PROD_SFTP_PASSWORD;
+
+  if (!host || !username || !remoteDir) {
+    throw new Error(
+      "PROD SFTP config missing. Set PROD_SFTP_HOST, PROD_SFTP_USERNAME and PROD_SFTP_REMOTE_DIR"
+    );
+  }
+
+  const connectionOptions = {
+    host,
+    port,
+    username,
+    readyTimeout: 30000,
+  };
+
+  if (privateKeyPath) {
+    const absoluteKeyPath = path.resolve(privateKeyPath);
+    connectionOptions.privateKey = fs.readFileSync(absoluteKeyPath, "utf8");
+    if (passphrase) {
+      connectionOptions.passphrase = passphrase;
+    }
+  } else if (password) {
+    connectionOptions.password = password;
+  } else {
+    throw new Error(
+      "PROD SFTP auth missing. Set PROD_SFTP_PASSWORD, or PROD_SFTP_PRIVATE_KEY_PATH with optional PROD_SFTP_PASSPHRASE."
+    );
+  }
+
+  return {
+    connectionOptions,
+    remoteDir,
+  };
+}
+
 module.exports = {
   buildSftpConfigFromEnv,
+  buildProdSftpConfigFromEnv,
 };
