@@ -68,17 +68,20 @@ function buildProdSftpConfigFromEnv(env) {
     readyTimeout: 30000,
   };
 
-  if (privateKeyPath) {
+  const inlineKey = env.PROD_SFTP_PRIVATE_KEY; // key content pasted directly (Azure)
+
+  if (inlineKey) {
+    connectionOptions.privateKey = inlineKey.replace(/\\n/g, "\n");
+    if (passphrase) connectionOptions.passphrase = passphrase;
+  } else if (privateKeyPath) {
     const absoluteKeyPath = path.resolve(privateKeyPath);
     connectionOptions.privateKey = fs.readFileSync(absoluteKeyPath, "utf8");
-    if (passphrase) {
-      connectionOptions.passphrase = passphrase;
-    }
+    if (passphrase) connectionOptions.passphrase = passphrase;
   } else if (password) {
     connectionOptions.password = password;
   } else {
     throw new Error(
-      "PROD SFTP auth missing. Set PROD_SFTP_PASSWORD, or PROD_SFTP_PRIVATE_KEY_PATH with optional PROD_SFTP_PASSPHRASE."
+      "PROD SFTP auth missing. Set PROD_SFTP_PRIVATE_KEY (inline), PROD_SFTP_PRIVATE_KEY_PATH (file), or PROD_SFTP_PASSWORD."
     );
   }
 
