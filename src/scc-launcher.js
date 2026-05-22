@@ -62,10 +62,12 @@ function getWorkingAutomationPaths() {
     asnLookupSpec: path.join(LOCAL_SCC_COPY_DIR, 'tests', 'ASNLookup.spec.js'),
     singleBookingSpec: path.join(LOCAL_SCC_COPY_DIR, 'tests', 'SingleASNBookingMultipleTimes.spec.js'),
     multiBookingSpec: path.join(LOCAL_SCC_COPY_DIR, 'tests', 'MultiASNSingleBooking.spec.js'),
+    multiLinesEditSpec: path.join(LOCAL_SCC_COPY_DIR, 'tests', 'MultiLinesEdit.spec.js'),
     fullFlowSpec: path.join(LOCAL_SCC_COPY_DIR, 'tests', 'FullSCCFlow.spec.js'),
     asnsFile: path.join(LOCAL_SCC_COPY_DIR, 'tests', 'asns.txt'),
     asnLookupResults: path.join(LOCAL_SCC_COPY_DIR, 'asn-lookup-results.json'),
     bookingResults: path.join(LOCAL_SCC_COPY_DIR, 'booking-results.json'),
+    multiLinesEditResults: path.join(LOCAL_SCC_COPY_DIR, 'multi-lines-edit-results.json'),
     fullFlowResults: path.join(LOCAL_SCC_COPY_DIR, 'full-scc-flow-results.json'),
   };
 }
@@ -409,16 +411,16 @@ async function createSingleAsnBooking(asnList, options = {}) {
   writeAsnsInput(asnList);
   console.log(`[SCC] Running working single-booking spec for ASNs: ${asnList.join(',')}`);
 
-  if (onStep) onStep(`Creating single booking for ${asnList.length} ASN${asnList.length > 1 ? 's' : ''}`);
+  if (onStep) onStep(`Creating single booking for ${asnList.length} ASN${asnList.length > 1 ? 's' : ''} (multi-lines edit flow)`);
   if (onStep) onStep('Launching Playwright browser\u2026');
 
   try {
-    await runWorkingSpec(paths.singleBookingSpec, {}, 1200000, options);
+    await runWorkingSpec(paths.multiLinesEditSpec, {}, 1200000, options);
 
-    if (onStep) onStep('Playwright test completed, reading booking results\u2026');
-    const result = readJsonIfExists(paths.bookingResults) || [];
+    if (onStep) onStep('Playwright test completed, reading results\u2026');
+    const result = readJsonIfExists(paths.multiLinesEditResults) || readJsonIfExists(paths.bookingResults) || [];
     const count = Array.isArray(result) ? result.length : asnList.length;
-    if (onStep) onStep(`\u2705 ${count} booking${count !== 1 ? 's' : ''} created successfully`);
+    if (onStep) onStep(`\u2705 ${count} booking line${count !== 1 ? 's' : ''} created and submitted`);
 
     return {
       success: true,
@@ -447,14 +449,14 @@ async function createMultiAsnBooking(asnList, options = {}) {
   writeAsnsInput(asnList);
   console.log(`[SCC] Running working multi-booking spec for ASNs: ${asnList.join(',')}`);
 
-  if (onStep) onStep(`Creating multi-ASN booking for ${asnList.length} ASN${asnList.length > 1 ? 's' : ''}`);
+  if (onStep) onStep(`Creating multi-ASN booking for ${asnList.length} ASN${asnList.length > 1 ? 's' : ''} (multi-lines edit flow)`);
   if (onStep) onStep('Launching Playwright browser\u2026');
 
   try {
-    await runWorkingSpec(paths.multiBookingSpec, {}, 600000, options);
+    await runWorkingSpec(paths.multiLinesEditSpec, {}, 600000, options);
 
-    if (onStep) onStep('Playwright test completed, reading booking results\u2026');
-    const result = readJsonIfExists(paths.bookingResults) || [];
+    if (onStep) onStep('Playwright test completed, reading results\u2026');
+    const result = readJsonIfExists(paths.multiLinesEditResults) || readJsonIfExists(paths.bookingResults) || [];
     const count = Array.isArray(result) ? result.length : asnList.length;
     if (onStep) onStep(`\u2705 Multi-ASN booking created with ${count} ASN${count !== 1 ? 's' : ''}`);
 

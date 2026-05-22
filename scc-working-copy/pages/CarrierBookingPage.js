@@ -43,8 +43,13 @@ class CarrierBookingPage {
     async searchWithasnAndstatus(asns) {
         await this.frame.locator(this.asnField).click();
         await this.frame.locator(this.asnField).fill(asns);
+        // Wait for any loading triggered by the ASN fill to settle before touching the status dropdown
+        await this.frame.locator(this.loadingOverlay).waitFor({ state: 'hidden', timeout: 10000 }).catch(() => {});
         await this.frame.locator(this.statusDropDown).click();
         await this.frame.getByLabel('Draft', { exact: true }).check();
+        // Close dropdown by clicking ASN field (neutral — already filled, click just repositions cursor)
+        // This commits the Draft selection to the filter form before Apply runs
+        await this.frame.locator(this.asnField).click();
         await this.frame.locator(this.applyButton).click();
         await this.frame.locator(this.collapseFilter).click();
     }

@@ -14,6 +14,8 @@ class CarrierBookingEditPage {
         this.fillcargoDeliveryDate = '[id^="resultfield_appvbCargoDeliveryDate_APP_PO"]';
         this.trafficModeOrigin = '[id$="appvbTrafficModeOrigin-content-cell"]';
         this.filltrafficModeOrigin = '[id^="resultfield_appvbTrafficModeOrigin_APP_PO"]';
+        this.carrierBookingRequestDate = '[id$="appvbCarrierBookingRequestDate-content-cell"]';
+        this.fillCarrierBookingRequestDate = '[id^="resultfield_appvbCarrierBookingRequestDate_APP_PO"]';
         this.editBooking = { name: 'Edit Booking' };
         this.saveAfterEdit = { name: 'Save' };
         this.selectEditedBookingResult = '#resultTable-select-all';
@@ -61,10 +63,20 @@ class CarrierBookingEditPage {
             }
         }
 
-        // Fill weights for all rows — no Apply All per row
-        for (let i = 0; i < recordCount; i++) {
+        // Apply All after cartons — commits the last open inline editor and reloads the grid
+        // Without this the last row's confirm button overlaps the Unit Weight cell
+        await this.safeClick(this.frame.locator(this.applyAllButton));
+        await this.waitForGridToBeReady();
+        await this.frame.locator(this.editrecordRows).first().waitFor({ state: 'visible', timeout: 30000 });
+
+        // Fill weights for all rows — two-click activation: content-cell first, then result-field input
+        const weightRecordCount = await this.frame.locator(this.fillweightField).count();
+        for (let i = 0; i < weightRecordCount; i++) {
+            await this.frame.locator(this.loadingOverlay).waitFor({ state: 'hidden', timeout: 10000 }).catch(() => {});
             await this.safeClick(this.frame.locator(this.weightField).nth(i));
+            await new Promise(r => setTimeout(r, 300));
             await this.safeClick(this.frame.locator(this.fillweightField).nth(i));
+            await new Promise(r => setTimeout(r, 500));
             if (this.page) {
                 await this.page.keyboard.press('Control+a');
                 await this.page.keyboard.type('0.01');
@@ -96,6 +108,17 @@ class CarrierBookingEditPage {
         await this.safeClick(this.frame.locator(this.fillcargoDeliveryDate).first());
         await this.selectDatepickerDay();
         await this.safeClick(this.frame.locator(this.applyAllButton));
+        // Carrier Booking Request Date — skip gracefully if field is not present in this view
+        const carrierReqDateCell = this.frame.locator(this.carrierBookingRequestDate).first();
+        const hasCarrierReqDate = await carrierReqDateCell.count().then(c => c > 0).catch(() => false);
+        if (hasCarrierReqDate) {
+            await this.safeClick(carrierReqDateCell);
+            const fillField = this.frame.locator(this.fillCarrierBookingRequestDate).first();
+            await fillField.waitFor({ state: 'visible', timeout: 5000 }).catch(() => {});
+            await this.safeClick(fillField);
+            await this.selectDatepickerDay();
+            await this.safeClick(this.frame.locator(this.applyAllButton));
+        }
         await this.safeClick(this.frame.locator(this.trafficModeOrigin).first());
         await this.frame.locator(this.filltrafficModeOrigin).first().selectOption('CFS');
         await this.safeClick(this.frame.locator(this.applyAllButton));

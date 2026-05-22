@@ -16,7 +16,9 @@ export class Regression_TA_LoginPage extends Regression_TA_BasePage {
     await this.page.getByRole('textbox', { name: 'Enter your username' }).fill(username);
     await this.page.getByRole('textbox', { name: 'Enter your password' }).fill(password);
     await this.page.getByRole('button', { name: 'Login' }).click();
-    await this.page.waitForLoadState('networkidle');
+    // Wait for the auth redirect to complete (navigates away from authn page).
+    // waitForNavigation is faster than networkidle but still ensures the redirect happened.
+    await this.page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 30000 }).catch(() => {});
 
     try {
       await this.page.goto('https://asos.staging.e2open.com/CLPSTG_e2clp/e2clp/#/');
@@ -38,7 +40,7 @@ export class Regression_TA_LoginPage extends Regression_TA_BasePage {
     // Prefer direct SCC app landing; dashboard clicks are flaky on transient sessions.
     try {
       await this.page.goto('https://asos.staging.e2open.com/asos/', { waitUntil: 'domcontentloaded' });
-      await this.page.frameLocator('iframe[name="clientframe"]').locator('body').waitFor({ timeout: 15000 });
+      await this.page.frameLocator('iframe[name="clientframe"]').locator('body').waitFor({ timeout: 45000 });
       return;
     } catch {
       // Fallback to dashboard click flow.

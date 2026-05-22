@@ -1,0 +1,62 @@
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - generic [ref=e5]:
+      - navigation [ref=e6]:
+        - button " Menu" [ref=e7] [cursor=pointer]
+      - img "Launchpad" [ref=e8]
+      - generic [ref=e9]: Launchpad
+      - generic [ref=e11] [cursor=pointer]: help
+      - generic "My Profile" [ref=e13] [cursor=pointer]:
+        - generic [ref=e15]: elamathi pandian
+        - generic [ref=e16]: person_outline
+  - generic [ref=e17]:
+    - list [ref=e18]:
+      - listitem [ref=e19]:
+        - link "home" [ref=e20] [cursor=pointer]:
+          - /url: "#"
+          - generic [ref=e21]: home
+      - listitem [ref=e22]: ASOS SCC
+    - list [ref=e23]:
+      - listitem [ref=e24]:
+        - text: ASOS SCC
+        - generic [ref=e25] [cursor=pointer]: help
+      - listitem [ref=e26]:
+        - radiogroup [ref=e28]:
+          - generic "Tile View" [ref=e29]:
+            - radio "view_module" [ref=e30]
+            - generic [ref=e32] [cursor=pointer]: view_module
+          - generic "List View" [ref=e33]:
+            - radio "view_list" [checked] [ref=e34]
+            - generic [ref=e36] [cursor=pointer]: view_list
+  - table [ref=e37]:
+    - rowgroup [ref=e38]:
+      - row "remove_circle_outline Favorites You have no accessible applications in the favorites list remove_circle_outline ASOS SCC record_voice_over ASOS SCC star_border add_circle_outline Messages autorenew help" [ref=e98]:
+        - cell "remove_circle_outline Favorites You have no accessible applications in the favorites list remove_circle_outline ASOS SCC record_voice_over ASOS SCC star_border" [ref=e99]:
+          - generic [ref=e42]:
+            - generic [ref=e43]:
+              - generic "Collapse" [ref=e45] [cursor=pointer]: remove_circle_outline
+              - generic [ref=e46]: Favorites
+            - generic [ref=e50]: You have no accessible applications in the favorites list
+          - generic [ref=e103]:
+            - generic [ref=e104]:
+              - generic "Collapse" [ref=e106] [cursor=pointer]: remove_circle_outline
+              - generic [ref=e107]: ASOS SCC
+              - generic "View and edit program support information" [ref=e108] [cursor=pointer]: record_voice_over
+            - table [ref=e111]:
+              - rowgroup
+              - rowgroup [ref=e112]:
+                - row "ASOS SCC star_border" [ref=e113]:
+                  - cell [ref=e114]:
+                    - img [ref=e115]
+                  - cell "ASOS SCC" [ref=e116]
+                  - cell "star_border" [ref=e117]:
+                    - generic "Add to favorites list" [ref=e118] [cursor=pointer]: star_border
+        - cell "add_circle_outline Messages autorenew help" [ref=e85]:
+          - generic [ref=e87]:
+            - generic "Expand" [ref=e89] [cursor=pointer]: add_circle_outline
+            - list [ref=e91]:
+              - listitem [ref=e92]: Messages
+              - listitem [ref=e93]:
+                - generic "Refresh" [ref=e94] [cursor=pointer]:
+                  - generic [ref=e95]: autorenew
+            - generic [ref=e96] [cursor=pointer]: help

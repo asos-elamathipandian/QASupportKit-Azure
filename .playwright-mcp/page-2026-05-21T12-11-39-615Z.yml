@@ -1,0 +1,30 @@
+- generic [ref=e2]:
+  - generic [ref=e5]:
+    - img "About e2open" [ref=e6]
+    - link "About e2open" [ref=e7] [cursor=pointer]:
+      - /url: https://www.e2open.com/company/
+  - generic [ref=e9]:
+    - generic [ref=e11]: Welcome to e2open! Please log in to continue.
+    - generic [ref=e15]:
+      - textbox "Enter your email" [active] [ref=e18]
+      - generic [ref=e20] [cursor=pointer]:
+        - checkbox "Remember my email" [ref=e21]
+        - generic [ref=e23]: Remember my email
+      - generic [ref=e24]:
+        - button "Continue" [disabled]
+    - link "Need help? Contact Support" [ref=e28] [cursor=pointer]:
+      - /url: http://www.e2open.com/about/support/
+    - alert [ref=e30]:
+      - text: info
+      - generic [ref=e31]:
+        - generic [ref=e32]: Regular Maintenance Hours
+        - text: Users of the e2open system may experience temporary disruptions to service 8:00 AM to 12:00 PM
+        - link "US Pacific time" [ref=e33] [cursor=pointer]:
+          - /url: http://www.timeanddate.com/worldclock/city.html?n=224
+        - text: each Saturday.
+  - contentinfo [ref=e34]:
+    - generic [ref=e35]:
+      - text: Copyright © 2024 -
+      - text: E2open, LLC. All rights reserved.
+    - link "Privacy Policy" [ref=e36] [cursor=pointer]:
+      - /url: https://www.e2open.com/company/privacy-policy

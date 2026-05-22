@@ -96,6 +96,7 @@ const PROGRESS_PATTERNS = [
   { re: /\[asn-lookup\]\s*(.+)/i, extract: (m) => m[1].trim() },
   { re: /\[booking-step\]\s*(.+)/i, extract: (m) => m[1].trim() },
   { re: /\[full-flow\]\s*(.+)/i, extract: (m) => m[1].trim() },
+  { re: /\[multi-lines-edit\]\s*(.+)/i, extract: (m) => m[1].trim() },
 
   // Key data markers from specs
   { re: /ASN_LOOKUP_RESULTS?:\s*(.+)/i, extract: (m) => "ASN lookup complete" },
