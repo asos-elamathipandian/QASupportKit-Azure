@@ -2,27 +2,27 @@
   "cookies": [
     {
       "name": "Authorization",
-      "value": "eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiIxMTA5IiwidGVuYW50SWQiOiJBU09TIiwidXNlcklkIjoiNDY4IiwidXNlck5hbWUiOiJlbGFtYXRoaSBwYW5kaWFuIiwidXNlckVtYWlsIjoiZWxhbWF0aGkucGFuZGlhbkBhc29zLmNvbSIsInVuaWZpZWRBcHBJZCI6IkFTT1MuU3VwcGx5IENoYWluIENvbGxhYm9yYXRpb24uU0NDU3RhY2suU0NDIiwiZXhwIjoxNzc5NDM4NjMyfQ.Z_ZkU48xR5WLTwxnvHrNEZXoaD1MVZBL829E1yIJv78pbrktJY-jfxlleVyzYEkd1-ccNx5lgvsAgt5qbSXVMQ",
+      "value": "eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiIxMTA5IiwidGVuYW50SWQiOiJBU09TIiwidXNlcklkIjoiNDY4IiwidXNlck5hbWUiOiJlbGFtYXRoaSBwYW5kaWFuIiwidXNlckVtYWlsIjoiZWxhbWF0aGkucGFuZGlhbkBhc29zLmNvbSIsInVuaWZpZWRBcHBJZCI6IkFTT1MuU3VwcGx5IENoYWluIENvbGxhYm9yYXRpb24uU0NDU3RhY2suU0NDIiwiZXhwIjoxNzc5ODg5NjMyfQ.5j9ddc2m6rpeozGqHROMbgG0ac1IiUTncC5KaA3OrmBe8ZjU0HWtnwNBje0OifuP1x-fUkL5RlZcCAUfur_NSQ",
       "domain": ".e2open.com",
       "path": "/DISCSVCCHEF_di",
-      "expires": 1779438633.339856,
+      "expires": 1779889631.724025,
       "httpOnly": true,
       "secure": true,
       "sameSite": "Strict"
     },
     {
       "name": "Authorization_ASOS.Supply Chain Collaboration.SCCStack.SCC",
-      "value": "eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiIxMTA5IiwidGVuYW50SWQiOiJBU09TIiwidXNlcklkIjoiNDY4IiwidXNlck5hbWUiOiJlbGFtYXRoaSBwYW5kaWFuIiwidXNlckVtYWlsIjoiZWxhbWF0aGkucGFuZGlhbkBhc29zLmNvbSIsInVuaWZpZWRBcHBJZCI6IkFTT1MuU3VwcGx5IENoYWluIENvbGxhYm9yYXRpb24uU0NDU3RhY2suU0NDIiwiZXhwIjoxNzc5NDM4NjMyfQ.Z_ZkU48xR5WLTwxnvHrNEZXoaD1MVZBL829E1yIJv78pbrktJY-jfxlleVyzYEkd1-ccNx5lgvsAgt5qbSXVMQ",
+      "value": "eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiIxMTA5IiwidGVuYW50SWQiOiJBU09TIiwidXNlcklkIjoiNDY4IiwidXNlck5hbWUiOiJlbGFtYXRoaSBwYW5kaWFuIiwidXNlckVtYWlsIjoiZWxhbWF0aGkucGFuZGlhbkBhc29zLmNvbSIsInVuaWZpZWRBcHBJZCI6IkFTT1MuU3VwcGx5IENoYWluIENvbGxhYm9yYXRpb24uU0NDU3RhY2suU0NDIiwiZXhwIjoxNzc5ODg5NjMyfQ.5j9ddc2m6rpeozGqHROMbgG0ac1IiUTncC5KaA3OrmBe8ZjU0HWtnwNBje0OifuP1x-fUkL5RlZcCAUfur_NSQ",
       "domain": ".e2open.com",
       "path": "/DISCSVCCHEF_di",
-      "expires": 1779438633.339961,
+      "expires": 1779889631.724236,
       "httpOnly": true,
       "secure": true,
       "sameSite": "Strict"
     },
     {
       "name": "X-Contour-Session-Affinity",
-      "value": "\"587c6b89325c3ecc\"",
+      "value": "\"3cd489ea730f1031\"",
       "domain": "e2portal.staging.e2open.com",
       "path": "/DISCSVCCHEF_di",
       "expires": -1,
@@ -31,18 +31,8 @@
       "sameSite": "Strict"
     },
     {
-      "name": "e2.app.route",
-      "value": "\"0693eda958909fc2\"",
-      "domain": "asos.staging.e2open.com",
-      "path": "/CLPSTG_e2clp",
-      "expires": -1,
-      "httpOnly": true,
-      "secure": true,
-      "sameSite": "Lax"
-    },
-    {
       "name": "JSESSIONID",
-      "value": "A97BE93C8C3C02CF2384FEFE54699100",
+      "value": "0889312A7928F76DFD31D785CB29EE2E",
       "domain": "asos.staging.e2open.com",
       "path": "/CLPSTG_e2clp",
       "expires": -1,
@@ -51,28 +41,18 @@
       "sameSite": "Lax"
     },
     {
-      "name": "com.e2open.e2clp.rememberMe",
-      "value": "gFcfdJBG29ZbLygBnkKTVWpN3Q2YCCnNBAKr6oG1DsnwZ5VDMmNXY2FDuhPnA6nf9mtXmCwmXvbFT7ngLhrZ73Ir9nHIHsG0MGI0PT8W519UOz3lnW9feL1YiCnjZuV2S8xmmH7hqVvrFcqC7loeiSxV/lH/qyC3ciTAVWN6O9WijWCEFz0OWiMUyzhkVeug636j5m+Dn3X0XvOrH1CkcXCBqZoXDUhhcDs6o01RIW1GCaI4wUw0lzWYwTSGBiNb7fwbWrLnTeBGUaqXlQkLOa+Rrsh/Qi3LMQxmzGycBqo+DWidsY0fgZeh7miRK6zICJRbgHsaLND3NWEWgmvCbZzTfP8u3VLdhMjPQq5zbRKITvsnad4EO5KQdxApVnKWi1E+rU4Giw6XM2RiBdVPCw3GSrnD9RAb42xJyG4JC5kpHPEvbNEUgL4pmy3adnrQHBfdGGoX7fRH1/7v3bmE+VqoXc8DZeZBoPYvT8fZ5qmQnACoz3HJmfKXfzz95mK6lsrliBgAigwUxX7o49eyIEdRWzXcddHZGKaw+PvKJxfoJj5v6L3GhF1Q5PFdZJd+4gCW+AHIRNMObpU=",
+      "name": "e2.app.route",
+      "value": "\"ab95722047ddd0aa\"",
       "domain": "asos.staging.e2open.com",
       "path": "/CLPSTG_e2clp",
-      "expires": 1810888207.725213,
+      "expires": -1,
       "httpOnly": true,
       "secure": true,
       "sameSite": "Lax"
-    },
-    {
-      "name": "WalkMeStorage_b37213e5ace242fb99395ccfdf1d1635_test",
-      "value": "N4Ig7gtgtAzgLgewE4EMDmBTKA3DSYCWCAdiAFyjYoA2ArhuSAIwgA0IMKuAKgRA2SYB2IQE4AzAFYATNPEAGACyjp7DAA8ADgSQYAyhgDGJACYxyANgVDp8uwF92kKPVppylGvUYAdECgB5ADMASWkAVTAAaQBFTRNJCDAABThNeQBrGE0EAFETAhMAdQBZFAArC25xJHCEACMAL2IY6NyAXj82Di4MXn5yYTEpWQULIUk1LR19I1NzMit5Gzt5R3BoGAwYQhIoTTwXLaQPECo6ARBgP0DQiOi4hKTU9Kyc-MLSiqqauqaWtqdDx+DC0EImPxkG7BMKRWLxRIpNKZbJ5ArFMqVaq1BrNVpRDp+Vh+GDgyE3IQoCwmCT1KDiIQWFBQRRBDDM0RMFBBKD1AAciiWQXEoiEGHqRJJcBQSDg-QwkKGEhkcnkFlEFmJIGoKHgAEFDHACNgCHAAJ7yxUiZWjaSSJjiez2bqcHh8ARKkZyO0OqbaXQGYzEMyWJR8hxOaCGLa0KCFU7nbxkEB+RSSExCQy2LBMYV0xRCEziKAocTSQxQB0MtUKDP1aRddiuvruwbWr0KPk2P0zQPzSzWWwRjZQMywBNeS5+ADaAF1Gz03QNBO2VZ2xD2A3NgwsLMPnCYMBhNLQCFBqBoCEGoBhiCh6heTFAgshRyhpc+CBeJxdGEEaFsLq9PKbbDGu0hMJIiibrMQYhmQ4iQeIe77tAh7HqeN7BkchyoMGP5JiA8gAHR8tIfJMOR4jUdIyjSFYkhAUuHqrrakjyJMIAaP6sH9osYaofsCD7ARHpNsBrYrmBbFSDBfY7uQyGCTkUAAI6iYw1zMFa0neqIabOuJzGgTaelpnJ27wUpayRlAAAW9QacmWlbMGABCuotvwOmmWWUFMIZi5eSxul+YoTAWXBu4CTZI7oSeZ60McUAQCgmjaMQaAuPE74YE+75OcwjL2vI5GSEIIosEZwUmR2dqKKoXHTFuUWKUhKGxc4MAQGkcbEKahVaeaByQhYgXNiBUm+XaMiRXxKHrM4KknBQZyTowVVBZNnprtRyhzQpCELfYQA",
-      "domain": "cdn-walkme.staging.e2open.com",
-      "path": "/player/lib/",
-      "expires": 1813912233.352136,
-      "httpOnly": false,
-      "secure": true,
-      "sameSite": "None"
     },
     {
       "name": "SSESS713b590f9d5437865ae45e1efd8c2d24",
-      "value": "oSqi5jlCtlaHT3-NBiBlt_C05_oMe35IT0q_s3Iz7_0",
+      "value": "mzvgNgkFHR2ycI6Jfudhm5V4Fx9DM9RXD51VI0IqYKg",
       "domain": ".asos.staging.e2open.com",
       "path": "/asosccp",
       "expires": -1,
@@ -92,7 +72,7 @@
     },
     {
       "name": "JSESSIONID",
-      "value": "BEOc5MgF0paC5nTs353aZyrXmheCqKxPPCQJYL_M.usdc4uatapp19",
+      "value": "afE6-VR6CNk0wHjZyKMEDi_kZAv4vWEGStkgxvI1.usdc4uatapp10",
       "domain": "asos.staging.e2open.com",
       "path": "/asosap",
       "expires": -1,
@@ -101,28 +81,8 @@
       "sameSite": "Lax"
     },
     {
-      "name": "lastAccessedTime",
-      "value": "1779352231706",
-      "domain": "asos.staging.e2open.com",
-      "path": "/asosap",
-      "expires": -1,
-      "httpOnly": false,
-      "secure": true,
-      "sameSite": "Lax"
-    },
-    {
-      "name": "maxInactiveInterval",
-      "value": "7200",
-      "domain": "asos.staging.e2open.com",
-      "path": "/asosap",
-      "expires": -1,
-      "httpOnly": false,
-      "secure": true,
-      "sameSite": "Lax"
-    },
-    {
       "name": "SCC_ROUTEID",
-      "value": ".2",
+      "value": ".1",
       "domain": "asos.staging.e2open.com",
       "path": "/asosap",
       "expires": -1,
@@ -132,7 +92,7 @@
     },
     {
       "name": "ci_session_e2openstaging",
-      "value": "9to6obkfr4se02t4jlr5v8b4vg6p1ss6",
+      "value": "d3634cm010qkeoab8ho6fa04avmsl0mh",
       "domain": ".asos.staging.e2open.com",
       "path": "/asos",
       "expires": -1,
@@ -142,7 +102,7 @@
     },
     {
       "name": "SCC_ROUTEID",
-      "value": ".2",
+      "value": ".1",
       "domain": "asos.staging.e2open.com",
       "path": "/asos",
       "expires": -1,
@@ -155,17 +115,17 @@
       "value": "True",
       "domain": ".e2open.com",
       "path": "/",
-      "expires": 1794904195.574647,
+      "expires": 1795355210.471993,
       "httpOnly": true,
       "secure": true,
       "sameSite": "Lax"
     },
     {
       "name": "allowFunctionalCookies",
-      "value": "True",
+      "value": "False",
       "domain": ".e2open.com",
       "path": "/",
-      "expires": 1813912195.575939,
+      "expires": 1814363210.474388,
       "httpOnly": true,
       "secure": true,
       "sameSite": "Lax"
@@ -175,14 +135,14 @@
       "value": "False",
       "domain": ".e2open.com",
       "path": "/",
-      "expires": 1813912195.575996,
+      "expires": 1814363210.474525,
       "httpOnly": true,
       "secure": true,
       "sameSite": "Lax"
     },
     {
       "name": "cacheCookie",
-      "value": "b21dfe47-8500-425c-816f-923c572a9886",
+      "value": "2b96a94c-354c-4bb2-a611-25fb9340ad8e",
       "domain": "authn.staging.e2open.com",
       "path": "/",
       "expires": -1,
@@ -192,7 +152,7 @@
     },
     {
       "name": "stage.e2open.session.id",
-      "value": "f14924a4-b16e-4754-8b11-88dfffb1181d.1",
+      "value": "88b58666-b85f-4448-a2fd-cc6ef23c0017.1",
       "domain": ".e2open.com",
       "path": "/",
       "expires": -1,
@@ -201,27 +161,5 @@
       "sameSite": "Lax"
     }
   ],
-  "origins": [
-    {
-      "origin": "https://asos.staging.e2open.com",
-      "localStorage": [
-        {
-          "name": "wm-wait-win-load",
-          "value": "true"
-        },
-        {
-          "name": "wm-state",
-          "value": "{\"currentFlow\":{}}"
-        },
-        {
-          "name": "wm-deepui-master-mode",
-          "value": "true"
-        },
-        {
-          "name": "wm-preload-data",
-          "value": "true"
-        }
-      ]
-    }
-  ]
+  "origins": []
 }

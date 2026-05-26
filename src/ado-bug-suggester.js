@@ -21,7 +21,7 @@ const PRIORITY_RULES = [
   {
     keywords: [
       "fail", "error", "incorrect", "broken", "wrong result", "mismatch",
-      "not working", "rejected", "invalid", "missing field", "p2",
+      "not working", "rejected", "invalid", "missing field", "not found", "p2",
       "unexpected", "not matching", "discrepancy", "failure",
     ],
     priority: "2",
@@ -70,14 +70,15 @@ async function suggestReproSteps(title, description) {
 
   const prompt =
     `You are a QA engineer writing an Azure DevOps bug work item.\n` +
-    `Given the bug title and description below, generate HTML content for the "Repro Steps" field.\n` +
-    `Structure it with four clearly labelled sections:\n` +
-    `1. <b>Description:</b> — one paragraph summary\n` +
-    `2. <b>Steps to Reproduce:</b> — numbered <ol> list of steps\n` +
-    `3. <b>Expected Result:</b> — one paragraph\n` +
-    `4. <b>Test Data:</b> — any relevant test data or "N/A"\n\n` +
+    `Given the bug title and notes below, generate HTML content for the "Repro Steps" field.\n` +
+    `Structure it with five clearly labelled sections:\n` +
+    `1. <b>Description:</b> — one paragraph context summary\n` +
+    `2. <b>Steps to Reproduce:</b> — numbered <ol> list (use the user's steps if provided)\n` +
+    `3. <b>Actual Result:</b> — what actually happened (the bug)\n` +
+    `4. <b>Expected Result:</b> — what should have happened\n` +
+    `5. <b>Test Data:</b> — relevant IDs or "N/A"\n\n` +
     `Bug Title: ${title}\n` +
-    `Description: ${description || "(none provided)"}\n\n` +
+    `Notes: ${description || "(none provided)"}\n\n` +
     `Return only the HTML. No markdown, no code fences, no extra explanation.`;
 
   try {
@@ -110,22 +111,60 @@ async function suggestReproSteps(title, description) {
 }
 
 function buildReproTemplate(title, description) {
-  const text = (description || title || "").trim();
+  // Strip optional label prefix that users sometimes prepend
+  let rawText = (description || title || "").trim();
+  rawText = rawText.replace(/^(?:description|notes?|steps?|title)\s*[:\-\u2013]\s*/i, "").trim();
+  const text = rawText;
   const lower = text.toLowerCase();
 
-  // ── Extract identifiers from description ──────────────────────────────────
+  // ── Extract identifiers from user's notes ─────────────────────────────────
   const identifiers = [];
-  const asnMatch   = text.match(/\bASN\s*[:\-]?\s*(\d{10,})/i);
-  const poMatch    = text.match(/\bPO\s*[:\-]?\s*(\d{5,})/i);
-  const suppMatch  = text.match(/supplier\s*[:\-]?\s*(\d{5,})/i);
+  const asnMatch  = text.match(/\bASN\s*[-:\u2013]?\s*(\d{10,})/i);
+  const poMatch   = text.match(/\bPO\s*[-:\u2013]?\s*(\d{5,})/i);
+  const suppMatch = text.match(/supplier\s*[-:\u2013]?\s*(\d{5,})/i);
   if (asnMatch)  identifiers.push(`ASN: ${asnMatch[1]}`);
   if (poMatch)   identifiers.push(`PO: ${poMatch[1]}`);
-  if (suppMatch) identifiers.push(`Supplier: ${suppMatch[1]}`);
-  const testData = identifiers.length
+  if (suppMatch) identifiers.push(`Supplier: ${suppMatch[1]}`);  // Also capture bare "Test data: X" or "Test ASN: X" values
+  if (identifiers.length === 0) {
+    const tdLine = text.match(/test\s*(?:asn|case|data)?\s*[-:\u2013]\s*([^\n]+)/i);
+    if (tdLine) identifiers.push(tdLine[1].trim());
+  }  const testData = identifiers.length
     ? identifiers.join(", ")
     : "Use relevant test data from the current sprint";
 
-  // ── Detect message type / area and build domain-specific steps ────────────
+  // ── Extract actual/expected result — works anywhere in text (mid-sentence) ─
+  const actualRx   = /actual\s*(?:result)?\s*[-:\u2013]\s*([\s\S]+?)(?=\s*expected\s*(?:result)?\s*[-:\u2013]|\s*test\s*(?:asn|data)\s*[-:\u2013]|\s*$)/i;
+  const expectedRx = /expected\s*(?:result)?\s*[-:\u2013]\s*([\s\S]+?)(?=\s*actual\s*(?:result)?\s*[-:\u2013]|\s*test\s*(?:asn|data)\s*[-:\u2013]|\s*$)/i;
+  const actualLineMatch   = text.match(actualRx);
+  const expectedLineMatch = text.match(expectedRx);
+  const userActualInline = actualLineMatch   ? actualLineMatch[1].trim().replace(/[.!?]$/, "")   : null;
+  const userExpected     = expectedLineMatch ? expectedLineMatch[1].trim().replace(/[.!?]$/, "") : null;
+
+  // ── Build clean text for step parsing (strip actual/expected/test-data) ───
+  const stepText = text
+    .replace(new RegExp(actualRx.source,   "gi"), "")
+    .replace(new RegExp(expectedRx.source, "gi"), "")
+    .replace(/test\s*(?:asn|data)\s*[-:\u2013]\s*[\s\S]*/gi, "")
+    .trim();
+
+  // ── Extract user-written numbered steps: newline-based first, then inline ──
+  const stepLineRegex = /^(?:step\s*)?(\d+)[.:\-\)]\s*(.+)/;
+  const byLine = stepText.split(/\r?\n/).map((l) => l.trim()).filter((l) => stepLineRegex.test(l));
+  let userStepLines = [];
+  if (byLine.length >= 2) {
+    userStepLines = byLine.map((l) => l.replace(/^(?:step\s*)?\d+[.:\-\)]\s*/i, "").trim());
+  } else {
+    // Inline: "1. Login. 2. Navigate. 3. Click." — split at whitespace before "N. "
+    const inlineParts = stepText.split(/\s+(?=\d+\.\s)/);
+    const inlineSteps = inlineParts
+      .map((s) => s.trim())
+      .filter((s) => /^\d+\.\s/.test(s))
+      .map((s) => s.replace(/^\d+\.\s+/, "").replace(/[.!?]$/, "").trim())
+      .filter((s) => s.length > 0);
+    if (inlineSteps.length >= 2) userStepLines = inlineSteps;
+  }
+
+  // ── Build steps: use user's steps if present, else domain defaults ─────────
   let steps = [];
 
   const isAsn     = lower.includes("asn") || asnMatch;
@@ -136,7 +175,10 @@ function buildReproTemplate(title, description) {
   const isPo      = lower.includes("po feed") || lower.includes("po ") || poMatch;
   const isScc     = lower.includes("scc") || lower.includes("wms");
 
-  if (isVbkcon || isVbkreq) {
+  if (userStepLines.length >= 2) {
+    // User provided their own steps — use them directly
+    steps = userStepLines;
+  } else if (isVbkcon || isVbkreq) {
     const msgRef = asnMatch ? ` for ASN ${asnMatch[1]}` : "";
     steps = [
       `Login to E2open`,
@@ -186,7 +228,7 @@ function buildReproTemplate(title, description) {
       `If ERROR — capture the error message and rejection reason from the logs`,
       `Verify the PO data is correctly reflected in the downstream system`,
     ];
-  } else if (isScc || isScc) {
+  } else if (isScc) {
     steps = [
       `Login to E2open SCC`,
       `Navigate to the relevant ASN / booking section`,
@@ -195,7 +237,6 @@ function buildReproTemplate(title, description) {
       `Verify the expected outcome in WMS`,
     ];
   } else {
-    // Generic E2Open inbound flow
     steps = [
       `Login to E2open`,
       `Navigate to the relevant message / transaction log`,
@@ -209,31 +250,68 @@ function buildReproTemplate(title, description) {
 
   const stepsHtml = steps.map((s) => `<li>${s}</li>`).join("");
 
-  // ── Derive expected result by inverting the problem ───────────────────────
-  let expected = "";
-  if (lower.includes("not process") || lower.includes("not being process")) {
-    expected = "The message / file should be processed successfully with status SUCCESS and reflect correctly in the downstream system";
-  } else if (lower.includes("reject") || lower.includes("rejected")) {
-    expected = "The message should be accepted by E2open and processed with status SUCCESS";
-  } else if (lower.includes("500") || lower.includes("error") || lower.includes("exception")) {
-    expected = "The operation should complete without errors and the file should be processed with status SUCCESS";
-  } else if (lower.includes("missing") || lower.includes("not appear") || lower.includes("not show")) {
-    expected = "The expected data / lines should appear in the downstream system after successful processing";
-  } else if (lower.includes("fail") || lower.includes("failing")) {
-    expected = "The operation should complete successfully with status SUCCESS on the E2open logs";
-  } else if (lower.includes("slow") || lower.includes("delay") || lower.includes("timeout")) {
-    expected = "The system should process and respond within the expected SLA / time threshold";
-  } else if (isVbkcon || isVbkreq) {
-    expected = "VBKREQ and VBKCON should be generated and processed with status SUCCESS; booking confirmation should be visible in the downstream system";
-  } else if (isAsn) {
-    expected = "ASN should be accepted by E2open, processed with status SUCCESS, and all shipment lines should be visible in WMS";
+  // ── Derive expected result ────────────────────────────────────────────────
+  let expected = userExpected || "";
+  if (!expected) {
+    if (lower.includes("not process") || lower.includes("not being process")) {
+      expected = "The message / file should be processed successfully with status SUCCESS and reflect correctly in the downstream system";
+    } else if (lower.includes("reject") || lower.includes("rejected")) {
+      expected = "The message should be accepted by E2open and processed with status SUCCESS";
+    } else if (lower.includes("500") || lower.includes("error") || lower.includes("exception")) {
+      expected = "The operation should complete without errors and the file should be processed with status SUCCESS";
+    } else if (lower.includes("missing") || lower.includes("not appear") || lower.includes("not show")) {
+      expected = "The expected data / lines should appear in the downstream system after successful processing";
+    } else if (lower.includes("fail") || lower.includes("failing")) {
+      expected = "The operation should complete successfully with status SUCCESS on the E2open logs";
+    } else if (lower.includes("slow") || lower.includes("delay") || lower.includes("timeout")) {
+      expected = "The system should process and respond within the expected SLA / time threshold";
+    } else if (isVbkcon || isVbkreq) {
+      expected = "VBKREQ and VBKCON should be generated and processed with status SUCCESS; booking confirmation should be visible in the downstream system";
+    } else if (isAsn) {
+      expected = "ASN should be accepted by E2open, processed with status SUCCESS, and all shipment lines should be visible in WMS";
+    } else {
+      expected = "The file / message should be processed with status SUCCESS and the expected outcome should be visible in the downstream system";
+    }
+  }
+
+  // ── Build description: context from first 2 steps (not actual result) ────────
+  const beforeFirstStep = stepText.split(/\s*1\.\s/)[0].trim();
+  let descriptionText;
+  if (beforeFirstStep && beforeFirstStep.length > 3) {
+    descriptionText = beforeFirstStep;
+  } else if (userStepLines.length >= 2) {
+    // Summarise the first two steps as scenario context
+    descriptionText = userStepLines.slice(0, 2).join(" \u2192 ");
   } else {
-    expected = "The file / message should be processed with status SUCCESS and the expected outcome should be visible in the downstream system";
+    descriptionText = userActualInline || text.split(/[.!?\n]/)[0].trim() || text;
+  }
+
+  const userActual = userActualInline;
+
+  // ── Derive actual result ──────────────────────────────────────────────────
+  let actual = userActual || "";
+  if (!actual) {
+    if (lower.includes("500") || lower.includes("exception")) {
+      actual = "A 500 / Internal Server Error is returned and the message fails to process";
+    } else if (lower.includes("rejected")) {
+      actual = "The message is rejected by the system with an error";
+    } else if (lower.includes("not appear") || lower.includes("not showing") || lower.includes("not visible")) {
+      actual = "The expected data / lines are not visible in the downstream system";
+    } else if (lower.includes("not process") || lower.includes("not being process")) {
+      actual = "The message is not being processed — status shows ERROR or remains pending";
+    } else if (lower.includes("fail") || lower.includes("error")) {
+      actual = "The operation fails with an error in the E2open message log";
+    } else if (lower.includes("missing")) {
+      actual = "The expected data is missing from the downstream system";
+    } else {
+      actual = descriptionText;
+    }
   }
 
   return (
-    `<b>Description:</b><br/>${text}<br/><br/>` +
+    `<b>Description:</b><br/>${descriptionText}<br/><br/>` +
     `<b>Steps to Reproduce:</b><br/><ol>${stepsHtml}</ol>` +
+    `<b>Actual Result:</b><br/>${actual}<br/><br/>` +
     `<b>Expected Result:</b><br/>${expected}<br/><br/>` +
     `<b>Test Data:</b><br/>${testData}`
   );
@@ -291,13 +369,47 @@ async function suggestTitle(description) {
  * capped at 100 characters.
  */
 function buildTitleFallback(description) {
-  const text = (description || "").trim();
-  // Take up to the first sentence-ending punctuation
+  let text = (description || "").trim();
+  text = text.replace(/^(?:description|notes?|steps?|title)\s*[:\-\u2013]\s*/i, "").trim();
+  // If text starts with a numbered step, derive title from actual result + domain prefix
+  if (/^\d+\.\s/.test(text)) {
+    const actualM = text.match(/actual\s*(?:result)?\s*[-:\u2013]\s*(.+?)(?=\s*expected\s*(?:result)?\s*[-:\u2013]|\s*test\s*(?:asn|data)\s*[-:\u2013]|\s*$)/i);
+    if (actualM) {
+      const basis = actualM[1].trim().replace(/[.!?]$/, "");
+      const isScc = /scc/i.test(text);
+      const isInbound = /\basn\b|inbound|vbkreq|vbkcon/i.test(text);
+      const prefix = isScc ? "SCC \u2014 " : isInbound ? "Inbound \u2014 " : "";
+      const capped = basis.length > 90 ? basis.substring(0, 87) + "..." : basis;
+      return (prefix + capped.charAt(0).toUpperCase() + capped.slice(1)).trim();
+    }
+    // Fall back: skip all step fragments and use next non-step sentence
+    const noSteps = text.replace(/\d+\.\s+[^.]+\.?/g, " ").trim();
+    const first = noSteps.split(/[.!?\n]/)[0].trim();
+    if (first && first.length > 5) return first.charAt(0).toUpperCase() + first.slice(1);
+  }
   const firstSentence = text.split(/[.!?\n]/)[0].trim();
   const candidate = firstSentence || text;
-  // Capitalise first letter and cap length
   const capped = candidate.length > 100 ? candidate.substring(0, 97) + "..." : candidate;
   return capped.charAt(0).toUpperCase() + capped.slice(1);
 }
 
-module.exports = { suggestPriorityAndSeverity, suggestReproSteps, suggestTitle };
+/**
+ * Suggests an assignee based on keywords in the notes.
+ * Assignee values must match the dropdown options in the UI.
+ */
+function suggestAssignee(description) {
+  const lower = (description || "").toLowerCase();
+  // E2open integration platform keywords take priority — most inbound supply chain bugs live here
+  if (
+    lower.includes("e2open") || lower.includes("vbkcon") || lower.includes("vbkreq") ||
+    lower.includes("asn") || lower.includes("gpm") || lower.includes("bst") ||
+    lower.includes("po feed") || lower.includes("message log") || lower.includes("inbound")
+  ) return "E2open";
+  // ASOS sub-teams (only if no E2open keywords found)
+  if (lower.includes(" ris ") || lower.includes("returns") || lower.includes("reverse")) return "ASOS RIS";
+  if (lower.includes(" rms ") || lower.includes("range") || lower.includes("product range")) return "ASOS RMS";
+  if (lower.includes("sct") || lower.includes("warehouse") || lower.includes("wms")) return "ASOS SCT";
+  return "E2open"; // default
+}
+
+module.exports = { suggestPriorityAndSeverity, suggestReproSteps, suggestTitle, suggestAssignee };

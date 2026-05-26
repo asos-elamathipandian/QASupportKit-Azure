@@ -1090,7 +1090,7 @@ app.post("/api/cancel", (req, res) => {
 const { sendAdoReportEmail, sendEditedAdoReportEmail, getAdoAvailability, generateAdoReportHtml } = require("./ado-email");
 
 // ── ADO Bug Creation ──────────────────────────────────────────────────────────
-const { suggestPriorityAndSeverity, suggestReproSteps, suggestTitle } = require("./ado-bug-suggester");
+const { suggestPriorityAndSeverity, suggestReproSteps, suggestTitle, suggestAssignee } = require("./ado-bug-suggester");
 const { createAdoBug } = require("./ado-bug-creator");
 
 // Suggest title, priority, severity, and repro steps from description
@@ -1098,11 +1098,12 @@ app.post("/api/ado/suggest-fields", async (req, res) => {
   try {
     const { title = "", description = "" } = req.body || {};
     const { priority, severity } = suggestPriorityAndSeverity(title || description, description);
+    const assignee = suggestAssignee(description);
     const [reproSteps, suggestedTitle] = await Promise.all([
       suggestReproSteps(title || description, description),
       title ? Promise.resolve(null) : suggestTitle(description),
     ]);
-    res.json({ ok: true, title: suggestedTitle, priority, severity, reproSteps });
+    res.json({ ok: true, title: suggestedTitle, priority, severity, assignee, reproSteps });
   } catch (e) {
     res.status(500).json({ ok: false, error: e.message });
   }
@@ -1120,6 +1121,7 @@ app.post("/api/ado/create-bug", async (req, res) => {
       priority,
       severity,
       testCaseId,
+      discoveredInEnvironment,
     } = req.body || {};
 
     if (!title || !String(title).trim()) {
@@ -1135,6 +1137,7 @@ app.post("/api/ado/create-bug", async (req, res) => {
       priority,
       severity,
       testCaseId,
+      discoveredInEnvironment,
     });
 
     res.json({ ok: true, id: result.id, url: result.url });

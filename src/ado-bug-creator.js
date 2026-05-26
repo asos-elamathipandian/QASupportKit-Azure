@@ -37,6 +37,7 @@ function getAuthHeader() {
  * @param {string|number} [params.priority] 1–4
  * @param {string} [params.severity]       e.g. "2 - High"
  * @param {string|number} [params.testCaseId] work item ID to link as Related
+ * @param {string} [params.discoveredInEnvironment] e.g. "Integration", "UAT", "Production"
  * @returns {{ id: number, url: string }}
  */
 async function createAdoBug({
@@ -48,6 +49,7 @@ async function createAdoBug({
   priority,
   severity,
   testCaseId,
+  discoveredInEnvironment,
 }) {
   if (!title || !title.trim()) {
     throw new Error("Bug title is required.");
@@ -57,10 +59,6 @@ async function createAdoBug({
   const encodedProject = encodeURIComponent(project);
   const apiUrl =
     `https://dev.azure.com/${org}/${encodedProject}/_apis/wit/workitems/$Bug?api-version=7.1`;
-
-  console.log(`[ado-bug-creator] POST ${apiUrl}`);
-  console.log(`[ado-bug-creator] PAT length: ${process.env[patEnvVar] ? process.env[patEnvVar].length : "NOT SET"}`);
-  console.log(`[ado-bug-creator] Auth header starts: ${auth.substring(0, 12)}...`);
 
   const resolvedArea = areaPath && areaPath.trim() ? areaPath.trim() : project;
   const resolvedIteration =
@@ -89,9 +87,18 @@ async function createAdoBug({
       path: "/fields/Microsoft.VSTS.Common.Severity",
       value: resolvedSeverity,
     },
+    {
+      op: "add",
+      path: "/fields/Custom.DiscoveredInEnvironment",
+      value: discoveredInEnvironment && discoveredInEnvironment.trim()
+        ? discoveredInEnvironment.trim()
+        : "Integration",
+    },
   ];
 
-  if (assignedTo && assignedTo.trim()) {
+  // Only send System.AssignedTo if value looks like a valid email / ADO identity
+  // Plain display names ("E2open", "Lisa" etc.) are rejected by the ADO API
+  if (assignedTo && assignedTo.includes("@")) {
     patchDoc.push({
       op: "add",
       path: "/fields/System.AssignedTo",
@@ -126,7 +133,6 @@ async function createAdoBug({
 
   if (!res.ok) {
     const errText = await res.text();
-    console.log(`[ado-bug-creator] ADO error ${res.status}:`, errText);
     throw new Error(`ADO API responded with ${res.status}: ${errText}`);
   }
 

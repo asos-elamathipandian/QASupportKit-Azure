@@ -3,8 +3,10 @@ const path = require("path");
 const dotenv = require("dotenv");
 
 function loadEnvironment() {
-  dotenv.config({ path: path.resolve(process.cwd(), "config/.env") });
-  dotenv.config();
+  // override: true ensures .env values replace any pre-existing process.env values
+  // (e.g. stale Windows system/user env vars from a previous setup)
+  dotenv.config({ path: path.resolve(process.cwd(), "config/.env"), override: true });
+  dotenv.config({ override: true });
 }
 
 function loadInputsFile() {
