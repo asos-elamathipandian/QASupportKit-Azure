@@ -14,8 +14,6 @@ class CarrierBookingEditPage {
         this.fillcargoDeliveryDate = '[id^="resultfield_appvbCargoDeliveryDate_APP_PO"]';
         this.trafficModeOrigin = '[id$="appvbTrafficModeOrigin-content-cell"]';
         this.filltrafficModeOrigin = '[id^="resultfield_appvbTrafficModeOrigin_APP_PO"]';
-        this.carrierBookingRequestDate = '[id$="appvbCarrierBookingRequestDate-content-cell"]';
-        this.fillCarrierBookingRequestDate = '[id^="resultfield_appvbCarrierBookingRequestDate_APP_PO"]';
         this.editBooking = { name: 'Edit Booking' };
         this.saveAfterEdit = { name: 'Save' };
         this.selectEditedBookingResult = '#resultTable-select-all';
@@ -108,17 +106,6 @@ class CarrierBookingEditPage {
         await this.safeClick(this.frame.locator(this.fillcargoDeliveryDate).first());
         await this.selectDatepickerDay();
         await this.safeClick(this.frame.locator(this.applyAllButton));
-        // Carrier Booking Request Date — skip gracefully if field is not present in this view
-        const carrierReqDateCell = this.frame.locator(this.carrierBookingRequestDate).first();
-        const hasCarrierReqDate = await carrierReqDateCell.count().then(c => c > 0).catch(() => false);
-        if (hasCarrierReqDate) {
-            await this.safeClick(carrierReqDateCell);
-            const fillField = this.frame.locator(this.fillCarrierBookingRequestDate).first();
-            await fillField.waitFor({ state: 'visible', timeout: 5000 }).catch(() => {});
-            await this.safeClick(fillField);
-            await this.selectDatepickerDay();
-            await this.safeClick(this.frame.locator(this.applyAllButton));
-        }
         await this.safeClick(this.frame.locator(this.trafficModeOrigin).first());
         await this.frame.locator(this.filltrafficModeOrigin).first().selectOption('CFS');
         await this.safeClick(this.frame.locator(this.applyAllButton));

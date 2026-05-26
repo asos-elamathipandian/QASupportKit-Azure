@@ -48,7 +48,7 @@ loadEnvironment();
 });
 
 const app = express();
-app.use(express.json());
+app.use(express.json({ limit: "10mb" }));
 app.use(express.static(path.join(__dirname, "..", "public")));
 
 // Health check endpoint (useful for Azure probes)
@@ -613,6 +613,17 @@ app.post("/api/prod-upload", async (req, res) => {
     if (!safeFileName || safeFileName !== fileName) {
       return res.status(400).json({ ok: false, error: "Invalid file name" });
     }
+    // Basic XML syntax validation — reject if the content doesn't look like valid XML
+    const trimmed = xml.trim();
+    if (!trimmed.startsWith("<")) {
+      return res.status(400).json({ ok: false, error: "Invalid XML: content does not start with '<'" });
+    }
+    // Check for unclosed root tag as a lightweight well-formedness guard
+    const rootTagMatch = trimmed.match(/^<[?!].*?>?\s*<([\w:.-]+)[\s>]/);
+    const rootTag = rootTagMatch ? rootTagMatch[1] : null;
+    if (rootTag && !trimmed.includes(`</${rootTag}>`)) {
+      return res.status(400).json({ ok: false, error: `Invalid XML: missing closing tag </${rootTag}>` });
+    }
     const outputDir = getOutputDir(process.env);
     const filePath = path.join(outputDir, safeFileName);
     fs.writeFileSync(filePath, xml, "utf8");
@@ -1077,6 +1088,60 @@ app.post("/api/cancel", (req, res) => {
 
 // ADO Email Report (enabled when config and env are valid)
 const { sendAdoReportEmail, sendEditedAdoReportEmail, getAdoAvailability, generateAdoReportHtml } = require("./ado-email");
+
+// ── ADO Bug Creation ──────────────────────────────────────────────────────────
+const { suggestPriorityAndSeverity, suggestReproSteps, suggestTitle } = require("./ado-bug-suggester");
+const { createAdoBug } = require("./ado-bug-creator");
+
+// Suggest title, priority, severity, and repro steps from description
+app.post("/api/ado/suggest-fields", async (req, res) => {
+  try {
+    const { title = "", description = "" } = req.body || {};
+    const { priority, severity } = suggestPriorityAndSeverity(title || description, description);
+    const [reproSteps, suggestedTitle] = await Promise.all([
+      suggestReproSteps(title || description, description),
+      title ? Promise.resolve(null) : suggestTitle(description),
+    ]);
+    res.json({ ok: true, title: suggestedTitle, priority, severity, reproSteps });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+// Create a Bug work item in ADO
+app.post("/api/ado/create-bug", async (req, res) => {
+  try {
+    const {
+      title,
+      areaPath,
+      iterationPath,
+      assignedTo,
+      reproSteps,
+      priority,
+      severity,
+      testCaseId,
+    } = req.body || {};
+
+    if (!title || !String(title).trim()) {
+      return res.status(400).json({ ok: false, error: "Bug title is required." });
+    }
+
+    const result = await createAdoBug({
+      title,
+      areaPath,
+      iterationPath,
+      assignedTo,
+      reproSteps,
+      priority,
+      severity,
+      testCaseId,
+    });
+
+    res.json({ ok: true, id: result.id, url: result.url });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
 
 app.get("/api/ado-status", (req, res) => {
   res.json(getAdoAvailability());

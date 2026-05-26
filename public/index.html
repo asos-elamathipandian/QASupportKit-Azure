@@ -1148,6 +1148,140 @@ async function fullSccFlow() {
     </div>
   </div>
 
+  <!-- ══════════════════════════════════════════════════════════════════════
+       RAISE ADO BUG — fully isolated from all existing flows
+       ══════════════════════════════════════════════════════════════════════ -->
+  <div class="card" id="raise-ado-bug-card" style="border-left:4px solid #7c3aed;">
+    <div class="card-title" style="color:#7c3aed;">&#128027; Raise ADO Bug</div>
+    <p style="font-size:0.82rem; color:#555; margin:4px 0 16px 0;">
+      Enter a <strong>1–2 line description</strong> of the issue, then click <strong>Suggest Fields</strong> — the title, priority, severity and repro steps will all be auto-generated for review before submitting. You can override the title manually if preferred.
+    </p>
+
+    <!-- Row 1: Title (full width) -->
+    <div class="form-grid" style="margin-bottom:14px;">
+      <div class="form-group" style="grid-column:1/-1;">
+        <label for="bugTitle">Title</label>
+        <input id="bugTitle" type="text" placeholder="Auto-generated from description — or type your own title here" />
+      </div>
+    </div>
+
+    <!-- Row 1b: Brief description -->
+    <div class="form-group" style="margin-bottom:14px;">
+      <label for="bugDescription">Brief Description <span style="color:#e53e3e;">*</span></label>
+      <textarea id="bugDescription" rows="2"
+        style="resize:vertical;border:1px solid #d1d5db;border-radius:6px;padding:9px 10px;width:100%;font-size:0.88rem;font-family:inherit;"
+        placeholder="1–2 lines: what went wrong and where. e.g. ASN 49870000002468 is rejected with a 500 error — no shipment lines appear in WMS after transmission."></textarea>
+      <span class="field-hint">This drives the auto-suggestion of Priority, Severity and Repro Steps.</span>
+    </div>
+
+    <!-- Row 2: Area + Iteration -->
+    <div class="form-grid" style="margin-bottom:14px;">
+      <div class="form-group">
+        <label for="bugArea">Area Path</label>
+        <input id="bugArea" type="text" value="Inbound" placeholder="Inbound" />
+      </div>
+      <div class="form-group">
+        <label for="bugIteration">Iteration Path</label>
+        <input id="bugIteration" type="text" value="Inbound\Iteration 1" placeholder="Inbound\Iteration 1" />
+      </div>
+    </div>
+
+    <!-- Row 3: Assignee + Priority + Severity -->
+    <div class="form-grid" style="margin-bottom:14px;">
+      <div class="form-group">
+        <label for="bugAssignee">Assignee</label>
+        <select id="bugAssignee">
+          <option value="">— Unassigned —</option>
+          <option value="E2open">E2open</option>
+          <option value="Lisa">Lisa</option>
+          <option value="Arthur">Arthur</option>
+          <option value="Ela">Ela</option>
+          <option value="Shyam">Shyam</option>
+          <option value="Frazer">Frazer</option>
+          <option value="ASOS SCT">ASOS SCT</option>
+          <option value="ASOS RIS">ASOS RIS</option>
+          <option value="ASOS RMS">ASOS RMS</option>
+          <option value="ASOS">ASOS</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="bugPriority">Priority</label>
+        <select id="bugPriority">
+          <option value="1">1 - Critical</option>
+          <option value="2">2 - High</option>
+          <option value="3" selected>3 - Medium</option>
+          <option value="4">4 - Low</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="bugSeverity">Severity</label>
+        <select id="bugSeverity">
+          <option value="1 - Critical">1 - Critical</option>
+          <option value="2 - High">2 - High</option>
+          <option value="3 - Medium" selected>3 - Medium</option>
+          <option value="4 - Low">4 - Low</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Repro Steps (Description / Steps / Expected / Test Data) -->
+    <div class="form-group" style="margin-bottom:14px;">
+      <label for="bugReproSteps" style="display:flex;align-items:center;gap:8px;">
+        Repro Steps
+        <span id="bugReproStepsBadge" style="display:none;background:#7c3aed;color:white;font-size:0.65rem;padding:2px 7px;border-radius:10px;font-weight:700;">AI suggested</span>
+      </label>
+      <textarea id="bugReproSteps" rows="8"
+        style="font-family:monospace;font-size:0.82rem;resize:vertical;border:1px solid #d1d5db;border-radius:6px;padding:10px;width:100%;"
+        placeholder="Auto-filled when you click Suggest Fields. You can also type or edit directly here."></textarea>
+      <span class="field-hint">This maps to the ADO Bug 'Repro Steps' field — include Description, Steps to Reproduce, Expected Result and Test Data.</span>
+    </div>
+
+    <!-- Related Test Case ID -->
+    <div class="form-grid" style="margin-bottom:18px;">
+      <div class="form-group">
+        <label for="bugTestCaseId">Related Test Case ID</label>
+        <input id="bugTestCaseId" type="text" placeholder="e.g. 1192345 (ADO work item ID)" />
+        <span class="field-hint">Will be linked as a Related work item.</span>
+      </div>
+    </div>
+
+    <!-- Action buttons -->
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px;">
+      <button id="btnSuggestBugFields" onclick="suggestBugFields()"
+        style="background:#7c3aed;color:white;font-weight:600;padding:8px 18px;border:none;border-radius:4px;cursor:pointer;">
+        &#9889; Suggest Fields
+      </button>
+      <button id="btnReviewBug" onclick="reviewBug()"
+        style="background:#0369a1;color:white;font-weight:600;padding:8px 18px;border:none;border-radius:4px;cursor:pointer;">
+        &#128065; Review
+      </button>
+      <button id="btnSubmitBug" onclick="submitBug()" disabled
+        style="background:#15803d;color:white;font-weight:600;padding:8px 18px;border:none;border-radius:4px;cursor:pointer;opacity:0.5;">
+        &#128027; Submit Bug
+      </button>
+      <span id="bugActionStatus" style="font-size:0.82rem;"></span>
+    </div>
+
+    <!-- Inline review panel (shown after Review click) -->
+    <div id="bugReviewPanel" style="display:none;background:#f8f7ff;border:1px solid #c4b5fd;border-radius:8px;padding:16px 20px;margin-top:6px;">
+      <div style="font-weight:700;color:#7c3aed;font-size:0.88rem;margin-bottom:12px;letter-spacing:0.04em;">&#128270; BUG REVIEW SUMMARY</div>
+      <table style="width:100%;border-collapse:collapse;font-size:0.83rem;">
+        <tr><td style="padding:4px 8px;color:#6b7280;white-space:nowrap;width:130px;">Title</td><td id="rvTitle" style="padding:4px 8px;font-weight:600;"></td></tr>
+        <tr style="background:#f0ebff;"><td style="padding:4px 8px;color:#6b7280;">Area Path</td><td id="rvArea" style="padding:4px 8px;"></td></tr>
+        <tr><td style="padding:4px 8px;color:#6b7280;">Iteration</td><td id="rvIteration" style="padding:4px 8px;"></td></tr>
+        <tr style="background:#f0ebff;"><td style="padding:4px 8px;color:#6b7280;">Assignee</td><td id="rvAssignee" style="padding:4px 8px;"></td></tr>
+        <tr><td style="padding:4px 8px;color:#6b7280;">Priority</td><td id="rvPriority" style="padding:4px 8px;"></td></tr>
+        <tr style="background:#f0ebff;"><td style="padding:4px 8px;color:#6b7280;">Severity</td><td id="rvSeverity" style="padding:4px 8px;"></td></tr>
+        <tr><td style="padding:4px 8px;color:#6b7280;">Test Case ID</td><td id="rvTestCaseId" style="padding:4px 8px;"></td></tr>
+        <tr style="background:#f0ebff;"><td style="padding:4px 8px;color:#6b7280;vertical-align:top;">Repro Steps</td><td id="rvReproSteps" style="padding:4px 8px;max-height:200px;overflow-y:auto;display:block;"></td></tr>
+      </table>
+      <p style="font-size:0.78rem;color:#6b7280;margin-top:10px;">&#9432; Edit the form fields above if needed, then click <strong>Submit Bug</strong>.</p>
+    </div>
+
+    <!-- Result after submit -->
+    <div id="bugSubmitResult" style="margin-top:12px;"></div>
+  </div>
+
   <!-- ── WORK IN PROGRESS FEATURES ── -->
   <hr style="margin:32px 0; border:none; border-top:2px solid #e5e7eb; opacity:0.5;" />
   <div style="text-align:center; margin:20px 0;">
@@ -2346,6 +2480,157 @@ async function prodDoUpload() {
 function prodSafeId(name) {
   return name.replace(/[^a-zA-Z0-9]/g, '_');
 }
+
+  // ── Raise ADO Bug ──────────────────────────────────────────────────────────
+
+  async function suggestBugFields() {
+    const btn = document.getElementById('btnSuggestBugFields');
+    const status = document.getElementById('bugActionStatus');
+    const title = document.getElementById('bugTitle').value.trim();
+    const description = document.getElementById('bugDescription').value.trim();
+
+    if (!description) {
+      status.style.color = '#d32f2f';
+      status.textContent = '⚠️ Enter a brief description first.';
+      return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = '⏳ Suggesting...';
+    status.textContent = '';
+    document.getElementById('bugReviewPanel').style.display = 'none';
+    document.getElementById('bugSubmitResult').innerHTML = '';
+
+    try {
+      const res = await fetch('/api/ado/suggest-fields', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, description }),
+      });
+      const data = await res.json();
+      if (!data.ok) throw new Error(data.error || 'Suggestion failed');
+
+      // Apply priority
+      const priSel = document.getElementById('bugPriority');
+      for (const opt of priSel.options) { if (opt.value === String(data.priority)) { opt.selected = true; break; } }
+
+      // Apply severity
+      const sevSel = document.getElementById('bugSeverity');
+      for (const opt of sevSel.options) { if (opt.value === data.severity) { opt.selected = true; break; } }
+
+      // Apply title if not already entered
+      const titleEl = document.getElementById('bugTitle');
+      if (!titleEl.value.trim() && data.title) {
+        titleEl.value = data.title;
+      }
+
+      // Apply repro steps
+      document.getElementById('bugReproSteps').value = data.reproSteps || '';
+      document.getElementById('bugReproStepsBadge').style.display = 'inline';
+
+      status.style.color = '#15803d';
+      status.textContent = '✅ Fields suggested — review the summary below and adjust if needed.';
+
+      // Automatically open review panel
+      reviewBug();
+    } catch (err) {
+      status.style.color = '#d32f2f';
+      status.textContent = '❌ ' + err.message;
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '⚡ Suggest Fields';
+    }
+  }
+
+  function reviewBug() {
+    const title = document.getElementById('bugTitle').value.trim();
+    const status = document.getElementById('bugActionStatus');
+    if (!title) {
+      status.style.color = '#d32f2f';
+      status.textContent = '⚠️ Enter a title before reviewing.';
+      return;
+    }
+
+    document.getElementById('rvTitle').textContent      = title;
+    document.getElementById('rvArea').textContent       = document.getElementById('bugArea').value || 'Inbound';
+    document.getElementById('rvIteration').textContent  = document.getElementById('bugIteration').value || 'Inbound\\Iteration 1';
+    document.getElementById('rvAssignee').textContent   = document.getElementById('bugAssignee').value || '— Unassigned —';
+    document.getElementById('rvPriority').textContent   = document.getElementById('bugPriority').value;
+    document.getElementById('rvSeverity').textContent   = document.getElementById('bugSeverity').value;
+    document.getElementById('rvTestCaseId').textContent = document.getElementById('bugTestCaseId').value || '—';
+    document.getElementById('rvReproSteps').innerHTML   = document.getElementById('bugReproSteps').value || '<em>(empty)</em>';
+
+    document.getElementById('bugReviewPanel').style.display = 'block';
+    document.getElementById('bugSubmitResult').innerHTML = '';
+
+    // Enable Submit once reviewed
+    const submitBtn = document.getElementById('btnSubmitBug');
+    submitBtn.disabled = false;
+    submitBtn.style.opacity = '1';
+
+    // Only update status if not already set by suggestBugFields
+    if (!status.textContent) {
+      status.style.color = '#0369a1';
+      status.textContent = '👁 Review complete — edit fields above if needed, then Submit.';
+    }
+  }
+
+  async function submitBug() {
+    const title = document.getElementById('bugTitle').value.trim();
+    if (!title) {
+      document.getElementById('bugActionStatus').style.color = '#d32f2f';
+      document.getElementById('bugActionStatus').textContent = '⚠️ Title is required — run Suggest Fields or enter a title manually.';
+      return;
+    }
+
+    const btn = document.getElementById('btnSubmitBug');
+    const status = document.getElementById('bugActionStatus');
+    btn.disabled = true;
+    btn.textContent = '⏳ Creating bug...';
+    status.textContent = '';
+
+    const payload = {
+      title,
+      areaPath:      document.getElementById('bugArea').value.trim() || 'Inbound',
+      iterationPath: document.getElementById('bugIteration').value.trim() || 'Inbound\\Iteration 1',
+      assignedTo:    document.getElementById('bugAssignee').value,
+      reproSteps:    document.getElementById('bugReproSteps').value,
+      priority:      document.getElementById('bugPriority').value,
+      severity:      document.getElementById('bugSeverity').value,
+      testCaseId:    document.getElementById('bugTestCaseId').value.trim(),
+    };
+
+    try {
+      const res = await fetch('/api/ado/create-bug', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (!data.ok) throw new Error(data.error || 'Bug creation failed');
+
+      document.getElementById('bugSubmitResult').innerHTML =
+        `<div style="padding:12px 16px;background:#f0fdf4;border-left:4px solid #22c55e;border-radius:6px;font-size:0.87rem;">
+          <strong style="color:#15803d;">✅ Bug #${data.id} created successfully!</strong><br/>
+          <a href="${data.url}" target="_blank" rel="noopener noreferrer"
+             style="color:#0369a1;margin-top:6px;display:inline-block;">
+            &#128279; Open in Azure DevOps
+          </a>
+        </div>`;
+
+      status.textContent = '';
+      document.getElementById('bugReviewPanel').style.display = 'none';
+    } catch (err) {
+      document.getElementById('bugSubmitResult').innerHTML =
+        `<div style="padding:12px 16px;background:#fef2f2;border-left:4px solid #ef4444;border-radius:6px;font-size:0.87rem;">
+          <strong style="color:#991b1b;">❌ Error:</strong> ${err.message}
+        </div>`;
+      status.textContent = '';
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '🐛 Submit Bug';
+    }
+  }
 </script>
 
 <!-- ═══════════════════════════════════════════════════════════════════════════
