@@ -1118,6 +1118,14 @@ async function fullSccFlow() {
     </div>
 
     <!-- ② Structured bug input -->
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+      <span style="font-size:0.82rem;font-weight:600;color:#374151;">Bug Details</span>
+      <button type="button" onclick="resetBugInputs()"
+        style="font-size:0.72rem;background:none;border:1px solid #c4b5fd;color:#7c3aed;border-radius:4px;padding:2px 10px;cursor:pointer;font-weight:500;">
+        &#8634; Reset
+      </button>
+    </div>
+
     <div class="form-group" style="margin-bottom:10px;">
       <label for="bugSteps">Steps to Reproduce <span style="color:#e53e3e;">*</span></label>
       <textarea id="bugSteps" rows="4"
@@ -2533,6 +2541,21 @@ function prodSafeId(name) {
   // ── Raise ADO Bug ──────────────────────────────────────────────────────────
 
   let bugEditMode = false;
+
+  function resetBugInputs() {
+    document.getElementById('bugSteps').value = '';
+    document.getElementById('bugActualInput').value = '';
+    document.getElementById('bugExpectedInput').value = '';
+    document.getElementById('bugTestDataInput').value = '';
+    document.getElementById('bugUnifiedPanel').style.display = 'none';
+    document.getElementById('bugSubmitResult').innerHTML = '';
+    document.getElementById('bugActionStatus').textContent = '';
+    // Reset unified panel state
+    if (bugEditMode) toggleBugEditMode();
+    const submitBtn = document.getElementById('btnSubmitBug');
+    submitBtn.disabled = true;
+    submitBtn.style.opacity = '0.5';
+  }
 
   function htmlToPlainText(html) {
     return (html || '')
