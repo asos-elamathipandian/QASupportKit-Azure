@@ -275,7 +275,9 @@ function buildReproTemplate(title, description) {
   }
 
   // ── Build description: actual result + "in [tool]" extracted from step 1 ───
-  const beforeFirstStep = stepText.split(/\s*1\.\s/)[0].trim();
+  // Only use text-before-steps if the split actually found a "1." boundary (intro text)
+  const stepParts = stepText.split(/(?:^|\n)\s*1\.\s*/);
+  const beforeFirstStep = stepParts.length > 1 ? stepParts[0].trim() : "";
   let descriptionText;
   if (beforeFirstStep && beforeFirstStep.length > 3) {
     descriptionText = beforeFirstStep;
@@ -393,23 +395,30 @@ async function suggestTitle(description) {
 function buildTitleFallback(description) {
   let text = (description || "").trim();
   text = text.replace(/^(?:description|notes?|steps?|title)\s*[:\-\u2013]\s*/i, "").trim();
-  // If text starts with a numbered step, derive title from actual result + domain prefix
-  if (/^\d+\.\s/.test(text)) {
-    const actualM = text.match(/actual\s*(?:result)?\s*[-:\u2013]\s*(.+?)(?=\s*expected\s*(?:result)?\s*[-:\u2013]|\s*test\s*(?:asn|data)\s*[-:\u2013]|\s*$)/i);
-    if (actualM) {
-      const basis = actualM[1].trim().replace(/[.!?]$/, "");
-      const isScc = /scc/i.test(text);
-      const isInbound = /\basn\b|inbound|vbkreq|vbkcon/i.test(text);
-      const prefix = isScc ? "SCC \u2014 " : isInbound ? "Inbound \u2014 " : "";
-      const capped = basis.length > 90 ? basis.substring(0, 87) + "..." : basis;
-      return (prefix + capped.charAt(0).toUpperCase() + capped.slice(1)).trim();
-    }
-    // Fall back: skip all step fragments and use next non-step sentence
-    const noSteps = text.replace(/\d+\.\s+[^.]+\.?/g, " ").trim();
-    const first = noSteps.split(/[.!?\n]/)[0].trim();
-    if (first && first.length > 5) return first.charAt(0).toUpperCase() + first.slice(1);
+
+  // Always try actual result first — most meaningful summary for a bug title
+  const actualM = text.match(/actual\s*(?:result)?\s*[-:\u2013]\s*(.+?)(?:\n|$)/i);
+  if (actualM && actualM[1].trim().length > 3) {
+    const basis = actualM[1].trim().replace(/[.!?]$/, "");
+    const isScc = /scc/i.test(text);
+    const isInbound = /\basn\b|inbound|vbkreq|vbkcon/i.test(text);
+    const prefix = isScc ? "SCC \u2014 " : isInbound ? "Inbound \u2014 " : "";
+    const capped = basis.length > 90 ? basis.substring(0, 87) + "..." : basis;
+    return (prefix + capped.charAt(0).toUpperCase() + capped.slice(1)).trim();
   }
-  const firstSentence = text.split(/[.!?\n]/)[0].trim();
+
+  // No actual result — use first meaningful non-step, non-label line
+  const lines = text.split(/\n/);
+  for (const line of lines) {
+    const clean = line.replace(/^\d+[.\-:\)]\s*/, "").trim();
+    if (clean.length > 5 && !/^(?:actual|expected|steps?|test\s*(?:data|asn))\s*[-:\u2013]/i.test(clean)) {
+      const capped = clean.length > 100 ? clean.substring(0, 97) + "..." : clean;
+      return capped.charAt(0).toUpperCase() + capped.slice(1);
+    }
+  }
+
+  // Last resort: strip any leading "N." and use first sentence
+  const firstSentence = text.replace(/^\d+\.\s*/, "").split(/[.!?\n]/)[0].trim();
   const candidate = firstSentence || text;
   const capped = candidate.length > 100 ? candidate.substring(0, 97) + "..." : candidate;
   return capped.charAt(0).toUpperCase() + capped.slice(1);
