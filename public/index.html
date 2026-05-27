@@ -2693,7 +2693,7 @@ function prodSafeId(name) {
         </div>`;
 
       status.textContent = '';
-      document.getElementById('bugUnifiedPanel').style.display = 'none';
+      document.getElementById('bugSubmitResult').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     } catch (err) {
       document.getElementById('bugSubmitResult').innerHTML =
         `<div style="padding:12px 16px;background:#fef2f2;border-left:4px solid #ef4444;border-radius:6px;font-size:0.87rem;">
