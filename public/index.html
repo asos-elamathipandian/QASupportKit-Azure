@@ -1114,29 +1114,37 @@ async function fullSccFlow() {
 
     <!-- ① Instructions -->
     <div style="background:#f5f3ff;border:1px solid #c4b5fd;border-radius:6px;padding:11px 16px;margin-bottom:18px;font-size:0.83rem;color:#5b21b6;line-height:1.7;">
-      <strong>How to use:</strong> Fill in the bug notes below using the template structure, then click
-      <strong>&#9889; Suggest Fields</strong> — the title, priority, severity and repro steps will be auto-populated for review.<br/>
-      Or skip straight to the <em>manual form</em> below and fill in the fields yourself.
+      <strong>How to use:</strong> Fill in the fields below, then click <strong>&#9889; Suggest Fields</strong> — title, priority, severity, assignee and repro steps will be auto-generated for review.
     </div>
 
-    <!-- ② Bug Notes &amp; Steps — pre-filled template -->
-    <div class="form-group" style="margin-bottom:12px;">
-      <label for="bugDescription" style="display:flex;align-items:center;gap:10px;">
-        Bug Notes &amp; Steps <span style="color:#e53e3e;">*</span>
-        <button type="button" onclick="resetBugTemplate()"
-          style="font-size:0.72rem;background:none;border:1px solid #c4b5fd;color:#7c3aed;border-radius:4px;padding:2px 8px;cursor:pointer;font-weight:500;">
-          &#8634; Reset template
-        </button>
-      </label>
-      <textarea id="bugDescription" rows="9"
-        style="resize:vertical;border:1px solid #c4b5fd;border-radius:6px;padding:9px 10px;width:100%;font-size:0.88rem;font-family:inherit;background:#fdfcff;">1. 
-2. 
-3. 
+    <!-- ② Structured bug input -->
+    <div class="form-group" style="margin-bottom:10px;">
+      <label for="bugSteps">Steps to Reproduce <span style="color:#e53e3e;">*</span></label>
+      <textarea id="bugSteps" rows="4"
+        style="resize:vertical;border:1px solid #c4b5fd;border-radius:6px;padding:9px 10px;width:100%;font-size:0.87rem;font-family:inherit;background:#fdfcff;"
+        placeholder="1. Login to E2open SCC&#10;2. Navigate to ASOS Order Search DDP&#10;3. Search for ASN and click Apply"></textarea>
+    </div>
 
-Actual result: 
-Expected result: 
-Test data: </textarea>
-      <span class="field-hint">Fill in each step and the actual/expected result — the more detail, the better the suggestions.</span>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+      <div class="form-group">
+        <label for="bugActualInput">Actual Result <span style="color:#e53e3e;">*</span></label>
+        <input id="bugActualInput" type="text"
+          style="border:1px solid #c4b5fd;border-radius:6px;padding:8px 10px;width:100%;font-size:0.87rem;background:#fdfcff;box-sizing:border-box;"
+          placeholder="e.g. ASN shipment is not found" />
+      </div>
+      <div class="form-group">
+        <label for="bugExpectedInput">Expected Result</label>
+        <input id="bugExpectedInput" type="text"
+          style="border:1px solid #c4b5fd;border-radius:6px;padding:8px 10px;width:100%;font-size:0.87rem;background:#fdfcff;box-sizing:border-box;"
+          placeholder="e.g. ASN shipment is found and visible" />
+      </div>
+    </div>
+
+    <div class="form-group" style="margin-bottom:14px;">
+      <label for="bugTestDataInput">Test Data <span style="font-weight:400;color:#9ca3af;">(ASN / PO / SKU or other reference numbers)</span></label>
+      <input id="bugTestDataInput" type="text"
+        style="border:1px solid #c4b5fd;border-radius:6px;padding:8px 10px;width:100%;font-size:0.87rem;background:#fdfcff;box-sizing:border-box;"
+        placeholder="e.g. ASN 49802839369890  /  PO 500034227745" />
     </div>
 
     <!-- ③ Suggest button -->
@@ -1148,135 +1156,130 @@ Test data: </textarea>
       <span id="bugActionStatus" style="font-size:0.82rem;"></span>
     </div>
 
-    <!-- ④ Review / results panel (shown after Suggest) -->
-    <div id="bugReviewPanel" style="display:none;background:#f8f7ff;border:1px solid #c4b5fd;border-radius:8px;padding:16px 20px;margin-bottom:22px;">
-      <div style="font-weight:700;color:#7c3aed;font-size:0.88rem;margin-bottom:12px;letter-spacing:0.04em;">&#128270; SUGGESTED FIELDS — review &amp; adjust in the manual form below if needed</div>
-      <table style="width:100%;border-collapse:collapse;font-size:0.83rem;">
-        <tr><td style="padding:4px 8px;color:#6b7280;white-space:nowrap;width:140px;">Title</td><td id="rvTitle" style="padding:4px 8px;font-weight:600;"></td></tr>
-        <tr style="background:#f0ebff;"><td style="padding:4px 8px;color:#6b7280;">Area Path</td><td id="rvArea" style="padding:4px 8px;"></td></tr>
-        <tr><td style="padding:4px 8px;color:#6b7280;">Iteration</td><td id="rvIteration" style="padding:4px 8px;"></td></tr>
-        <tr style="background:#f0ebff;"><td style="padding:4px 8px;color:#6b7280;">Assignee (suggested)</td><td id="rvAssignee" style="padding:4px 8px;"></td></tr>
-        <tr><td style="padding:4px 8px;color:#6b7280;">Priority</td><td id="rvPriority" style="padding:4px 8px;"></td></tr>
-        <tr style="background:#f0ebff;"><td style="padding:4px 8px;color:#6b7280;">Severity</td><td id="rvSeverity" style="padding:4px 8px;"></td></tr>
-        <tr><td style="padding:4px 8px;color:#6b7280;">Discovered In</td><td id="rvEnvironment" style="padding:4px 8px;"></td></tr>
-        <tr style="background:#f0ebff;"><td style="padding:4px 8px;color:#6b7280;">Test Case ID</td><td style="padding:4px 8px;"><input id="rvTcInput" type="text" placeholder="e.g. 1192345" oninput="document.getElementById('bugTestCaseId').value=this.value" style="border:1px solid #c4b5fd;border-radius:4px;padding:3px 7px;font-size:0.82rem;width:160px;" /></td></tr>
-        <tr><td style="padding:4px 8px;color:#6b7280;vertical-align:top;">Repro Steps</td><td id="rvReproSteps" style="padding:4px 8px;max-height:200px;overflow-y:auto;display:block;"></td></tr>
-      </table>
-      <div style="margin-top:14px;display:flex;gap:10px;align-items:center;">
-        <button id="btnSubmitDirect" onclick="submitBug()" disabled
-          style="background:#15803d;color:white;font-weight:700;padding:9px 24px;border:none;border-radius:6px;cursor:pointer;opacity:0.5;font-size:0.9rem;">
-          &#128027; Submit Bug
+    <!-- ④ Unified fields panel — view mode by default, edit mode on demand -->
+    <div id="bugUnifiedPanel" style="display:none;border:1px solid #c4b5fd;border-radius:10px;overflow:hidden;margin-bottom:18px;">
+
+      <!-- Panel header -->
+      <div style="background:#7c3aed;padding:11px 18px;display:flex;justify-content:space-between;align-items:center;">
+        <span style="color:white;font-weight:700;font-size:0.88rem;letter-spacing:0.04em;">&#9889; SUGGESTED BUG FIELDS</span>
+        <button id="btnEditFields" onclick="toggleBugEditMode()"
+          style="background:rgba(255,255,255,0.18);color:white;border:1px solid rgba(255,255,255,0.45);padding:5px 15px;border-radius:5px;cursor:pointer;font-size:0.82rem;font-weight:600;">
+          &#9998; Edit Fields
         </button>
-        <span style="font-size:0.78rem;color:#6b7280;">Happy with the above? Submit directly, or edit fields in the manual form below first.</span>
       </div>
-    </div>
 
-    <!-- ⑤ Manual form divider with OR -->
-    <div style="text-align:center;margin:22px 0 18px;position:relative;">
-      <div style="border-top:2px dashed #e5e7eb;"></div>
-      <span style="position:absolute;top:-13px;left:50%;transform:translateX(-50%);background:white;padding:0 16px;color:#9ca3af;font-weight:800;font-size:1.1rem;letter-spacing:0.05em;">OR</span>
-    </div>
-    <p style="font-size:0.75rem;color:#9ca3af;margin:0 0 16px;text-transform:uppercase;letter-spacing:0.07em;font-weight:600;">&#9998;&nbsp; Manual form — review or edit individual fields</p>
+      <div style="padding:14px 18px 4px;background:#f8f7ff;">
 
-    <!-- Title -->
-    <div class="form-grid" style="margin-bottom:14px;">
-      <div class="form-group" style="grid-column:1/-1;">
-        <label for="bugTitle">Title</label>
-        <input id="bugTitle" type="text" placeholder="Auto-generated from your notes — or type your own title here" />
-      </div>
-    </div>
+        <!-- Title -->
+        <div style="display:grid;grid-template-columns:148px 1fr;border-bottom:1px solid #ede9fe;padding:8px 0;align-items:center;">
+          <span style="font-size:0.82rem;color:#6b7280;font-weight:500;">Title</span>
+          <div>
+            <div id="dispTitle" class="ubf-view" style="font-weight:600;font-size:0.88rem;color:#1e1b4b;line-height:1.4;"></div>
+            <input id="bugTitle" class="ubf-edit" type="text" style="display:none;width:100%;border:1px solid #c4b5fd;border-radius:5px;padding:5px 9px;font-size:0.86rem;box-sizing:border-box;" placeholder="Bug title" />
+          </div>
+        </div>
 
-    <!-- Area + Iteration -->
-    <div class="form-grid" style="margin-bottom:14px;">
-      <div class="form-group">
-        <label for="bugArea">Area Path</label>
-        <input id="bugArea" type="text" value="Inbound" placeholder="Inbound" />
-      </div>
-      <div class="form-group">
-        <label for="bugIteration">Iteration Path</label>
-        <input id="bugIteration" type="text" value="Inbound\Iteration 1" placeholder="Inbound\Iteration 1" />
-      </div>
-    </div>
+        <!-- Area + Iteration -->
+        <div style="display:grid;grid-template-columns:148px 1fr 148px 1fr;border-bottom:1px solid #ede9fe;padding:8px 0;align-items:center;background:#f0ebff;">
+          <span style="font-size:0.82rem;color:#6b7280;font-weight:500;">Area Path</span>
+          <div>
+            <div id="dispArea" class="ubf-view" style="font-size:0.85rem;color:#374151;"></div>
+            <input id="bugArea" class="ubf-edit" type="text" style="display:none;width:100%;border:1px solid #c4b5fd;border-radius:5px;padding:5px 8px;font-size:0.84rem;box-sizing:border-box;" value="Inbound" />
+          </div>
+          <span style="font-size:0.82rem;color:#6b7280;font-weight:500;padding-left:16px;">Iteration</span>
+          <div>
+            <div id="dispIteration" class="ubf-view" style="font-size:0.85rem;color:#374151;"></div>
+            <input id="bugIteration" class="ubf-edit" type="text" style="display:none;width:100%;border:1px solid #c4b5fd;border-radius:5px;padding:5px 8px;font-size:0.84rem;box-sizing:border-box;" value="Inbound\Iteration 1" />
+          </div>
+        </div>
 
-    <!-- Assignee + Priority + Severity + Environment -->
-    <div class="form-grid" style="margin-bottom:14px;">
-      <div class="form-group">
-        <label for="bugAssignee">Assignee</label>
-        <select id="bugAssignee">
-          <option value="">— Unassigned —</option>
-          <option value="E2open">E2open</option>
-          <option value="Lisa">Lisa</option>
-          <option value="Arthur">Arthur</option>
-          <option value="Ela">Ela</option>
-          <option value="Shyam">Shyam</option>
-          <option value="Frazer">Frazer</option>
-          <option value="ASOS SCT">ASOS SCT</option>
-          <option value="ASOS RIS">ASOS RIS</option>
-          <option value="ASOS RMS">ASOS RMS</option>
-          <option value="ASOS">ASOS</option>
-        </select>
-        <span class="field-hint">Team suggestion only — bug will be created unassigned in ADO; assign via ADO after creation.</span>
-      </div>
-      <div class="form-group">
-        <label for="bugPriority">Priority</label>
-        <select id="bugPriority">
-          <option value="1">1 - Critical</option>
-          <option value="2">2 - High</option>
-          <option value="3" selected>3 - Medium</option>
-          <option value="4">4 - Low</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label for="bugSeverity">Severity</label>
-        <select id="bugSeverity">
-          <option value="1 - Critical">1 - Critical</option>
-          <option value="2 - High">2 - High</option>
-          <option value="3 - Medium" selected>3 - Medium</option>
-          <option value="4 - Low">4 - Low</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label for="bugEnvironment">Discovered In</label>
-        <select id="bugEnvironment">
-          <option value="Integration" selected>Integration</option>
-          <option value="UAT">UAT</option>
-          <option value="Production">Production</option>
-          <option value="Dev">Dev</option>
-        </select>
-      </div>
-    </div>
+        <!-- Assignee + Priority -->
+        <div style="display:grid;grid-template-columns:148px 1fr 148px 1fr;border-bottom:1px solid #ede9fe;padding:8px 0;align-items:center;">
+          <span style="font-size:0.82rem;color:#6b7280;font-weight:500;">Assignee</span>
+          <div>
+            <div id="dispAssignee" class="ubf-view" style="font-size:0.85rem;color:#374151;"></div>
+            <select id="bugAssignee" class="ubf-edit" style="display:none;border:1px solid #c4b5fd;border-radius:5px;padding:4px 8px;font-size:0.84rem;width:100%;">
+              <option value="">— Unassigned —</option>
+              <option value="E2open">E2open</option>
+              <option value="Lisa">Lisa</option>
+              <option value="Arthur">Arthur</option>
+              <option value="Ela">Ela</option>
+              <option value="Shyam">Shyam</option>
+              <option value="Frazer">Frazer</option>
+              <option value="ASOS SCT">ASOS SCT</option>
+              <option value="ASOS RIS">ASOS RIS</option>
+              <option value="ASOS RMS">ASOS RMS</option>
+              <option value="ASOS">ASOS</option>
+            </select>
+          </div>
+          <span style="font-size:0.82rem;color:#6b7280;font-weight:500;padding-left:16px;">Priority</span>
+          <div>
+            <div id="dispPriority" class="ubf-view" style="font-size:0.85rem;color:#374151;"></div>
+            <select id="bugPriority" class="ubf-edit" style="display:none;border:1px solid #c4b5fd;border-radius:5px;padding:4px 8px;font-size:0.84rem;width:100%;">
+              <option value="1">1 - Critical</option>
+              <option value="2">2 - High</option>
+              <option value="3" selected>3 - Medium</option>
+              <option value="4">4 - Low</option>
+            </select>
+          </div>
+        </div>
 
-    <!-- Repro Steps -->
-    <div class="form-group" style="margin-bottom:14px;">
-      <label for="bugReproSteps" style="display:flex;align-items:center;gap:8px;">
-        Repro Steps (ADO field)
-        <span id="bugReproStepsBadge" style="display:none;background:#7c3aed;color:white;font-size:0.65rem;padding:2px 7px;border-radius:10px;font-weight:700;">AI suggested</span>
-      </label>
-      <textarea id="bugReproSteps" rows="8"
-        style="font-family:monospace;font-size:0.82rem;resize:vertical;border:1px solid #d1d5db;border-radius:6px;padding:10px;width:100%;"
-        placeholder="Auto-structured from your notes when you click Suggest Fields. Edit here if needed."></textarea>
-      <span class="field-hint">Formatted into: Description / Steps / Actual Result / Expected Result / Test Data.</span>
-    </div>
+        <!-- Severity + Discovered In -->
+        <div style="display:grid;grid-template-columns:148px 1fr 148px 1fr;border-bottom:1px solid #ede9fe;padding:8px 0;align-items:center;background:#f0ebff;">
+          <span style="font-size:0.82rem;color:#6b7280;font-weight:500;">Severity</span>
+          <div>
+            <div id="dispSeverity" class="ubf-view" style="font-size:0.85rem;color:#374151;"></div>
+            <select id="bugSeverity" class="ubf-edit" style="display:none;border:1px solid #c4b5fd;border-radius:5px;padding:4px 8px;font-size:0.84rem;width:100%;">
+              <option value="1 - Critical">1 - Critical</option>
+              <option value="2 - High">2 - High</option>
+              <option value="3 - Medium" selected>3 - Medium</option>
+              <option value="4 - Low">4 - Low</option>
+            </select>
+          </div>
+          <span style="font-size:0.82rem;color:#6b7280;font-weight:500;padding-left:16px;">Discovered In</span>
+          <div>
+            <div id="dispEnvironment" class="ubf-view" style="font-size:0.85rem;color:#374151;"></div>
+            <select id="bugEnvironment" class="ubf-edit" style="display:none;border:1px solid #c4b5fd;border-radius:5px;padding:4px 8px;font-size:0.84rem;width:100%;">
+              <option value="Integration" selected>Integration</option>
+              <option value="UAT">UAT</option>
+              <option value="Production">Production</option>
+              <option value="Dev">Dev</option>
+            </select>
+          </div>
+        </div>
 
-    <!-- Test Case ID -->
-    <div class="form-grid" style="margin-bottom:18px;">
-      <div class="form-group">
-        <label for="bugTestCaseId">Related Test Case ID</label>
-        <input id="bugTestCaseId" type="text" placeholder="e.g. 1192345 (ADO work item ID)" />
-        <span class="field-hint">Will be linked as a Related work item.</span>
+        <!-- Test Case ID -->
+        <div style="display:grid;grid-template-columns:148px 1fr;border-bottom:1px solid #ede9fe;padding:8px 0;align-items:center;">
+          <span style="font-size:0.82rem;color:#6b7280;font-weight:500;">Test Case ID</span>
+          <div>
+            <div id="dispTestCaseId" class="ubf-view" style="font-size:0.85rem;color:#374151;"></div>
+            <input id="bugTestCaseId" class="ubf-edit" type="text" style="display:none;width:200px;border:1px solid #c4b5fd;border-radius:5px;padding:5px 8px;font-size:0.84rem;" placeholder="e.g. 1192345" />
+          </div>
+        </div>
+
+        <!-- Repro Steps -->
+        <div style="border-bottom:1px solid #ede9fe;padding:8px 0;background:#f0ebff;">
+          <div style="display:grid;grid-template-columns:148px 1fr;align-items:flex-start;">
+            <span style="font-size:0.82rem;color:#6b7280;font-weight:500;padding-top:3px;">Repro Steps</span>
+            <div>
+              <div id="dispReproSteps" class="ubf-view" style="font-size:0.82rem;line-height:1.5;max-height:220px;overflow-y:auto;"></div>
+              <textarea id="bugReproSteps" class="ubf-edit" rows="10"
+                style="display:none;width:100%;font-family:monospace;font-size:0.81rem;border:1px solid #c4b5fd;border-radius:5px;padding:8px;resize:vertical;box-sizing:border-box;"
+                placeholder="Edit repro steps. HTML version is sent to ADO."></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- Submit -->
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:14px 0 10px;">
+          <button id="btnSubmitBug" onclick="submitBug()" disabled
+            style="background:#15803d;color:white;font-weight:700;padding:10px 28px;border:none;border-radius:6px;cursor:pointer;opacity:0.5;font-size:0.93rem;">
+            &#128027; Submit Bug
+          </button>
+          <span style="font-size:0.78rem;color:#6b7280;">Happy with the fields? Click Submit — or use <strong>&#9998; Edit</strong> above to change anything first.</span>
+        </div>
+
       </div>
-    </div>
-
-    <!-- ⑥ Submit buttons -->
-    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px;">
-      <button id="btnReviewBug" onclick="reviewBug()"
-        style="background:#0369a1;color:white;font-weight:600;padding:8px 18px;border:none;border-radius:4px;cursor:pointer;">
-        &#128065; Review
-      </button>
-      <button id="btnSubmitBug" onclick="submitBug()" disabled
-        style="background:#15803d;color:white;font-weight:600;padding:8px 18px;border:none;border-radius:4px;cursor:pointer;opacity:0.5;">
-        &#128027; Submit Bug
-      </button>
     </div>
 
     <!-- Result after submit -->
@@ -2529,114 +2532,119 @@ function prodSafeId(name) {
 
   // ── Raise ADO Bug ──────────────────────────────────────────────────────────
 
-  const BUG_TEMPLATE = '1. \n2. \n3. \n\nActual result: \nExpected result: \nTest data: ';
-  function resetBugTemplate() {
-    document.getElementById('bugDescription').value = BUG_TEMPLATE;
+  let bugEditMode = false;
+
+  function htmlToPlainText(html) {
+    return (html || '')
+      .replace(/<b>([^<]+)<\/b>/gi, (_, t) => t.toUpperCase())
+      .replace(/<br\s*\/?>/gi, '\n')
+      .replace(/<\/li>/gi, '\n')
+      .replace(/<li>/gi, '  \u2022 ')
+      .replace(/<\/ol>|<ol>/gi, '')
+      .replace(/<[^>]+>/g, '')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim();
+  }
+
+  function updateBugDisplayElements() {
+    document.getElementById('dispTitle').textContent       = document.getElementById('bugTitle').value || '\u2014';
+    document.getElementById('dispArea').textContent        = document.getElementById('bugArea').value || 'Inbound';
+    document.getElementById('dispIteration').textContent   = document.getElementById('bugIteration').value || 'Inbound\\Iteration 1';
+    document.getElementById('dispAssignee').textContent    = document.getElementById('bugAssignee').value || '\u2014 Unassigned \u2014';
+    document.getElementById('dispPriority').textContent    = document.getElementById('bugPriority').value;
+    document.getElementById('dispSeverity').textContent    = document.getElementById('bugSeverity').value;
+    document.getElementById('dispEnvironment').textContent = document.getElementById('bugEnvironment').value;
+    document.getElementById('dispTestCaseId').textContent  = document.getElementById('bugTestCaseId').value || '\u2014';
+    const reproEl = document.getElementById('bugReproSteps');
+    document.getElementById('dispReproSteps').innerHTML = reproEl.dataset.htmlValue || htmlToPlainText(reproEl.value) || '<em>(empty)</em>';
+  }
+
+  function toggleBugEditMode() {
+    if (bugEditMode) {
+      updateBugDisplayElements();
+      bugEditMode = false;
+    } else {
+      bugEditMode = true;
+    }
+    document.querySelectorAll('.ubf-view').forEach(el => { el.style.display = bugEditMode ? 'none' : ''; });
+    document.querySelectorAll('.ubf-edit').forEach(el => { el.style.display = bugEditMode ? '' : 'none'; });
+    const btn = document.getElementById('btnEditFields');
+    btn.textContent = bugEditMode ? '\uD83D\uDC41 Done Editing' : '\u270E Edit Fields';
+    btn.style.background = bugEditMode ? 'rgba(255,255,255,0.35)' : 'rgba(255,255,255,0.18)';
   }
 
   async function suggestBugFields() {
     const btn = document.getElementById('btnSuggestBugFields');
     const status = document.getElementById('bugActionStatus');
-    const title = document.getElementById('bugTitle').value.trim();
-    const description = document.getElementById('bugDescription').value.trim();
 
-    if (!description || description === BUG_TEMPLATE.trim()) {
+    const steps      = document.getElementById('bugSteps').value.trim();
+    const actual     = document.getElementById('bugActualInput').value.trim();
+    const expected   = document.getElementById('bugExpectedInput').value.trim();
+    const testData   = document.getElementById('bugTestDataInput').value.trim();
+
+    if (!steps && !actual) {
       status.style.color = '#d32f2f';
-      status.textContent = '⚠️ Fill in your bug notes in the template above first.';
+      status.textContent = '\u26A0\uFE0F Fill in at least the Steps and Actual Result before suggesting.';
       return;
     }
 
+    // Combine into a structured description string the server parser understands
+    const description = [
+      steps,
+      actual   ? `\nActual result: ${actual}`   : '',
+      expected ? `\nExpected result: ${expected}` : '',
+      testData ? `\nTest data: ${testData}`       : '',
+    ].filter(Boolean).join('\n').trim();
+
     btn.disabled = true;
-    btn.textContent = '⏳ Suggesting...';
+    btn.textContent = '\u23F3 Suggesting...';
     status.textContent = '';
-    document.getElementById('bugReviewPanel').style.display = 'none';
+    document.getElementById('bugUnifiedPanel').style.display = 'none';
     document.getElementById('bugSubmitResult').innerHTML = '';
+    if (bugEditMode) toggleBugEditMode();
 
     try {
       const res = await fetch('/api/ado/suggest-fields', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, description }),
+        body: JSON.stringify({ title: '', description }),
       });
       const data = await res.json();
       if (!data.ok) throw new Error(data.error || 'Suggestion failed');
 
-      // Apply priority
+      document.getElementById('bugTitle').value = data.title || '';
+
       const priSel = document.getElementById('bugPriority');
       for (const opt of priSel.options) { if (opt.value === String(data.priority)) { opt.selected = true; break; } }
 
-      // Apply severity
       const sevSel = document.getElementById('bugSeverity');
       for (const opt of sevSel.options) { if (opt.value === data.severity) { opt.selected = true; break; } }
 
-      // Apply assignee (only if currently unset)
       if (data.assignee) {
         const assignSel = document.getElementById('bugAssignee');
         for (const opt of assignSel.options) { if (opt.value === data.assignee) { opt.selected = true; break; } }
       }
 
-      // Apply title if not already entered
-      const titleEl = document.getElementById('bugTitle');
-      if (!titleEl.value.trim() && data.title) {
-        titleEl.value = data.title;
-      }
+      const rawHtml = data.reproSteps || '';
+      const textarea = document.getElementById('bugReproSteps');
+      textarea.dataset.htmlValue = rawHtml;
+      textarea.value = htmlToPlainText(rawHtml);
 
-      // Apply repro steps
-      document.getElementById('bugReproSteps').value = data.reproSteps || '';
-      document.getElementById('bugReproStepsBadge').style.display = 'inline';
+      updateBugDisplayElements();
+      document.getElementById('bugUnifiedPanel').style.display = 'block';
+
+      const submitBtn = document.getElementById('btnSubmitBug');
+      submitBtn.disabled = false;
+      submitBtn.style.opacity = '1';
 
       status.style.color = '#15803d';
-      status.textContent = '✅ Fields suggested — review the summary below and adjust if needed.';
-
-      // Automatically open review panel
-      reviewBug();
+      status.textContent = '\u2705 Fields suggested \u2014 review above, click \u270E Edit to adjust, then Submit.';
     } catch (err) {
       status.style.color = '#d32f2f';
-      status.textContent = '❌ ' + err.message;
+      status.textContent = '\u274C ' + err.message;
     } finally {
       btn.disabled = false;
-      btn.textContent = '⚡ Suggest Fields';
-    }
-  }
-
-  function reviewBug() {
-    const title = document.getElementById('bugTitle').value.trim();
-    const status = document.getElementById('bugActionStatus');
-    if (!title) {
-      status.style.color = '#d32f2f';
-      status.textContent = '⚠️ Enter a title before reviewing.';
-      return;
-    }
-
-    document.getElementById('rvTitle').textContent      = title;
-    document.getElementById('rvArea').textContent       = document.getElementById('bugArea').value || 'Inbound';
-    document.getElementById('rvIteration').textContent  = document.getElementById('bugIteration').value || 'Inbound\\Iteration 1';
-    document.getElementById('rvAssignee').textContent   = document.getElementById('bugAssignee').value || '— Unassigned —';
-    document.getElementById('rvPriority').textContent   = document.getElementById('bugPriority').value;
-    document.getElementById('rvSeverity').textContent   = document.getElementById('bugSeverity').value;
-    document.getElementById('rvEnvironment').textContent = document.getElementById('bugEnvironment').value;
-    // TC ID: sync from manual form into the review panel input (but don't overwrite if user typed there)
-    const tcInput = document.getElementById('rvTcInput');
-    if (tcInput && !tcInput.value) tcInput.value = document.getElementById('bugTestCaseId').value || '';
-    // Repro steps: use stored HTML if available, else fall back to textarea text
-    const reproEl = document.getElementById('bugReproSteps');
-    const reproHtml = reproEl.dataset.htmlValue || reproEl.value;
-    document.getElementById('rvReproSteps').innerHTML = reproHtml || '<em>(empty)</em>';
-
-    document.getElementById('bugReviewPanel').style.display = 'block';
-    document.getElementById('bugSubmitResult').innerHTML = '';
-
-    // Enable both submit buttons once reviewed
-    const submitBtn = document.getElementById('btnSubmitBug');
-    submitBtn.disabled = false;
-    submitBtn.style.opacity = '1';
-    const submitDirect = document.getElementById('btnSubmitDirect');
-    if (submitDirect) { submitDirect.disabled = false; submitDirect.style.opacity = '1'; }
-
-    // Only update status if not already set by suggestBugFields
-    if (!status.textContent) {
-      status.style.color = '#0369a1';
-      status.textContent = '👁 Review complete — edit fields above if needed, then Submit.';
+      btn.textContent = '\u26A1 Suggest Fields';
     }
   }
 
@@ -2644,14 +2652,14 @@ function prodSafeId(name) {
     const title = document.getElementById('bugTitle').value.trim();
     if (!title) {
       document.getElementById('bugActionStatus').style.color = '#d32f2f';
-      document.getElementById('bugActionStatus').textContent = '⚠️ Title is required — run Suggest Fields or enter a title manually.';
+      document.getElementById('bugActionStatus').textContent = '\u26A0\uFE0F Title is required \u2014 run Suggest Fields or switch to Edit mode and enter a title.';
       return;
     }
 
     const btn = document.getElementById('btnSubmitBug');
     const status = document.getElementById('bugActionStatus');
     btn.disabled = true;
-    btn.textContent = '⏳ Creating bug...';
+    btn.textContent = '\u23F3 Creating bug...';
     status.textContent = '';
 
     const payload = {
@@ -2677,24 +2685,24 @@ function prodSafeId(name) {
 
       document.getElementById('bugSubmitResult').innerHTML =
         `<div style="padding:12px 16px;background:#f0fdf4;border-left:4px solid #22c55e;border-radius:6px;font-size:0.87rem;">
-          <strong style="color:#15803d;">✅ Bug #${data.id} created successfully!</strong><br/>
+          <strong style="color:#15803d;">\u2705 Bug #${data.id} created successfully!</strong><br/>
           <a href="${data.url}" target="_blank" rel="noopener noreferrer"
              style="color:#0369a1;margin-top:6px;display:inline-block;">
-            &#128279; Open in Azure DevOps
+            \uD83D\uDD17 Open in Azure DevOps
           </a>
         </div>`;
 
       status.textContent = '';
-      document.getElementById('bugReviewPanel').style.display = 'none';
+      document.getElementById('bugUnifiedPanel').style.display = 'none';
     } catch (err) {
       document.getElementById('bugSubmitResult').innerHTML =
         `<div style="padding:12px 16px;background:#fef2f2;border-left:4px solid #ef4444;border-radius:6px;font-size:0.87rem;">
-          <strong style="color:#991b1b;">❌ Error:</strong> ${err.message}
+          <strong style="color:#991b1b;">\u274C Error:</strong> ${err.message}
         </div>`;
       status.textContent = '';
     } finally {
       btn.disabled = false;
-      btn.textContent = '🐛 Submit Bug';
+      btn.textContent = '\uD83D\uDC1B Submit Bug';
     }
   }
 </script>

@@ -274,16 +274,35 @@ function buildReproTemplate(title, description) {
     }
   }
 
-  // ── Build description: context from first 2 steps (not actual result) ────────
+  // ── Build description: actual result + "in [product screen]" context ────────
   const beforeFirstStep = stepText.split(/\s*1\.\s/)[0].trim();
   let descriptionText;
   if (beforeFirstStep && beforeFirstStep.length > 3) {
     descriptionText = beforeFirstStep;
-  } else if (userStepLines.length >= 2) {
-    // Summarise the first two steps as scenario context
-    descriptionText = userStepLines.slice(0, 2).join(" \u2192 ");
+  } else if (userActualInline) {
+    // Extract product name from step 1
+    const step1 = userStepLines[0] || "";
+    const product = /scc/i.test(step1) ? "E2open SCC"
+      : /e2open/i.test(step1) ? "E2open"
+      : /wms/i.test(step1) ? "WMS"
+      : /ris/i.test(step1) ? "RIS"
+      : "E2open";
+
+    // Extract screen name from the first "Navigate to X" step
+    const navStep = userStepLines.find(s => /navigate|go to|open/i.test(s)) || "";
+    const screenM = navStep.match(/navigate\s+to\s+(?:the\s+)?(.+?)(?:\s+screen|\s+page|\s+tab|\s+section|$)/i)
+                 || navStep.match(/(?:go\s+to|open)\s+(?:the\s+)?(.+?)(?:\s+screen|\s+page|\s+tab|\s+section|$)/i);
+    const screen = screenM ? screenM[1].trim() : "";
+
+    const ctx = screen ? `${product} ${screen}` : product;
+    const base = userActualInline.replace(/[.!?]$/, "");
+    // Only append context if the actual result doesn't already mention it
+    const alreadyMentioned = new RegExp(product.split(" ")[0], "i").test(base);
+    descriptionText = alreadyMentioned
+      ? base.charAt(0).toUpperCase() + base.slice(1) + "."
+      : base.charAt(0).toUpperCase() + base.slice(1) + ` in ${ctx}.`;
   } else {
-    descriptionText = userActualInline || text.split(/[.!?\n]/)[0].trim() || text;
+    descriptionText = text.split(/[.!?\n]/)[0].trim() || text;
   }
 
   const userActual = userActualInline;
