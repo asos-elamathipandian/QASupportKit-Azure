@@ -274,33 +274,36 @@ function buildReproTemplate(title, description) {
     }
   }
 
-  // ── Build description: actual result + "in [product screen]" context ────────
+  // ── Build description: actual result + "in [tool]" extracted from step 1 ───
   const beforeFirstStep = stepText.split(/\s*1\.\s/)[0].trim();
   let descriptionText;
   if (beforeFirstStep && beforeFirstStep.length > 3) {
     descriptionText = beforeFirstStep;
   } else if (userActualInline) {
-    // Extract product name from step 1
-    const step1 = userStepLines[0] || "";
-    const product = /scc/i.test(step1) ? "E2open SCC"
-      : /e2open/i.test(step1) ? "E2open"
-      : /wms/i.test(step1) ? "WMS"
-      : /ris/i.test(step1) ? "RIS"
-      : "E2open";
+    // Detect product/tool — scan all steps, not just step 1
+    let product = "";
+    for (const s of userStepLines) {
+      if (/scc/i.test(s))        { product = "E2open SCC"; break; }
+      if (/e2open/i.test(s))     { product = "E2open";     break; }
+      if (/wms/i.test(s))        { product = "WMS";        break; }
+      if (/ris/i.test(s))        { product = "RIS";        break; }
+      // Generic: extract tool name from "Login to X" / "Open X" / "Navigate to X"
+      const m = s.match(/login\s+to\s+(.+)/i)
+             || s.match(/(?:open|launch)\s+(.+)/i)
+             || s.match(/navigate\s+to\s+(?:the\s+)?(.+?)(?:\s+screen|\s+page|\s+tab|\s+section|,|$)/i);
+      if (m) {
+        product = m[1].trim().replace(/[.!?,]$/, "")
+          .replace(/\b(\w)/g, (_, c) => c.toUpperCase());
+        break;
+      }
+    }
 
-    // Extract screen name from the first "Navigate to X" step
-    const navStep = userStepLines.find(s => /navigate|go to|open/i.test(s)) || "";
-    const screenM = navStep.match(/navigate\s+to\s+(?:the\s+)?(.+?)(?:\s+screen|\s+page|\s+tab|\s+section|$)/i)
-                 || navStep.match(/(?:go\s+to|open)\s+(?:the\s+)?(.+?)(?:\s+screen|\s+page|\s+tab|\s+section|$)/i);
-    const screen = screenM ? screenM[1].trim() : "";
-
-    const ctx = screen ? `${product} ${screen}` : product;
     const base = userActualInline.replace(/[.!?]$/, "");
-    // Only append context if the actual result doesn't already mention it
-    const alreadyMentioned = new RegExp(product.split(" ")[0], "i").test(base);
-    descriptionText = alreadyMentioned
-      ? base.charAt(0).toUpperCase() + base.slice(1) + "."
-      : base.charAt(0).toUpperCase() + base.slice(1) + ` in ${ctx}.`;
+    // Don't append if the actual result already names the tool
+    const alreadyMentioned = product && new RegExp(product.split(" ")[0], "i").test(base);
+    descriptionText = (product && !alreadyMentioned)
+      ? `${base.charAt(0).toUpperCase() + base.slice(1)} in ${product}.`
+      : `${base.charAt(0).toUpperCase() + base.slice(1)}.`;
   } else {
     descriptionText = text.split(/[.!?\n]/)[0].trim() || text;
   }
