@@ -160,127 +160,32 @@ function buildReproTemplate(title, description) {
   const byLine = stepText.split(/\r?\n/).map((l) => l.trim()).filter((l) => stepLineRegex.test(l));
   let userStepLines = [];
   if (byLine.length >= 2) {
+    // Numbered lines (1. 2. 3.) — strip the number prefix
     userStepLines = byLine.map((l) => l.replace(/^(?:step\s*)?\d+[.:\-\)]\s*/i, "").trim());
   } else {
-    // Inline: "1. Login. 2. Navigate. 3. Click." — split at whitespace before "N. "
+    // Inline numbered: "1. Login. 2. Navigate. 3. Click."
     const inlineParts = stepText.split(/\s+(?=\d+\.\s)/);
     const inlineSteps = inlineParts
       .map((s) => s.trim())
       .filter((s) => /^\d+\.\s/.test(s))
       .map((s) => s.replace(/^\d+\.\s+/, "").replace(/[.!?]$/, "").trim())
       .filter((s) => s.length > 0);
-    if (inlineSteps.length >= 2) userStepLines = inlineSteps;
+    if (inlineSteps.length >= 2) {
+      userStepLines = inlineSteps;
+    } else {
+      // Plain unnumbered lines — take them as-is so user's steps are always respected
+      const plainLines = stepText.split(/\r?\n/).map((l) => l.trim()).filter((l) => l.length > 3);
+      if (plainLines.length >= 1) userStepLines = plainLines;
+    }
   }
 
-  // ── Build steps: use user's steps if present, else domain defaults ─────────
-  let steps = [];
-
-  const isAsn     = lower.includes("asn") || asnMatch;
-  const isVbkcon  = lower.includes("vbkcon") || lower.includes("carrier booking") || lower.includes("booking");
-  const isVbkreq  = lower.includes("vbkreq");
-  const isGpm     = lower.includes("gpm");
-  const isBst     = lower.includes("bst") || lower.includes("bulk status");
-  const isPo      = lower.includes("po feed") || lower.includes("po ") || poMatch;
-  const isScc     = lower.includes("scc") || lower.includes("wms");
-
-  if (userStepLines.length >= 2) {
-    // User provided their own steps — use them directly
-    steps = userStepLines;
-  } else if (isVbkcon || isVbkreq) {
-    const msgRef = asnMatch ? ` for ASN ${asnMatch[1]}` : "";
-    steps = [
-      `Login to E2open`,
-      `Navigate to the Carrier Booking / Outbound message log`,
-      `Trigger${msgRef} and locate the VBKREQ / VBKCON message in the logs`,
-      `Validate VBKREQ and VBKCON message content against expected values`,
-      `Check whether the files are processed with status SUCCESS or ERROR`,
-      `If ERROR — capture the error message / rejection reason from the logs`,
-      `Verify the booking confirmation is reflected correctly in the downstream system`,
-    ];
-  } else if (isAsn) {
-    const asnRef = asnMatch ? ` (${asnMatch[1]})` : "";
-    steps = [
-      `Login to E2open`,
-      `Trigger / send the inbound ASN${asnRef} from the supplier`,
-      `Navigate to the inbound message log and locate the ASN`,
-      `Validate VBKREQ, VBKCON entries associated with the ASN on the logs`,
-      `Check whether the ASN file is processed with status SUCCESS or ERROR`,
-      `If ERROR — capture the error message and rejection reason from the logs`,
-      `Verify the ASN shipment lines appear correctly in WMS / downstream system`,
-    ];
-  } else if (isGpm) {
-    steps = [
-      `Login to E2open`,
-      `Navigate to the GPM / Product Master message log`,
-      `Trigger or locate the GPM message in the logs`,
-      `Check whether the GPM file is processed with status SUCCESS or ERROR`,
-      `If ERROR — capture the error message from the logs`,
-      `Verify the product / item data is correctly reflected in the downstream system`,
-    ];
-  } else if (isBst) {
-    steps = [
-      `Login to E2open`,
-      `Navigate to the BST / Bulk Status message log`,
-      `Trigger or locate the BST message in the logs`,
-      `Check whether the BST file is processed with status SUCCESS or ERROR`,
-      `If ERROR — capture the rejection reason from the logs`,
-      `Verify the status update is reflected correctly in the downstream system`,
-    ];
-  } else if (isPo) {
-    const poRef = poMatch ? ` (${poMatch[1]})` : "";
-    steps = [
-      `Login to E2open`,
-      `Navigate to the PO Feed / Inbound Purchase Order log`,
-      `Locate the PO${poRef} message in the logs`,
-      `Check whether the PO Feed file is processed with status SUCCESS or ERROR`,
-      `If ERROR — capture the error message and rejection reason from the logs`,
-      `Verify the PO data is correctly reflected in the downstream system`,
-    ];
-  } else if (isScc) {
-    steps = [
-      `Login to E2open SCC`,
-      `Navigate to the relevant ASN / booking section`,
-      `Perform the relevant action as described`,
-      `Check the system response and log output`,
-      `Verify the expected outcome in WMS`,
-    ];
-  } else {
-    steps = [
-      `Login to E2open`,
-      `Navigate to the relevant message / transaction log`,
-      `Locate the affected message or transaction`,
-      `Validate the message on the logs`,
-      `Check whether the file / transaction is processed with status SUCCESS or ERROR`,
-      `If ERROR — capture the error message and rejection reason from the logs`,
-      `Verify the expected outcome in the downstream system`,
-    ];
-  }
+  // ── Build steps from user input (steps are mandatory) ───────────────────
+  const steps = userStepLines;
 
   const stepsHtml = steps.map((s) => `<li>${escHtml(s)}</li>`).join("");
 
-  // ── Derive expected result ────────────────────────────────────────────────
-  let expected = userExpected || "";
-  if (!expected) {
-    if (lower.includes("not process") || lower.includes("not being process")) {
-      expected = "The message / file should be processed successfully with status SUCCESS and reflect correctly in the downstream system";
-    } else if (lower.includes("reject") || lower.includes("rejected")) {
-      expected = "The message should be accepted by E2open and processed with status SUCCESS";
-    } else if (lower.includes("500") || lower.includes("error") || lower.includes("exception")) {
-      expected = "The operation should complete without errors and the file should be processed with status SUCCESS";
-    } else if (lower.includes("missing") || lower.includes("not appear") || lower.includes("not show")) {
-      expected = "The expected data / lines should appear in the downstream system after successful processing";
-    } else if (lower.includes("fail") || lower.includes("failing")) {
-      expected = "The operation should complete successfully with status SUCCESS on the E2open logs";
-    } else if (lower.includes("slow") || lower.includes("delay") || lower.includes("timeout")) {
-      expected = "The system should process and respond within the expected SLA / time threshold";
-    } else if (isVbkcon || isVbkreq) {
-      expected = "VBKREQ and VBKCON should be generated and processed with status SUCCESS; booking confirmation should be visible in the downstream system";
-    } else if (isAsn) {
-      expected = "ASN should be accepted by E2open, processed with status SUCCESS, and all shipment lines should be visible in WMS";
-    } else {
-      expected = "The file / message should be processed with status SUCCESS and the expected outcome should be visible in the downstream system";
-    }
-  }
+  // ── Derive expected result — only use what the user provided, never hallucinate ──
+  const expected = userExpected || "";
 
   // ── Build description: actual result + "in [tool]" extracted from step 1 ───
   // Only use text-before-steps if the split actually found a "1." boundary (intro text)
@@ -360,7 +265,7 @@ function buildReproTemplate(title, description) {
     `<b>Description:</b><br/>${escHtml(descriptionText)}<br/><br/>` +
     `<b>Steps to Reproduce:</b><br/><ol>${stepsHtml}</ol>` +
     `<b>Actual Result:</b><br/>${fmtBlock(actual)}<br/><br/>` +
-    `<b>Expected Result:</b><br/>${fmtBlock(expected)}<br/><br/>` +
+    (expected ? `<b>Expected Result:</b><br/>${fmtBlock(expected)}<br/><br/>` : "") +
     `<b>Test Data:</b><br/>${escHtml(testData)}`
   );
 }

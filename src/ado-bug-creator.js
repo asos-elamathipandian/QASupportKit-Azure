@@ -96,9 +96,8 @@ async function createAdoBug({
     },
   ];
 
-  // Only send System.AssignedTo if value looks like a valid email / ADO identity
-  // Plain display names ("E2open", "Lisa" etc.) are rejected by the ADO API
-  if (assignedTo && assignedTo.includes("@")) {
+  // Send AssignedTo for any non-empty value — supports both emails and display names
+  if (assignedTo && assignedTo.trim()) {
     patchDoc.push({
       op: "add",
       path: "/fields/System.AssignedTo",

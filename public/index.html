@@ -1163,6 +1163,9 @@ async function fullSccFlow() {
     <!-- Evidence attachments -->
     <div class="form-group" style="margin-bottom:14px;">
       <label>Evidence / Attachments <span style="font-weight:400;color:#9ca3af;">(screenshots, docs — uploaded to the ADO work item)</span></label>
+      <div style="font-size:0.76rem;color:#9ca3af;margin-bottom:5px;">
+        Supported: <strong>Images</strong> (PNG, JPG, GIF, WebP) &nbsp;·&nbsp; <strong>Documents</strong> (PDF, DOC, DOCX, XLSX, CSV, TXT) &nbsp;·&nbsp; <strong>Data</strong> (XML, JSON, LOG)
+      </div>
       <div style="border:2px dashed #c4b5fd;border-radius:6px;padding:10px 12px;background:#fdfcff;cursor:pointer;"
            onclick="document.getElementById('bugAttachments').click()"
            ondragover="event.preventDefault();this.style.borderColor='#7c3aed';"
@@ -2713,9 +2716,14 @@ function prodSafeId(name) {
     const expected   = document.getElementById('bugExpectedInput').value.trim();
     const testData   = document.getElementById('bugTestDataInput').value.trim();
 
-    if (!steps && !actual) {
+    if (!steps) {
       status.style.color = '#d32f2f';
-      status.textContent = '\u26A0\uFE0F Fill in at least the Steps and Actual Result before suggesting.';
+      status.textContent = '\u26A0\uFE0F Steps to Reproduce is required.';
+      return;
+    }
+    if (!actual) {
+      status.style.color = '#d32f2f';
+      status.textContent = '\u26A0\uFE0F Actual Result is required.';
       return;
     }
 
