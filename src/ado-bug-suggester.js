@@ -159,7 +159,7 @@ function buildReproTemplate(title, description) {
   const stepLineRegex = /^(?:step\s*)?(\d+)[.:\-\)]\s*(.+)/;
   const byLine = stepText.split(/\r?\n/).map((l) => l.trim()).filter((l) => stepLineRegex.test(l));
   let userStepLines = [];
-  if (byLine.length >= 2) {
+  if (byLine.length >= 1) {
     // Numbered lines (1. 2. 3.) — strip the number prefix
     userStepLines = byLine.map((l) => l.replace(/^(?:step\s*)?\d+[.:\-\)]\s*/i, "").trim());
   } else {
