@@ -2658,13 +2658,21 @@ function prodSafeId(name) {
   }
 
   function htmlToPlainText(html) {
+    let itemCount = 0;
     return (html || '')
       .replace(/<b>([^<]+)<\/b>/gi, (_, t) => t.toUpperCase())
       .replace(/<br\s*\/?>/gi, '\n')
+      .replace(/<ol[^>]*>/gi, () => { itemCount = 0; return ''; })
+      .replace(/<\/ol>/gi, '')
+      .replace(/<ul[^>]*>|<\/ul>/gi, '')
+      .replace(/<li>/gi, () => `${++itemCount}. `)
       .replace(/<\/li>/gi, '\n')
-      .replace(/<li>/gi, '  \u2022 ')
-      .replace(/<\/ol>|<ol>/gi, '')
       .replace(/<[^>]+>/g, '')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&amp;/g, '&')
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;|&apos;/g, "'")
       .replace(/\n{3,}/g, '\n\n')
       .trim();
   }
