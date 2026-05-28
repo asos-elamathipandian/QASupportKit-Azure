@@ -110,6 +110,14 @@ async function suggestReproSteps(title, description) {
   }
 }
 
+function escHtml(str) {
+  return (str || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
 function buildReproTemplate(title, description) {
   // Strip optional label prefix that users sometimes prepend
   let rawText = (description || title || "").trim();
@@ -248,7 +256,7 @@ function buildReproTemplate(title, description) {
     ];
   }
 
-  const stepsHtml = steps.map((s) => `<li>${s}</li>`).join("");
+  const stepsHtml = steps.map((s) => `<li>${escHtml(s)}</li>`).join("");
 
   // ── Derive expected result ────────────────────────────────────────────────
   let expected = userExpected || "";
@@ -301,11 +309,22 @@ function buildReproTemplate(title, description) {
     }
 
     const base = userActualInline.replace(/[.!?]$/, "");
-    // Don't append if the actual result already names the tool
-    const alreadyMentioned = product && new RegExp(product.split(" ")[0], "i").test(base);
-    descriptionText = (product && !alreadyMentioned)
-      ? `${base.charAt(0).toUpperCase() + base.slice(1)} in ${product}.`
-      : `${base.charAt(0).toUpperCase() + base.slice(1)}.`;
+    // Clean the base for use as a description sentence — strip XML tags, attributes,
+    // reference codes and numeric IDs so only plain wording remains.
+    const cleanBase = base
+      .replace(/\w+\s*=\s*"[^"]*"/g, '')       // strip XML attributes  e.g. Qualifier="QUR"
+      .replace(/<[^>]*>/g, ' ')                 // strip XML/HTML tags
+      .replace(/\b[A-Za-z]{1,5}\d{4,}\b/g, '') // strip ref codes like P0020232071675770574
+      .replace(/\b\d+\b/g, '')                  // strip all remaining standalone numbers
+      .replace(/\s{2,}/g, ' ')
+      .trim();
+    // Only append the tool name if it is a specific sub-system (SCC, WMS, RIS etc.).
+    // Generic "E2open" on its own is too broad and clutters the description.
+    const isSpecificTool = product && product !== "E2open";
+    const alreadyMentioned = isSpecificTool && new RegExp(product.split(" ")[0], "i").test(cleanBase);
+    descriptionText = (isSpecificTool && !alreadyMentioned)
+      ? `${cleanBase.charAt(0).toUpperCase() + cleanBase.slice(1)} in ${product}.`
+      : `${cleanBase.charAt(0).toUpperCase() + cleanBase.slice(1)}.`;
   } else {
     descriptionText = text.split(/[.!?\n]/)[0].trim() || text;
   }
@@ -332,12 +351,17 @@ function buildReproTemplate(title, description) {
     }
   }
 
+  const fmtBlock = (str) => {
+    const cleaned = (str || '').trim().replace(/(\r?\n){2,}/g, '\n');
+    return escHtml(cleaned).replace(/\r?\n/g, '<br/>');
+  };
+
   return (
-    `<b>Description:</b><br/>${descriptionText}<br/><br/>` +
+    `<b>Description:</b><br/>${escHtml(descriptionText)}<br/><br/>` +
     `<b>Steps to Reproduce:</b><br/><ol>${stepsHtml}</ol>` +
-    `<b>Actual Result:</b><br/>${actual}<br/><br/>` +
-    `<b>Expected Result:</b><br/>${expected}<br/><br/>` +
-    `<b>Test Data:</b><br/>${testData}`
+    `<b>Actual Result:</b><br/>${fmtBlock(actual)}<br/><br/>` +
+    `<b>Expected Result:</b><br/>${fmtBlock(expected)}<br/><br/>` +
+    `<b>Test Data:</b><br/>${escHtml(testData)}`
   );
 }
 

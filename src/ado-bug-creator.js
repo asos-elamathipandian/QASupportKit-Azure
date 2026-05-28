@@ -145,4 +145,67 @@ async function createAdoBug({
   return { id: workItemId, url: workItemUrl };
 }
 
-module.exports = { createAdoBug };
+/**
+ * Uploads a file as an attachment and links it to an existing ADO work item.
+ *
+ * @param {number|string} workItemId
+ * @param {{ fileName: string, fileBuffer: Buffer, comment?: string }} options
+ * @returns {{ fileName: string, attachmentUrl: string }}
+ */
+async function attachFileToWorkItem(workItemId, { fileName, fileBuffer, comment }) {
+  const auth = getAuthHeader();
+  const encodedProject = encodeURIComponent(project);
+
+  // Step 1: Upload the file content to ADO attachment store
+  const uploadUrl =
+    `https://dev.azure.com/${org}/${encodedProject}/_apis/wit/attachments` +
+    `?fileName=${encodeURIComponent(fileName)}&api-version=7.1`;
+
+  const uploadRes = await fetch(uploadUrl, {
+    method: "POST",
+    headers: {
+      Authorization: auth,
+      "Content-Type": "application/octet-stream",
+    },
+    body: fileBuffer,
+  });
+
+  if (!uploadRes.ok) {
+    const errText = await uploadRes.text();
+    throw new Error(`ADO attachment upload failed (${uploadRes.status}): ${errText}`);
+  }
+
+  const uploadData = await uploadRes.json();
+  const attachmentUrl = uploadData.url;
+
+  // Step 2: Link the uploaded attachment to the work item
+  const patchUrl =
+    `https://dev.azure.com/${org}/${encodedProject}/_apis/wit/workitems/${workItemId}` +
+    `?api-version=7.1`;
+
+  const patchRes = await fetch(patchUrl, {
+    method: "PATCH",
+    headers: {
+      Authorization: auth,
+      "Content-Type": "application/json-patch+json",
+    },
+    body: JSON.stringify([{
+      op: "add",
+      path: "/relations/-",
+      value: {
+        rel: "AttachedFile",
+        url: attachmentUrl,
+        attributes: { comment: comment || "Attached via QA Support Kit" },
+      },
+    }]),
+  });
+
+  if (!patchRes.ok) {
+    const errText = await patchRes.text();
+    throw new Error(`ADO work item link failed (${patchRes.status}): ${errText}`);
+  }
+
+  return { fileName, attachmentUrl };
+}
+
+module.exports = { createAdoBug, attachFileToWorkItem };

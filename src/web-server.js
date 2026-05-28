@@ -1091,7 +1091,7 @@ const { sendAdoReportEmail, sendEditedAdoReportEmail, getAdoAvailability, genera
 
 // ── ADO Bug Creation ──────────────────────────────────────────────────────────
 const { suggestPriorityAndSeverity, suggestReproSteps, suggestTitle, suggestAssignee } = require("./ado-bug-suggester");
-const { createAdoBug } = require("./ado-bug-creator");
+const { createAdoBug, attachFileToWorkItem } = require("./ado-bug-creator");
 
 // Suggest title, priority, severity, and repro steps from description
 app.post("/api/ado/suggest-fields", async (req, res) => {
@@ -1145,6 +1145,26 @@ app.post("/api/ado/create-bug", async (req, res) => {
     res.status(500).json({ ok: false, error: e.message });
   }
 });
+
+// Attach a file to an existing ADO work item.
+// Accepts raw binary body (Content-Type: application/octet-stream);
+// workItemId and fileName are passed as query params to avoid JSON size limits.
+app.post("/api/ado/attach-file",
+  express.raw({ type: "application/octet-stream", limit: "50mb" }),
+  async (req, res) => {
+    try {
+      const workItemId = req.query.workItemId;
+      const fileName   = req.query.fileName;
+      if (!workItemId || !fileName || !req.body || !req.body.length) {
+        return res.status(400).json({ ok: false, error: "workItemId, fileName and file body are required." });
+      }
+      const result = await attachFileToWorkItem(workItemId, { fileName, fileBuffer: req.body });
+      res.json({ ok: true, fileName: result.fileName, attachmentUrl: result.attachmentUrl });
+    } catch (e) {
+      res.status(500).json({ ok: false, error: e.message });
+    }
+  }
+);
 
 app.get("/api/ado-status", (req, res) => {
   res.json(getAdoAvailability());

@@ -9,6 +9,11 @@
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+    /* Restore list styles inside the repro steps display panel */
+    #dispReproSteps ol { padding-left: 1.4em; list-style: decimal; }
+    #dispReproSteps ul { padding-left: 1.4em; list-style: disc; }
+    #dispReproSteps li { margin-bottom: 3px; }
+
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       background: #f4f6f9;
@@ -1136,15 +1141,15 @@ async function fullSccFlow() {
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
       <div class="form-group">
         <label for="bugActualInput">Actual Result <span style="color:#e53e3e;">*</span></label>
-        <input id="bugActualInput" type="text"
-          style="border:1px solid #c4b5fd;border-radius:6px;padding:8px 10px;width:100%;font-size:0.87rem;background:#fdfcff;box-sizing:border-box;"
-          placeholder="e.g. ASN shipment is not found" />
+        <textarea id="bugActualInput" rows="3"
+          style="resize:vertical;border:1px solid #c4b5fd;border-radius:6px;padding:8px 10px;width:100%;font-size:0.87rem;background:#fdfcff;box-sizing:border-box;font-family:inherit;"
+          placeholder="e.g. ASN shipment is not found&#10;Paste XML snippet if needed"></textarea>
       </div>
       <div class="form-group">
         <label for="bugExpectedInput">Expected Result</label>
-        <input id="bugExpectedInput" type="text"
-          style="border:1px solid #c4b5fd;border-radius:6px;padding:8px 10px;width:100%;font-size:0.87rem;background:#fdfcff;box-sizing:border-box;"
-          placeholder="e.g. ASN shipment is found and visible" />
+        <textarea id="bugExpectedInput" rows="3"
+          style="resize:vertical;border:1px solid #c4b5fd;border-radius:6px;padding:8px 10px;width:100%;font-size:0.87rem;background:#fdfcff;box-sizing:border-box;font-family:inherit;"
+          placeholder="e.g. ASN shipment is found and visible"></textarea>
       </div>
     </div>
 
@@ -1153,6 +1158,22 @@ async function fullSccFlow() {
       <input id="bugTestDataInput" type="text"
         style="border:1px solid #c4b5fd;border-radius:6px;padding:8px 10px;width:100%;font-size:0.87rem;background:#fdfcff;box-sizing:border-box;"
         placeholder="e.g. ASN 49802839369890  /  PO 500034227745" />
+    </div>
+
+    <!-- Evidence attachments -->
+    <div class="form-group" style="margin-bottom:14px;">
+      <label>Evidence / Attachments <span style="font-weight:400;color:#9ca3af;">(screenshots, docs — uploaded to the ADO work item)</span></label>
+      <div style="border:2px dashed #c4b5fd;border-radius:6px;padding:10px 12px;background:#fdfcff;cursor:pointer;"
+           onclick="document.getElementById('bugAttachments').click()"
+           ondragover="event.preventDefault();this.style.borderColor='#7c3aed';"
+           ondragleave="this.style.borderColor='#c4b5fd';"
+           ondrop="bugAttachmentDrop(event);this.style.borderColor='#c4b5fd';">
+        <span style="font-size:0.84rem;color:#7c3aed;">&#128206; Click to browse or drag &amp; drop files here</span>
+        <input type="file" id="bugAttachments" multiple
+          accept="image/*,.pdf,.doc,.docx,.txt,.xml,.json,.log,.xlsx,.csv"
+          style="display:none;" onchange="bugAttachmentSelected(event)" />
+      </div>
+      <div id="bugAttachmentList" style="margin-top:6px;display:flex;flex-wrap:wrap;gap:6px;"></div>
     </div>
 
     <!-- ③ Suggest button -->
@@ -2542,11 +2563,90 @@ function prodSafeId(name) {
 
   let bugEditMode = false;
 
+  // ── Auto-numbered bullets for Steps textarea ───────────────────────────────
+  document.getElementById('bugSteps').addEventListener('keydown', function (e) {
+    if (e.key !== 'Enter') return;
+    const ta = this;
+    const pos = ta.selectionStart;
+    const val = ta.value;
+    const lineStart = val.lastIndexOf('\n', pos - 1) + 1;
+    const currentLine = val.substring(lineStart, pos);
+    const match = currentLine.match(/^(\d+)\.\s/);
+    if (!match) return; // not on a numbered line — let default Enter work
+    e.preventDefault();
+    // If the current line is just the bullet prefix (empty item), exit the list
+    if (currentLine === match[0]) {
+      ta.value = val.substring(0, lineStart) + val.substring(pos);
+      ta.selectionStart = ta.selectionEnd = lineStart;
+      return;
+    }
+    const nextNum = parseInt(match[1], 10) + 1;
+    const insertion = '\n' + nextNum + '. ';
+    ta.value = val.substring(0, pos) + insertion + val.substring(pos);
+    ta.selectionStart = ta.selectionEnd = pos + insertion.length;
+  });
+
+  // Start with "1. " when user types in an empty steps box
+  document.getElementById('bugSteps').addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' || e.key === 'Backspace' || e.ctrlKey || e.metaKey) return;
+    if (this.value === '' && e.key.length === 1) {
+      // Let the keypress land, then prepend "1. " on the next tick
+      setTimeout(() => {
+        if (/^\d+\./.test(this.value)) return; // user started numbering themselves
+        this.value = '1. ' + this.value;
+        this.selectionStart = this.selectionEnd = this.value.length;
+      }, 0);
+    }
+  });
+
+  // ── Attachment helpers ────────────────────────────────────────────────────
+  let _bugAttachmentFiles = [];
+
+  function bugAttachmentDrop(e) {
+    e.preventDefault();
+    const files = Array.from(e.dataTransfer.files);
+    _bugAddFiles(files);
+  }
+
+  function bugAttachmentSelected(e) {
+    _bugAddFiles(Array.from(e.target.files));
+    // Reset input so the same file can be re-added if needed
+    e.target.value = '';
+  }
+
+  function _bugAddFiles(files) {
+    files.forEach(f => {
+      if (!_bugAttachmentFiles.find(x => x.name === f.name && x.size === f.size)) {
+        _bugAttachmentFiles.push(f);
+      }
+    });
+    _renderBugAttachmentList();
+  }
+
+  function _bugRemoveAttachment(index) {
+    _bugAttachmentFiles.splice(index, 1);
+    _renderBugAttachmentList();
+  }
+
+  function _renderBugAttachmentList() {
+    const list = document.getElementById('bugAttachmentList');
+    list.innerHTML = _bugAttachmentFiles.map((f, i) =>
+      `<span style="display:inline-flex;align-items:center;gap:4px;background:#ede9fe;border:1px solid #c4b5fd;border-radius:14px;padding:3px 10px;font-size:0.79rem;color:#5b21b6;">
+        &#128206; ${f.name}
+        <button onclick="_bugRemoveAttachment(${i})"
+          style="background:none;border:none;color:#7c3aed;cursor:pointer;font-size:0.9rem;padding:0 0 0 4px;line-height:1;"
+          title="Remove">&#10005;</button>
+      </span>`
+    ).join('');
+  }
+
   function resetBugInputs() {
     document.getElementById('bugSteps').value = '';
     document.getElementById('bugActualInput').value = '';
     document.getElementById('bugExpectedInput').value = '';
     document.getElementById('bugTestDataInput').value = '';
+    _bugAttachmentFiles = [];
+    _renderBugAttachmentList();
     document.getElementById('bugUnifiedPanel').style.display = 'none';
     document.getElementById('bugSubmitResult').innerHTML = '';
     document.getElementById('bugActionStatus').textContent = '';
@@ -2635,7 +2735,20 @@ function prodSafeId(name) {
       const data = await res.json();
       if (!data.ok) throw new Error(data.error || 'Suggestion failed');
 
-      document.getElementById('bugTitle').value = data.title || '';
+      // Build title from actual result (user's own words) — strip XML tags and long IDs.
+      // Falls back to AI-suggested title.
+      function _cleanForTitle(str) {
+        return (str || '')
+          .replace(/<[^>]*>/g, ' ')                // strip XML/HTML tags
+          .replace(/\b[A-Za-z]{1,5}\d{6,}\b/g, '') // strip ref codes like P0020232071675770574
+          .replace(/\b\d{6,}\b/g, '')              // strip long numeric IDs (6+ digits)
+          .replace(/\s+\d{1,4}\s*$/g, '')          // strip trailing lone numbers e.g. " 3"
+          .replace(/\s+[,.:;]/g, ' ')              // clean orphaned punctuation
+          .replace(/\s{2,}/g, ' ')                 // collapse whitespace
+          .trim();
+      }
+      const _rawActual = document.getElementById('bugActualInput').value.trim();
+      document.getElementById('bugTitle').value = _cleanForTitle(_rawActual) || data.title || '';
 
       const priSel = document.getElementById('bugPriority');
       for (const opt of priSel.options) { if (opt.value === String(data.priority)) { opt.selected = true; break; } }
@@ -2706,6 +2819,34 @@ function prodSafeId(name) {
       const data = await res.json();
       if (!data.ok) throw new Error(data.error || 'Bug creation failed');
 
+      // ── Attach any queued files to the new work item ──────────────────────
+      let attachHtml = '';
+      if (_bugAttachmentFiles.length > 0) {
+        const attachResults = [];
+        for (const file of _bugAttachmentFiles) {
+          try {
+            const arrayBuf = await file.arrayBuffer();
+            const aRes = await fetch(
+              `/api/ado/attach-file?workItemId=${encodeURIComponent(data.id)}&fileName=${encodeURIComponent(file.name)}`,
+              {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/octet-stream' },
+                body: arrayBuf,
+              }
+            );
+            const aData = await aRes.json();
+            if (aData.ok) {
+              attachResults.push(`<span style="color:#15803d;">&#10003; ${file.name}</span>`);
+            } else {
+              attachResults.push(`<span style="color:#b91c1c;">&#10007; ${file.name}: ${aData.error}</span>`);
+            }
+          } catch (ae) {
+            attachResults.push(`<span style="color:#b91c1c;">&#10007; ${file.name}: ${ae.message}</span>`);
+          }
+        }
+        attachHtml = `<div style="margin-top:8px;font-size:0.82rem;"><strong>Attachments:</strong><br/>${attachResults.join('<br/>')}</div>`;
+      }
+
       document.getElementById('bugSubmitResult').innerHTML =
         `<div style="padding:12px 16px;background:#f0fdf4;border-left:4px solid #22c55e;border-radius:6px;font-size:0.87rem;">
           <strong style="color:#15803d;">\u2705 Bug #${data.id} created successfully!</strong><br/>
@@ -2713,6 +2854,7 @@ function prodSafeId(name) {
              style="color:#0369a1;margin-top:6px;display:inline-block;">
             \uD83D\uDD17 Open in Azure DevOps
           </a>
+          ${attachHtml}
         </div>`;
 
       status.textContent = '';
