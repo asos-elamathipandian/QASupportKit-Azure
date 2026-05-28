@@ -1587,6 +1587,15 @@ async function fullSccFlow() {
       enableUnifiedFeaturesAndOrder();
       initSccStatus();
       refreshSccSessionStatus();
+      // Pre-select assignee based on OS username (e.g. elamathi.pandian → "Elamathi Pandian")
+      fetch('/api/whoami').then(r => r.json()).then(({ username }) => {
+        const fullName = (username || '').split(/[.\-_]/).map(p => p.charAt(0).toUpperCase() + p.slice(1)).join(' ');
+        const sel = document.getElementById('bugAssignee');
+        if (sel) {
+          const match = Array.from(sel.options).find(o => o.value.toLowerCase() === fullName.toLowerCase());
+          if (match) sel.value = match.value;
+        }
+      }).catch(() => {});
     });
   } else {
     enableUnifiedFeaturesAndOrder();

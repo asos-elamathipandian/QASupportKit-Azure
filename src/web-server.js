@@ -56,6 +56,12 @@ app.get("/api/health", (req, res) => {
   res.json({ ok: true, uptime: process.uptime(), pid: process.pid });
 });
 
+// Returns the OS username so the frontend can pre-select the assignee
+app.get("/api/whoami", (req, res) => {
+  const os = require("os");
+  res.json({ username: os.userInfo().username });
+});
+
 const PORT = process.env.PORT || 3000;
 
 async function upload(filePath) {
