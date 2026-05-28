@@ -1233,11 +1233,9 @@ async function fullSccFlow() {
             <select id="bugAssignee" class="ubf-edit" style="display:none;border:1px solid #c4b5fd;border-radius:5px;padding:4px 8px;font-size:0.84rem;width:100%;">
               <option value="">— Unassigned —</option>
               <option value="E2open">E2open</option>
-              <option value="Lisa">Lisa</option>
-              <option value="Arthur">Arthur</option>
-              <option value="Ela">Ela</option>
-              <option value="Shyam">Shyam</option>
-              <option value="Frazer">Frazer</option>
+              <option value="Elamathi Pandian">Elamathi Pandian</option>
+              <option value="Shyam Pattni">Shyam Pattni</option>
+              <option value="Frazer Green">Frazer Green</option>
               <option value="ASOS SCT">ASOS SCT</option>
               <option value="ASOS RIS">ASOS RIS</option>
               <option value="ASOS RMS">ASOS RMS</option>
@@ -2587,19 +2585,6 @@ function prodSafeId(name) {
     const insertion = '\n' + nextNum + '. ';
     ta.value = val.substring(0, pos) + insertion + val.substring(pos);
     ta.selectionStart = ta.selectionEnd = pos + insertion.length;
-  });
-
-  // Start with "1. " when user types in an empty steps box
-  document.getElementById('bugSteps').addEventListener('keydown', function (e) {
-    if (e.key === 'Enter' || e.key === 'Backspace' || e.ctrlKey || e.metaKey) return;
-    if (this.value === '' && e.key.length === 1) {
-      // Let the keypress land, then prepend "1. " on the next tick
-      setTimeout(() => {
-        if (/^\d+\./.test(this.value)) return; // user started numbering themselves
-        this.value = '1. ' + this.value;
-        this.selectionStart = this.selectionEnd = this.value.length;
-      }, 0);
-    }
   });
 
   // ── Attachment helpers ────────────────────────────────────────────────────
