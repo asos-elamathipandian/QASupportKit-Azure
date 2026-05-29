@@ -31,7 +31,7 @@ export class Regression_TA_LoginPageTA extends Regression_TA_BasePage {
     }
 
     // Click ASOS tenant link (exact <a> match avoids 'ASOS SCC')
-    await this.page.locator('a').filter({ hasText: /^ASOS$/ }).waitFor({ state: 'visible', timeout: 60000 });
+    await this.page.locator('a').filter({ hasText: /^ASOS$/ }).waitFor({ state: 'visible', timeout: 120000 });
     await this.page.locator('a').filter({ hasText: /^ASOS$/ }).click();
     // Second launchpad: click 'ASOS Trade Automation UAT'
     await this.page.locator('#table-example-1').getByText('ASOS Trade Automation UAT').click({ timeout: 30000 });

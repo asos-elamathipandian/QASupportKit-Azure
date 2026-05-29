@@ -24,7 +24,7 @@ async function shot(page, filename) {
   return filename;
 }
 
-test.setTimeout(240000); // 4 minutes — login SSO takes up to 60s + 3 searches
+test.setTimeout(600000); // 10 minutes — login SSO + 3 searches + ASN detail tabs
 
 test('E2open TA | Check SKU, PO and ASN availability', async ({ page }) => {
   const loginPage   = new Regression_TA_LoginPageTA(page);
@@ -81,19 +81,43 @@ test('E2open TA | Check SKU, PO and ASN availability', async ({ page }) => {
   // ── ASN ──────────────────────────────────────────────────────────────────
   if (asnId) {
     console.log(`[TA] Searching ASN: ${asnId}`);
-    const asnFile = `asn-${asnId}-${Date.now()}.png`;
+    const ts = Date.now();
+    const asnFile       = `asn-${asnId}-${ts}.png`;
+    const asnDetailFile = `asn-${asnId}-detail-${ts}.png`;
+    const asnLineFile   = `asn-${asnId}-lineitems-${ts}.png`;
+    const asnEventsFile = `asn-${asnId}-events-${ts}.png`;
     await menuPage.openLogistics('Shipment Search Search Power');
     console.log('[TA] Logistics menu opened (ASN search)');
     const asnFound = await asnPage.searchASN(asnId);
     if (asnFound) {
       console.log(`[TA] ASN ${asnId}: FOUND ✓`);
-      await page.waitForTimeout(2000); // let results grid settle
+      await page.waitForTimeout(2000);
       await shot(page, asnFile);
+      // Drill into detail page
+      console.log(`[TA] ASN ${asnId}: opening detail...`);
+      await asnPage.clickResultLink(asnId);
+      await shot(page, asnDetailFile);
+      // Line Items tab
+      console.log(`[TA] ASN ${asnId}: capturing Line Items tab...`);
+      await asnPage.clickTab('Line Items');
+      await shot(page, asnLineFile);
+      // Events tab
+      console.log(`[TA] ASN ${asnId}: capturing Events tab...`);
+      await asnPage.clickTab('Events');
+      await shot(page, asnEventsFile);
+      // Back to search results
+      await asnPage.clickBack();
     } else {
       console.log(`[TA] ASN ${asnId}: NOT FOUND`);
       await shot(page, asnFile);
     }
-    results.asn = { id: asnId, found: asnFound, screenshot: asnFile };
+    results.asn = {
+      id: asnId, found: asnFound,
+      screenshot: asnFile,
+      screenshots: asnFound
+        ? { results: asnFile, detail: asnDetailFile, lineItems: asnLineFile, events: asnEventsFile }
+        : { results: asnFile }
+    };
   }
 
   // ── Write results JSON ────────────────────────────────────────────────────
