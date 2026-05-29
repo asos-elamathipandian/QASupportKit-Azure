@@ -1112,6 +1112,47 @@ async function fullSccFlow() {
 </script>
 
   <!-- ══════════════════════════════════════════════════════════════════════
+       E2OPEN TA CHECK — SKU / PO / ASN availability + screenshots
+       ══════════════════════════════════════════════════════════════════════ -->
+  <div class="card" id="ta-check-card" style="border-left:4px solid #0891b2;">
+    <div class="card-title" style="color:#0891b2;">&#128247; E2open TA Check</div>
+    <div style="background:#ecfeff;border:1px solid #a5f3fc;border-radius:6px;padding:11px 16px;margin-bottom:18px;font-size:0.83rem;color:#0e7490;line-height:1.7;">
+      Enter the SKU, PO and/or ASN you want to verify in E2open TA, then click <strong>Run Check</strong>. Playwright will open E2open TA, search each record and return a screenshot showing whether it was found.
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px;">
+      <div>
+        <label style="font-size:0.82rem;color:#6b7280;font-weight:500;display:block;margin-bottom:4px;">SKU</label>
+        <input id="taCheckSku" type="text" placeholder="e.g. 148609059" style="width:100%;box-sizing:border-box;border:1px solid #a5f3fc;border-radius:5px;padding:7px 10px;font-size:0.85rem;" />
+      </div>
+      <div>
+        <label style="font-size:0.82rem;color:#6b7280;font-weight:500;display:block;margin-bottom:4px;">PO ID</label>
+        <input id="taCheckPo" type="text" placeholder="e.g. 500034216386" style="width:100%;box-sizing:border-box;border:1px solid #a5f3fc;border-radius:5px;padding:7px 10px;font-size:0.85rem;" />
+      </div>
+      <div>
+        <label style="font-size:0.82rem;color:#6b7280;font-weight:500;display:block;margin-bottom:4px;">ASN ID</label>
+        <input id="taCheckAsn" type="text" placeholder="e.g. 49870000001276" style="width:100%;box-sizing:border-box;border:1px solid #a5f3fc;border-radius:5px;padding:7px 10px;font-size:0.85rem;" />
+      </div>
+    </div>
+
+    <button id="btnTaCheck" onclick="runTaCheck()" style="background:#0891b2;color:#fff;border:none;border-radius:6px;padding:9px 22px;font-size:0.9rem;font-weight:600;cursor:pointer;">&#9654; Run Check</button>
+
+    <div id="taCheckStatus" style="margin-top:14px;display:none;">
+      <div style="font-size:0.83rem;color:#0e7490;background:#ecfeff;border:1px solid #a5f3fc;border-radius:6px;padding:10px 14px;margin-bottom:8px;">
+        &#9203; Running E2open TA check — follow live progress below&hellip;
+      </div>
+      <div id="taCheckLog"
+        style="font-family:monospace;font-size:0.78rem;background:#0f172a;color:#a5f3fc;border-radius:6px;padding:10px 14px;
+               max-height:220px;overflow-y:auto;line-height:1.6;white-space:pre-wrap;"></div>
+    </div>
+    <div id="taCheckError"  style="margin-top:14px;display:none;font-size:0.85rem;color:#b91c1c;background:#fef2f2;border:1px solid #fca5a5;border-radius:6px;padding:10px 14px;"></div>
+
+    <div id="taCheckResults" style="display:none;margin-top:18px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;" id="taCheckCards"></div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════════════════
        RAISE ADO BUG — fully isolated from all existing flows
        ══════════════════════════════════════════════════════════════════════ -->
   <div class="card" id="raise-ado-bug-card" style="border-left:4px solid #7c3aed;">
@@ -1559,6 +1600,7 @@ async function fullSccFlow() {
     const blobPoCard = byTitle('E2Open PO Feed Search');
     const blobCarrierCard = byTitle('PO Carrier Feed Search');
     const adoBugCard = document.getElementById('raise-ado-bug-card');
+    const taCheckCard = document.getElementById('ta-check-card');
 
     // Make blob outbound visible; hide the other blob search cards for now
     if (blobOutboundCard) blobOutboundCard.style.display = '';
@@ -1575,6 +1617,7 @@ async function fullSccFlow() {
       resultsCard,         // 3. Results
       blobOutboundCard,    // 4. Blob search
       adoBugCard,          // 5. Raise ADO Bug
+      taCheckCard,         // 6. E2open TA Check
       adoCard,             // 6. Status email
     ].filter(Boolean);
 
@@ -2563,6 +2606,80 @@ async function prodDoUpload() {
 function prodSafeId(name) {
   return name.replace(/[^a-zA-Z0-9]/g, '_');
 }
+
+  // ── E2open TA Check ────────────────────────────────────────────────────────
+
+  async function runTaCheck() {
+    const sku   = document.getElementById('taCheckSku').value.trim();
+    const poId  = document.getElementById('taCheckPo').value.trim();
+    const asnId = document.getElementById('taCheckAsn').value.trim();
+
+    if (!sku && !poId && !asnId) {
+      document.getElementById('taCheckError').textContent = 'Please enter at least one of SKU, PO ID or ASN ID.';
+      document.getElementById('taCheckError').style.display = '';
+      return;
+    }
+
+    const btn    = document.getElementById('btnTaCheck');
+    const logEl  = document.getElementById('taCheckLog');
+    btn.disabled = true;
+    logEl.textContent = '';
+    document.getElementById('taCheckError').style.display = 'none';
+    document.getElementById('taCheckResults').style.display = 'none';
+    document.getElementById('taCheckStatus').style.display = '';
+
+    // Open SSE for live progress
+    const sse = new EventSource('/api/ta/progress');
+    sse.onmessage = (e) => {
+      const line = JSON.parse(e.data);
+      logEl.textContent += line + '\n';
+      logEl.scrollTop = logEl.scrollHeight;
+    };
+
+    try {
+      const resp = await fetch('/api/ta/check', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sku, poId, asnId }),
+      });
+      sse.close();
+      const data = await resp.json();
+      if (!resp.ok || !data.ok) throw new Error(data.error || 'TA check failed');
+
+      const r = data.results;
+      const items = [
+        { label: 'SKU',  info: r.sku  },
+        { label: 'PO',   info: r.po   },
+        { label: 'ASN',  info: r.asn  },
+      ].filter(x => x.info);
+
+      const cardsEl = document.getElementById('taCheckCards');
+      cardsEl.innerHTML = items.map(({ label, info }) => {
+        const badge = info.found
+          ? `<span style="background:#d1fae5;color:#065f46;border-radius:999px;padding:2px 10px;font-size:0.78rem;font-weight:700;">&#10003; Found</span>`
+          : `<span style="background:#fee2e2;color:#991b1b;border-radius:999px;padding:2px 10px;font-size:0.78rem;font-weight:700;">&#10007; Not Found</span>`;
+        const img = info.screenshot
+          ? `<a href="/api/ta/screenshot/${encodeURIComponent(info.screenshot)}" target="_blank">
+               <img src="/api/ta/screenshot/${encodeURIComponent(info.screenshot)}" alt="${label} screenshot"
+                 style="width:100%;border-radius:6px;border:1px solid #e5e7eb;margin-top:10px;cursor:zoom-in;" />
+             </a>`
+          : '';
+        return `<div style="border:1px solid #e0f2fe;border-radius:8px;padding:12px;background:#f0f9ff;">
+          <div style="font-size:0.78rem;color:#6b7280;font-weight:600;text-transform:uppercase;letter-spacing:.05em;">${label}</div>
+          <div style="font-size:0.9rem;font-weight:600;color:#1e293b;margin:4px 0;">${info.id || '—'}</div>
+          ${badge}${img}
+        </div>`;
+      }).join('');
+
+      document.getElementById('taCheckResults').style.display = '';
+    } catch (e) {
+      sse.close();
+      document.getElementById('taCheckError').textContent = e.message;
+      document.getElementById('taCheckError').style.display = '';
+    } finally {
+      btn.disabled = false;
+    }
+  }
 
   // ── Raise ADO Bug ──────────────────────────────────────────────────────────
 

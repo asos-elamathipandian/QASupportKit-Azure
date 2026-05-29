@@ -49,6 +49,5 @@ export class Regression_TA_POSearchPage extends Regression_TA_BasePage {
 
   async clickBack() {
     await this.page.getByRole('button', { name: 'Back to Search Results', exact: true }).click();
-    await this.waitForSearchReady();
   }
 }

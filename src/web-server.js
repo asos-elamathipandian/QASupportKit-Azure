@@ -38,6 +38,7 @@ const {
   createFullSccFlow,
   cancelActiveSpec,
 } = require("./scc-launcher");
+const { runTaCheck, SCREENSHOT_DIR } = require("./ta-checker");
 
 loadEnvironment();
 
@@ -1209,6 +1210,62 @@ app.post("/api/send-edited-email", async (req, res) => {
   } catch (e) {
     res.status(500).json({ ok: false, error: e.message });
   }
+});
+
+// ── E2open TA Check ──────────────────────────────────────────────────────────
+
+let _taProgressLines = [];
+let _taSseClients = [];
+
+function addTaProgress(text) {
+  const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+  for (const line of lines) {
+    // Only surface [TA] tagged lines, pass/fail summary, and errors
+    if (!/\[TA\]|passed|failed|timed?\s*out|Error:/i.test(line)) continue;
+    _taProgressLines.push(line);
+    const payload = `data: ${JSON.stringify(line)}\n\n`;
+    _taSseClients.forEach(c => { try { c.write(payload); } catch (_) {} });
+  }
+}
+
+app.get("/api/ta/progress", (req, res) => {
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
+  res.flushHeaders();
+  // Catch-up: send all lines buffered so far
+  _taProgressLines.forEach(line => res.write(`data: ${JSON.stringify(line)}\n\n`));
+  _taSseClients.push(res);
+  req.on("close", () => { _taSseClients = _taSseClients.filter(c => c !== res); });
+});
+
+app.post("/api/ta/check", async (req, res) => {
+  const { sku, poId, asnId } = req.body || {};
+  if (!sku && !poId && !asnId) {
+    return res.status(400).json({ ok: false, error: "At least one of sku, poId, asnId is required" });
+  }
+  // Reset progress for this new run
+  _taProgressLines = [];
+  const broadcast = msg => {
+    const p = `data: ${JSON.stringify(msg)}\n\n`;
+    _taSseClients.forEach(c => { try { c.write(p); } catch (_) {} });
+  };
+  broadcast("[TA] Starting check...");
+  try {
+    const results = await runTaCheck({ sku, poId, asnId, onProgress: addTaProgress });
+    broadcast("[TA] Check complete.");
+    res.json({ ok: true, results });
+  } catch (e) {
+    broadcast(`[TA] Error: ${e.message}`);
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+app.get("/api/ta/screenshot/:filename", (req, res) => {
+  const filename = path.basename(req.params.filename);
+  const filePath = path.join(SCREENSHOT_DIR, filename);
+  if (!fs.existsSync(filePath)) return res.status(404).send("Not found");
+  res.sendFile(filePath);
 });
 
 // ── Start ─────────────────────────────────────────────────────────────────────

@@ -2,48 +2,43 @@ import { Regression_TA_BasePage } from './Regression_TA_BasePage.js';
 
 export class Regression_TA_MenuPage extends Regression_TA_BasePage {
 
-  constructor(page) {
-    super(page);
-    this.menuSelectors = [
-      '.eto-header__menu-toggle',
-      'button.eto-header__menu-toggle',
-      'button[aria-label*="menu" i]',
-      'button[title*="menu" i]',
-      'button[title="View menu items"]',
-      'button:has-text("Menu")'
-    ];
-  }
-
   async openMainMenu() {
-    for (const selector of this.menuSelectors) {
-      const toggle = this.page.locator(selector).first();
-      if (await toggle.count()) {
-        await toggle.waitFor({ state: 'visible', timeout: 10000 });
-        const expanded = await toggle.getAttribute('aria-expanded').catch(() => null);
-        if (expanded !== 'true') {
-          await toggle.click();
-          await this.page.waitForTimeout(300);
-        }
-        return;
-      }
-    }
-    throw new Error('Main menu toggle not found');
+    await this.page.getByRole('button', { name: 'menu Menu' }).click({ timeout: 30000 });
+    await this.page.waitForTimeout(800); // let the dropdown animate open
   }
 
   async openProducts() {
     await this.openMainMenu();
-    await this.page.getByRole('button', { name: 'Products' }).click();
-    await this.page.getByText('General').nth(2).click();
+    await this.page.getByRole('button', { name: 'Products' }).click({ timeout: 30000 });
+    await this.page.getByText('General').nth(2).click({ timeout: 15000 });
   }
 
-  async openLogistics(itemText = 'PO / IWT Advice Search Power') {
+  // Opens the PO / IWT Advice Search page (first item under Logistics)
+  async openLogisticsForPO() {
     await this.openMainMenu();
-    await this.page.getByRole('button', { name: 'Logistics' }).click();
+    await this.page.getByRole('button', { name: 'Logistics' }).click({ timeout: 30000 });
     await this.page
-      .locator('li')
-      .filter({ hasText: itemText })
-      .locator('a')
+      .locator('.eto-header__menu-column > ul > li > .eto-menu__group > li > .eto-menu__link')
       .first()
-      .click();
+      .click({ timeout: 15000 });
+  }
+
+  // Opens the Shipment / ASN Search page (first item in third Logistics column)
+  async openLogisticsForASN() {
+    await this.openMainMenu();
+    await this.page.getByRole('button', { name: 'Logistics' }).click({ timeout: 30000 });
+    await this.page
+      .locator('.eto-header__menu-column > ul:nth-child(3) > li > .eto-menu__group > li > .eto-menu__link')
+      .first()
+      .click({ timeout: 15000 });
+  }
+
+  // Backward-compat: called by spec with no arg (PO) or 'Shipment...' string (ASN)
+  async openLogistics(type = 'PO') {
+    if (type === 'ASN' || type.includes('Shipment') || type.includes('ASN')) {
+      await this.openLogisticsForASN();
+    } else {
+      await this.openLogisticsForPO();
+    }
   }
 }
