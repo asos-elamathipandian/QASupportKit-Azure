@@ -1147,6 +1147,12 @@ async function fullSccFlow() {
     </div>
     <div id="taCheckError"  style="margin-top:14px;display:none;font-size:0.85rem;color:#b91c1c;background:#fef2f2;border:1px solid #fca5a5;border-radius:6px;padding:10px 14px;"></div>
 
+    <div id="taDownloadAll" style="display:none;margin-top:14px;text-align:right;">
+      <a href="/api/ta/screenshots/download-all" download style="display:inline-flex;align-items:center;gap:6px;background:#0e7490;color:#fff;border:none;border-radius:6px;padding:7px 16px;font-size:0.82rem;font-weight:600;text-decoration:none;cursor:pointer;">
+        &#11015; Download All Screenshots
+      </a>
+    </div>
+
     <div id="taCheckResults" style="display:none;margin-top:18px;">
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;" id="taCheckCards"></div>
     </div>
@@ -2626,6 +2632,7 @@ function prodSafeId(name) {
     logEl.textContent = '';
     document.getElementById('taCheckError').style.display = 'none';
     document.getElementById('taCheckResults').style.display = 'none';
+    document.getElementById('taDownloadAll').style.display = 'none';
     document.getElementById('taCheckStatus').style.display = '';
 
     // Open SSE for live progress
@@ -2698,6 +2705,7 @@ function prodSafeId(name) {
         </div>`;
       }).join('');
 
+      document.getElementById('taDownloadAll').style.display = '';
       document.getElementById('taCheckResults').style.display = '';
     } catch (e) {
       sse.close();

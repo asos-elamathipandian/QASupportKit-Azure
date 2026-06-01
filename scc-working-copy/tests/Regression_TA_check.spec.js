@@ -24,20 +24,29 @@ async function shot(page, filename) {
   return filename;
 }
 
+// Screenshot just the named iframe element — crops to its exact rendered height, no blank space.
+async function shotIframe(page, iframeName, filename) {
+  await fs.mkdir(screenshotDir, { recursive: true });
+  const p = path.resolve(screenshotDir, filename);
+  const el = await page.$(`iframe[name="${iframeName}"]`);
+  if (el) {
+    await el.screenshot({ path: p });
+  } else {
+    await page.screenshot({ path: p, fullPage: true });
+  }
+  return filename;
+}
+
 // Expand the named iframe + all overflow-scroll containers inside it so
 // fullPage: true captures every row (not just what fits in the viewport).
 async function expandIframe(page, frameName) {
-  // 1. Make the iframe element itself very tall on the outer page
-  await page.evaluate((name) => {
-    const el = document.querySelector(`iframe[name="${name}"]`);
-    if (el) el.style.height = '6000px';
-  }, frameName);
-  // 2. Inside the frame, remove fixed-height overflow containers
   const frame = page.frames().find(f => f.name() === frameName);
   if (frame) {
+    // 1. Inside the frame, remove fixed-height overflow containers AND collapse over-tall empty ones
     await frame.evaluate(() => {
       function expand(el) {
         const s = window.getComputedStyle(el);
+        if (s.display === 'none' || s.visibility === 'hidden') return;
         if (['auto', 'scroll', 'hidden'].includes(s.overflow) || ['auto', 'scroll', 'hidden'].includes(s.overflowY)) {
           if (el.scrollHeight > el.clientHeight) {
             el.style.height    = el.scrollHeight + 'px';
@@ -53,7 +62,50 @@ async function expandIframe(page, frameName) {
         for (const c of el.children) expand(c);
       }
       expand(document.body);
+
+      // Second pass: collapse containers that are over-tall relative to their actual content
+      // (e.g. empty table sections with large min-height set by the app layout)
+      function collapse(el) {
+        const s = window.getComputedStyle(el);
+        if (s.display === 'none' || s.visibility === 'hidden') return;
+        if (el.clientHeight > el.scrollHeight + 40 && el.clientHeight > 100) {
+          el.style.height    = el.scrollHeight + 'px';
+          el.style.minHeight = '0';
+        }
+        for (const c of el.children) collapse(c);
+      }
+      collapse(document.body);
     });
+    // 2. Measure the actual rendered content height after expansion
+    // Use the bottom of the lowest visible, non-empty element (not scrollHeight,
+    // which includes empty containers that inflate the height).
+    const contentHeight = await frame.evaluate(() => {
+      let maxY = 0;
+      function walk(el) {
+        const s = window.getComputedStyle(el);
+        if (s.display === 'none' || s.visibility === 'hidden') return;
+        // Skip fixed/sticky/absolute footer bars — they don't reflect content height
+        if (s.position === 'fixed' || s.position === 'sticky') return;
+        const rect = el.getBoundingClientRect();
+        if (rect.width > 0 && rect.height > 0) {
+          const hasContent = (el.children.length === 0 && (el.textContent || '').trim().length > 0)
+            || ['INPUT', 'SELECT', 'TEXTAREA', 'IMG'].includes(el.tagName);
+          if (hasContent) {
+            const bottom = rect.top + rect.height + window.pageYOffset;
+            if (bottom > maxY) maxY = bottom;
+          }
+        }
+        for (const c of el.children) walk(c);
+      }
+      walk(document.body);
+      // Fall back to scrollHeight if no content found
+      return maxY > 50 ? maxY : Math.max(document.body.scrollHeight, document.documentElement.scrollHeight);
+    });
+    // 3. Set the iframe to exactly that height (not a fixed 6000px) — avoids blank space
+    await page.evaluate(({ name, h }) => {
+      const el = document.querySelector(`iframe[name="${name}"]`);
+      if (el) el.style.height = (h + 20) + 'px';
+    }, { name: frameName, h: contentHeight });
   }
 }
 
@@ -156,12 +208,12 @@ test('E2open TA | Check SKU, PO and ASN availability', async ({ page }) => {
       console.log(`[TA] ASN ${asnId}: opening detail...`);
       await asnPage.clickResultLink(asnId);
       await expandIframe(page, 'detailFrame');
-      await shot(page, asnDetailFile);
+      await shotIframe(page, 'detailFrame', asnDetailFile);
       // Line Items tab
       console.log(`[TA] ASN ${asnId}: capturing Line Items tab...`);
       await asnPage.clickTab('Line Items');
       await expandIframe(page, 'detailFrame');
-      await shot(page, asnLineFile);
+      await shotIframe(page, 'detailFrame', asnLineFile);
       // Events tab
       console.log(`[TA] ASN ${asnId}: capturing Events tab...`);
       await asnPage.clickTab('Events');
@@ -171,7 +223,7 @@ test('E2open TA | Check SKU, PO and ASN availability', async ({ page }) => {
       if (detailFr) await detailFr.evaluate(() => { document.body.style.zoom = '0.7'; });
       await page.waitForTimeout(1000);
       await expandIframe(page, 'detailFrame');
-      await shot(page, asnEventsFile);
+      await shotIframe(page, 'detailFrame', asnEventsFile);
       // Back to search results
       await asnPage.clickBack();
     } else {

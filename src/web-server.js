@@ -1268,6 +1268,25 @@ app.get("/api/ta/screenshot/:filename", (req, res) => {
   res.sendFile(filePath);
 });
 
+app.get("/api/ta/screenshots/download-all", (req, res) => {
+  const archiver = require("archiver");
+  const files = fs.existsSync(SCREENSHOT_DIR)
+    ? fs.readdirSync(SCREENSHOT_DIR).filter((f) => f.endsWith(".png"))
+    : [];
+  if (!files.length) return res.status(404).json({ error: "No screenshots found" });
+
+  res.setHeader("Content-Type", "application/zip");
+  res.setHeader("Content-Disposition", 'attachment; filename="ta-screenshots.zip"');
+
+  const archive = archiver("zip", { zlib: { level: 6 } });
+  archive.on("error", (err) => res.destroy(err));
+  archive.pipe(res);
+  for (const f of files) {
+    archive.file(path.join(SCREENSHOT_DIR, f), { name: f });
+  }
+  archive.finalize();
+});
+
 // ── Start ─────────────────────────────────────────────────────────────────────
 
 // Safety net: log unhandled errors without crashing the server
