@@ -1,24 +1,16 @@
 {
-  "sku": {
-    "id": "1486090590",
-    "found": false,
-    "screenshot": "sku-1486090590-1780306047831.png"
-  },
-  "po": {
-    "id": "500034187852",
-    "found": true,
-    "screenshot": "po-500034187852-1780306055972.png"
-  },
+  "sku": null,
+  "po": null,
   "asn": {
     "id": "49870000003074",
     "found": true,
-    "screenshot": "asn-49870000003074-1780306062568.png",
+    "screenshot": "asn-49870000003074-1780306312263.png",
     "screenshots": {
-      "results": "asn-49870000003074-1780306062568.png",
-      "detail": "asn-49870000003074-detail-1780306062568.png",
-      "lineItems": "asn-49870000003074-lineitems-1780306062568.png",
-      "events": "asn-49870000003074-events-1780306062568.png"
+      "results": "asn-49870000003074-1780306312263.png",
+      "detail": "asn-49870000003074-detail-1780306312263.png",
+      "lineItems": "asn-49870000003074-lineitems-1780306312263.png",
+      "events": "asn-49870000003074-events-1780306312263.png"
     }
   },
-  "timestamp": "2026-06-01T09:26:48.687Z"
+  "timestamp": "2026-06-01T09:31:17.585Z"
 }
