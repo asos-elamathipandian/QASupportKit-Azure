@@ -10,3 +10,4 @@ iisnode/
 *.html
 scc-working-copy/asn-lookup-auth.json
 scc-working-copy/asn-lookup-results.json
+scc-working-copy/test-results/

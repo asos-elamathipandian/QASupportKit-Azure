@@ -20,8 +20,67 @@ const screenshotDir = process.env.TA_SCREENSHOT_DIR || path.resolve('test-result
 async function shot(page, filename) {
   await fs.mkdir(screenshotDir, { recursive: true });
   const p = path.resolve(screenshotDir, filename);
-  await page.screenshot({ path: p, fullPage: false });
+  await page.screenshot({ path: p, fullPage: true });
   return filename;
+}
+
+// Expand the named iframe + all overflow-scroll containers inside it so
+// fullPage: true captures every row (not just what fits in the viewport).
+async function expandIframe(page, frameName) {
+  // 1. Make the iframe element itself very tall on the outer page
+  await page.evaluate((name) => {
+    const el = document.querySelector(`iframe[name="${name}"]`);
+    if (el) el.style.height = '6000px';
+  }, frameName);
+  // 2. Inside the frame, remove fixed-height overflow containers
+  const frame = page.frames().find(f => f.name() === frameName);
+  if (frame) {
+    await frame.evaluate(() => {
+      function expand(el) {
+        const s = window.getComputedStyle(el);
+        if (['auto', 'scroll', 'hidden'].includes(s.overflow) || ['auto', 'scroll', 'hidden'].includes(s.overflowY)) {
+          if (el.scrollHeight > el.clientHeight) {
+            el.style.height    = el.scrollHeight + 'px';
+            el.style.maxHeight = 'none';      // remove max-height constraint
+            el.style.overflow  = 'visible';
+            el.style.overflowY = 'visible';
+          }
+        }
+        // Also clear max-height even on non-overflow containers (tables, grid wrappers)
+        if (s.maxHeight && s.maxHeight !== 'none' && s.maxHeight !== '0px') {
+          el.style.maxHeight = 'none';
+        }
+        for (const c of el.children) expand(c);
+      }
+      expand(document.body);
+    });
+  }
+}
+
+// Find pagination <select> controls inside the frame (those offering page-size options
+// like 10 / 25 / 50 / 100) and switch them to the largest available value so that
+// all rows are rendered before the screenshot.
+async function expandTablePagination(page, frameName) {
+  const frame = page.frames().find(f => f.name() === frameName);
+  if (!frame) return;
+  let changed = 0;
+  const selects = await frame.$$('select');
+  for (const sel of selects) {
+    const opts = await sel.evaluate(s =>
+      Array.from(s.options).map(o => ({ v: o.value, t: o.text, selected: o.selected }))
+    );
+    const numerics = opts
+      .map(o => ({ ...o, n: parseInt(o.v) || parseInt(o.t) }))
+      .filter(o => !isNaN(o.n) && o.n > 0);
+    if (numerics.some(o => o.n === 10) && numerics.some(o => o.n > 10)) {
+      const largest = numerics.reduce((a, b) => a.n > b.n ? a : b);
+      if (!largest.selected) {
+        await sel.selectOption(largest.v, { force: true });  // force skips visibility check on hidden native select
+        changed++;
+      }
+    }
+  }
+  if (changed > 0) await page.waitForTimeout(3000); // let table re-render
 }
 
 test.setTimeout(600000); // 10 minutes — login SSO + 3 searches + ASN detail tabs
@@ -96,14 +155,22 @@ test('E2open TA | Check SKU, PO and ASN availability', async ({ page }) => {
       // Drill into detail page
       console.log(`[TA] ASN ${asnId}: opening detail...`);
       await asnPage.clickResultLink(asnId);
+      await expandIframe(page, 'detailFrame');
       await shot(page, asnDetailFile);
       // Line Items tab
       console.log(`[TA] ASN ${asnId}: capturing Line Items tab...`);
       await asnPage.clickTab('Line Items');
+      await expandIframe(page, 'detailFrame');
       await shot(page, asnLineFile);
       // Events tab
       console.log(`[TA] ASN ${asnId}: capturing Events tab...`);
       await asnPage.clickTab('Events');
+      // Zoom out the detailFrame so the grid renders all rows without pagination clipping
+      // (equivalent to pressing Ctrl+- in the browser — same effect user confirmed works)
+      const detailFr = page.frames().find(f => f.name() === 'detailFrame');
+      if (detailFr) await detailFr.evaluate(() => { document.body.style.zoom = '0.7'; });
+      await page.waitForTimeout(1000);
+      await expandIframe(page, 'detailFrame');
       await shot(page, asnEventsFile);
       // Back to search results
       await asnPage.clickBack();
