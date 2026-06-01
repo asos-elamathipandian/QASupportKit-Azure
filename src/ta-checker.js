@@ -90,4 +90,4 @@ function runTaCheck({ sku, poId, asnId, onProgress } = {}) {
   });
 }
 
-module.exports = { runTaCheck, SCREENSHOT_DIR };
+module.exports = { runTaCheck, SCREENSHOT_DIR, TA_RESULTS_FILE };

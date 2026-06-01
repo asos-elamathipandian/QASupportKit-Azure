@@ -1148,9 +1148,9 @@ async function fullSccFlow() {
     <div id="taCheckError"  style="margin-top:14px;display:none;font-size:0.85rem;color:#b91c1c;background:#fef2f2;border:1px solid #fca5a5;border-radius:6px;padding:10px 14px;"></div>
 
     <div id="taDownloadAll" style="display:none;margin-top:14px;text-align:right;">
-      <a href="/api/ta/screenshots/download-all" download style="display:inline-flex;align-items:center;gap:6px;background:#0e7490;color:#fff;border:none;border-radius:6px;padding:7px 16px;font-size:0.82rem;font-weight:600;text-decoration:none;cursor:pointer;">
-        &#11015; Download All Screenshots
-      </a>
+      <button onclick="taDownloadScreenshots()" style="display:inline-flex;align-items:center;gap:6px;background:#0e7490;color:#fff;border:none;border-radius:6px;padding:7px 16px;font-size:0.82rem;font-weight:600;cursor:pointer;">
+        &#11015; Download Screenshots
+      </button>
     </div>
 
     <div id="taCheckResults" style="display:none;margin-top:18px;">
@@ -2615,6 +2615,30 @@ function prodSafeId(name) {
 
   // ── E2open TA Check ────────────────────────────────────────────────────────
 
+  function taDownloadScreenshots() {
+    const r = window._taLastResults;
+    if (!r) return;
+    const files = [];
+    if (r.sku?.screenshot)  files.push(r.sku.screenshot);
+    if (r.po?.screenshot)   files.push(r.po.screenshot);
+    if (r.asn?.screenshots) {
+      const ss = r.asn.screenshots;
+      [ss.results, ss.detail, ss.lineItems, ss.events].filter(Boolean).forEach(f => files.push(f));
+    } else if (r.asn?.screenshot) {
+      files.push(r.asn.screenshot);
+    }
+    files.forEach((f, i) => {
+      setTimeout(() => {
+        const a = document.createElement('a');
+        a.href = `/api/ta/screenshot/${encodeURIComponent(f)}`;
+        a.download = f;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      }, i * 300); // stagger to avoid browser blocking
+    });
+  }
+
   async function runTaCheck() {
     const sku   = document.getElementById('taCheckSku').value.trim();
     const poId  = document.getElementById('taCheckPo').value.trim();
@@ -2705,6 +2729,7 @@ function prodSafeId(name) {
         </div>`;
       }).join('');
 
+      window._taLastResults = r;
       document.getElementById('taDownloadAll').style.display = '';
       document.getElementById('taCheckResults').style.display = '';
     } catch (e) {

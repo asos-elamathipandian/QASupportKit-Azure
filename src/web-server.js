@@ -38,7 +38,7 @@ const {
   createFullSccFlow,
   cancelActiveSpec,
 } = require("./scc-launcher");
-const { runTaCheck, SCREENSHOT_DIR } = require("./ta-checker");
+const { runTaCheck, SCREENSHOT_DIR, TA_RESULTS_FILE } = require("./ta-checker");
 
 loadEnvironment();
 
@@ -1269,16 +1269,28 @@ app.get("/api/ta/screenshot/:filename", (req, res) => {
 });
 
 app.get("/api/ta/screenshots/download-all", (req, res) => {
-  const archiver = require("archiver");
-  const files = fs.existsSync(SCREENSHOT_DIR)
-    ? fs.readdirSync(SCREENSHOT_DIR).filter((f) => f.endsWith(".png"))
-    : [];
-  if (!files.length) return res.status(404).json({ error: "No screenshots found" });
+  const { ZipArchive } = require("archiver");
+
+  // Collect only the screenshots from the last test run via the results JSON
+  let files = [];
+  if (fs.existsSync(TA_RESULTS_FILE)) {
+    const r = JSON.parse(fs.readFileSync(TA_RESULTS_FILE, "utf8"));
+    const add = (f) => { if (f && fs.existsSync(path.join(SCREENSHOT_DIR, f))) files.push(f); };
+    if (r.sku)  add(r.sku.screenshot);
+    if (r.po)   add(r.po.screenshot);
+    if (r.asn) {
+      const ss = r.asn.screenshots || {};
+      [ss.results, ss.detail, ss.lineItems, ss.events].forEach(add);
+    }
+  }
+  // Deduplicate
+  files = [...new Set(files)];
+  if (!files.length) return res.status(404).json({ error: "No screenshots from last run" });
 
   res.setHeader("Content-Type", "application/zip");
   res.setHeader("Content-Disposition", 'attachment; filename="ta-screenshots.zip"');
 
-  const archive = archiver("zip", { zlib: { level: 6 } });
+  const archive = new ZipArchive({ zlib: { level: 6 } });
   archive.on("error", (err) => res.destroy(err));
   archive.pipe(res);
   for (const f of files) {
