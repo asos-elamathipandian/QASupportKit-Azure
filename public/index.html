@@ -602,6 +602,55 @@
     </p>
   </div>
 
+  <!-- ══════════════════════════════════════════════════════════════════════
+       E2OPEN TA CHECK — SKU / PO / ASN availability + screenshots
+       ══════════════════════════════════════════════════════════════════════ -->
+  <div class="card" id="ta-check-card" style="border-left:4px solid #0891b2;">
+    <div class="card-title" style="color:#0891b2;">&#128247; E2open TA Check</div>
+    <div style="background:#ecfeff;border:1px solid #a5f3fc;border-radius:6px;padding:11px 16px;margin-bottom:18px;font-size:0.83rem;color:#0e7490;line-height:1.7;">
+      Enter the SKU, PO and/or ASN you want to verify in E2open TA, then click <strong>Run Check</strong>. Playwright will open E2open TA, search each record and return a screenshot showing whether it was found.
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px;">
+      <div>
+        <label style="font-size:0.82rem;color:#6b7280;font-weight:500;display:block;margin-bottom:4px;">SKU</label>
+        <input id="taCheckSku" type="text" placeholder="e.g. 148609059" style="width:100%;box-sizing:border-box;border:1px solid #a5f3fc;border-radius:5px;padding:7px 10px;font-size:0.85rem;" />
+      </div>
+      <div>
+        <label style="font-size:0.82rem;color:#6b7280;font-weight:500;display:block;margin-bottom:4px;">PO ID</label>
+        <input id="taCheckPo" type="text" placeholder="e.g. 500034216386" style="width:100%;box-sizing:border-box;border:1px solid #a5f3fc;border-radius:5px;padding:7px 10px;font-size:0.85rem;" />
+      </div>
+      <div>
+        <label style="font-size:0.82rem;color:#6b7280;font-weight:500;display:block;margin-bottom:4px;">ASN ID</label>
+        <input id="taCheckAsn" type="text" placeholder="e.g. 49870000001276" style="width:100%;box-sizing:border-box;border:1px solid #a5f3fc;border-radius:5px;padding:7px 10px;font-size:0.85rem;" />
+      </div>
+    </div>
+
+    <button id="btnTaCheck" onclick="runTaCheck()" style="background:#0891b2;color:#fff;border:none;border-radius:6px;padding:9px 22px;font-size:0.9rem;font-weight:600;cursor:pointer;">&#9654; Run Check</button>
+    <button id="btnTaStop" onclick="forceTaStop()" style="display:none;background:#dc2626;color:#fff;border:none;border-radius:6px;padding:9px 18px;font-size:0.9rem;font-weight:600;cursor:pointer;margin-left:10px;">&#9632; Force Stop</button>
+    <button id="btnTaReset" onclick="resetTaCheck()" style="display:none;background:#6b7280;color:#fff;border:none;border-radius:6px;padding:9px 18px;font-size:0.9rem;font-weight:600;cursor:pointer;margin-left:10px;">&#8635; Reset</button>
+
+    <div id="taCheckStatus" style="margin-top:14px;display:none;">
+      <div style="font-size:0.83rem;color:#0e7490;background:#ecfeff;border:1px solid #a5f3fc;border-radius:6px;padding:10px 14px;margin-bottom:8px;">
+        &#9203; Running E2open TA check — follow live progress below&hellip;
+      </div>
+      <div id="taCheckLog"
+        style="font-family:monospace;font-size:0.78rem;background:#0f172a;color:#a5f3fc;border-radius:6px;padding:10px 14px;
+               max-height:220px;overflow-y:auto;line-height:1.6;white-space:pre-wrap;"></div>
+    </div>
+    <div id="taCheckError"  style="margin-top:14px;display:none;font-size:0.85rem;color:#b91c1c;background:#fef2f2;border:1px solid #fca5a5;border-radius:6px;padding:10px 14px;"></div>
+
+    <div id="taDownloadAll" style="display:none;margin-top:14px;text-align:right;">
+      <button onclick="taDownloadScreenshots()" style="display:inline-flex;align-items:center;gap:6px;background:#0e7490;color:#fff;border:none;border-radius:6px;padding:7px 16px;font-size:0.82rem;font-weight:600;cursor:pointer;">
+        &#11015; Download Screenshots
+      </button>
+    </div>
+
+    <div id="taCheckResults" style="display:none;margin-top:18px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;" id="taCheckCards"></div>
+    </div>
+  </div>
+
   <!-- ── Carrier & WMS Events ── -->
   <div class="card">
     <div class="card-title">Carrier &amp; WMS Events</div>
@@ -709,6 +758,16 @@
         <label for="blobAsn">ASN</label>
         <input id="blobAsn" type="text" placeholder="e.g. 49870000001418" />
         <span class="field-hint">Search E2Open outbound messages for XML files containing this ASN.</span>
+      </div>
+      <div class="form-group">
+        <label for="blobDateFrom">Date from <span style="font-weight:400;color:#64748b;">(optional)</span></label>
+        <input id="blobDateFrom" type="date" />
+        <span class="field-hint">Leave blank to search last 60 days.</span>
+      </div>
+      <div class="form-group">
+        <label for="blobDateTo">Date to <span style="font-weight:400;color:#64748b;">(optional)</span></label>
+        <input id="blobDateTo" type="date" />
+        <span class="field-hint">Leave blank for today.</span>
       </div>
     </div>
     <button class="btn-blob-search" id="btnBlobSearch" onclick="searchBlobs()" style="margin-top:14px;">
@@ -1110,53 +1169,6 @@ async function fullSccFlow() {
   }
 }
 </script>
-
-  <!-- ══════════════════════════════════════════════════════════════════════
-       E2OPEN TA CHECK — SKU / PO / ASN availability + screenshots
-       ══════════════════════════════════════════════════════════════════════ -->
-  <div class="card" id="ta-check-card" style="border-left:4px solid #0891b2;">
-    <div class="card-title" style="color:#0891b2;">&#128247; E2open TA Check</div>
-    <div style="background:#ecfeff;border:1px solid #a5f3fc;border-radius:6px;padding:11px 16px;margin-bottom:18px;font-size:0.83rem;color:#0e7490;line-height:1.7;">
-      Enter the SKU, PO and/or ASN you want to verify in E2open TA, then click <strong>Run Check</strong>. Playwright will open E2open TA, search each record and return a screenshot showing whether it was found.
-    </div>
-
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px;">
-      <div>
-        <label style="font-size:0.82rem;color:#6b7280;font-weight:500;display:block;margin-bottom:4px;">SKU</label>
-        <input id="taCheckSku" type="text" placeholder="e.g. 148609059" style="width:100%;box-sizing:border-box;border:1px solid #a5f3fc;border-radius:5px;padding:7px 10px;font-size:0.85rem;" />
-      </div>
-      <div>
-        <label style="font-size:0.82rem;color:#6b7280;font-weight:500;display:block;margin-bottom:4px;">PO ID</label>
-        <input id="taCheckPo" type="text" placeholder="e.g. 500034216386" style="width:100%;box-sizing:border-box;border:1px solid #a5f3fc;border-radius:5px;padding:7px 10px;font-size:0.85rem;" />
-      </div>
-      <div>
-        <label style="font-size:0.82rem;color:#6b7280;font-weight:500;display:block;margin-bottom:4px;">ASN ID</label>
-        <input id="taCheckAsn" type="text" placeholder="e.g. 49870000001276" style="width:100%;box-sizing:border-box;border:1px solid #a5f3fc;border-radius:5px;padding:7px 10px;font-size:0.85rem;" />
-      </div>
-    </div>
-
-    <button id="btnTaCheck" onclick="runTaCheck()" style="background:#0891b2;color:#fff;border:none;border-radius:6px;padding:9px 22px;font-size:0.9rem;font-weight:600;cursor:pointer;">&#9654; Run Check</button>
-
-    <div id="taCheckStatus" style="margin-top:14px;display:none;">
-      <div style="font-size:0.83rem;color:#0e7490;background:#ecfeff;border:1px solid #a5f3fc;border-radius:6px;padding:10px 14px;margin-bottom:8px;">
-        &#9203; Running E2open TA check — follow live progress below&hellip;
-      </div>
-      <div id="taCheckLog"
-        style="font-family:monospace;font-size:0.78rem;background:#0f172a;color:#a5f3fc;border-radius:6px;padding:10px 14px;
-               max-height:220px;overflow-y:auto;line-height:1.6;white-space:pre-wrap;"></div>
-    </div>
-    <div id="taCheckError"  style="margin-top:14px;display:none;font-size:0.85rem;color:#b91c1c;background:#fef2f2;border:1px solid #fca5a5;border-radius:6px;padding:10px 14px;"></div>
-
-    <div id="taDownloadAll" style="display:none;margin-top:14px;text-align:right;">
-      <button onclick="taDownloadScreenshots()" style="display:inline-flex;align-items:center;gap:6px;background:#0e7490;color:#fff;border:none;border-radius:6px;padding:7px 16px;font-size:0.82rem;font-weight:600;cursor:pointer;">
-        &#11015; Download Screenshots
-      </button>
-    </div>
-
-    <div id="taCheckResults" style="display:none;margin-top:18px;">
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;" id="taCheckCards"></div>
-    </div>
-  </div>
 
   <!-- ══════════════════════════════════════════════════════════════════════
        RAISE ADO BUG — fully isolated from all existing flows
@@ -1616,15 +1628,15 @@ async function fullSccFlow() {
 
     const ordered = [
       asnCreateCard,       // 1. Raise ASN link
-      asnLookupCard,       // 2. ASN lookup
-      bookingCard,         // 2. Carrier booking creation
-      fullFlowCard,        // 2. Full SCC flow
-      xmlCard,             // 3. Carrier & WMS milestones
-      resultsCard,         // 3. Results
-      blobOutboundCard,    // 4. Blob search
-      adoBugCard,          // 5. Raise ADO Bug
-      taCheckCard,         // 6. E2open TA Check
-      adoCard,             // 6. Status email
+      taCheckCard,         // 2. E2open TA Check
+      asnLookupCard,       // 3. ASN lookup
+      bookingCard,         // 3. Carrier booking creation
+      fullFlowCard,        // 3. Full SCC flow
+      xmlCard,             // 4. Carrier & WMS milestones
+      resultsCard,         // 4. Results
+      blobOutboundCard,    // 5. Blob search
+      adoBugCard,          // 6. Raise ADO Bug
+      adoCard,             // 7. Status email
     ].filter(Boolean);
 
     ordered.forEach((card) => main.appendChild(card));
@@ -1876,10 +1888,12 @@ async function fullSccFlow() {
     resultDiv.innerHTML = '<div style="padding:14px;background:#eff6ff;border-radius:8px;border-left:4px solid #3b82f6;">Searching E2Open outbound messages...</div>';
 
     try {
+      const startDate = document.getElementById("blobDateFrom").value || undefined;
+      const endDate   = document.getElementById("blobDateTo").value   || undefined;
       const res = await fetch("/api/blob-search", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ asn }),
+        body: JSON.stringify({ asn, startDate, endDate }),
       });
       const data = await res.json();
       if (!data.ok) {
@@ -2650,9 +2664,13 @@ function prodSafeId(name) {
       return;
     }
 
-    const btn    = document.getElementById('btnTaCheck');
-    const logEl  = document.getElementById('taCheckLog');
+    const btn      = document.getElementById('btnTaCheck');
+    const stopBtn  = document.getElementById('btnTaStop');
+    const resetBtn = document.getElementById('btnTaReset');
+    const logEl    = document.getElementById('taCheckLog');
     btn.disabled = true;
+    stopBtn.style.display = '';
+    resetBtn.style.display = 'none';
     logEl.textContent = '';
     document.getElementById('taCheckError').style.display = 'none';
     document.getElementById('taCheckResults').style.display = 'none';
@@ -2738,7 +2756,38 @@ function prodSafeId(name) {
       document.getElementById('taCheckError').style.display = '';
     } finally {
       btn.disabled = false;
+      stopBtn.style.display = 'none';
+      resetBtn.style.display = '';
     }
+  }
+
+  async function forceTaStop() {
+    const stopBtn = document.getElementById('btnTaStop');
+    stopBtn.disabled = true;
+    stopBtn.textContent = 'Stopping…';
+    try {
+      await fetch('/api/ta/cancel', { method: 'POST' });
+    } catch (_) {}
+    stopBtn.disabled = false;
+    stopBtn.innerHTML = '&#9632; Force Stop';
+    stopBtn.style.display = 'none';
+    document.getElementById('btnTaCheck').disabled = false;
+    document.getElementById('btnTaReset').style.display = '';
+  }
+
+  function resetTaCheck() {
+    document.getElementById('taCheckSku').value = '';
+    document.getElementById('taCheckPo').value = '';
+    document.getElementById('taCheckAsn').value = '';
+    document.getElementById('taCheckLog').textContent = '';
+    document.getElementById('taCheckError').style.display = 'none';
+    document.getElementById('taCheckStatus').style.display = 'none';
+    document.getElementById('taCheckResults').style.display = 'none';
+    document.getElementById('taDownloadAll').style.display = 'none';
+    document.getElementById('btnTaStop').style.display = 'none';
+    document.getElementById('btnTaReset').style.display = 'none';
+    document.getElementById('btnTaCheck').disabled = false;
+    window._taLastResults = null;
   }
 
   // ── Raise ADO Bug ──────────────────────────────────────────────────────────

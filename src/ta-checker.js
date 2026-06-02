@@ -21,6 +21,17 @@ function getPlaywrightBin() {
     : path.join(rootDir, 'node_modules', '.bin', 'playwright');
 }
 
+let _taActiveChild = null;
+
+function cancelTaCheck() {
+  if (_taActiveChild) {
+    try { _taActiveChild.kill('SIGTERM'); } catch (_) {}
+    _taActiveChild = null;
+    return true;
+  }
+  return false;
+}
+
 function runTaCheck({ sku, poId, asnId, onProgress } = {}) {
   return new Promise((resolve, reject) => {
     const playwrightBin = getPlaywrightBin();
@@ -36,7 +47,10 @@ function runTaCheck({ sku, poId, asnId, onProgress } = {}) {
     });
 
     console.log(`[TA] Running: ${cmd}`);
+    // Clear stale results from any previous run before starting
+    try { if (fs.existsSync(TA_RESULTS_FILE)) fs.unlinkSync(TA_RESULTS_FILE); } catch (_) {}
     const child = spawn(cmd, [], { cwd: SCC_WORKING_COPY, shell: true, env });
+    _taActiveChild = child;
 
     let stdout = '';
     let stderr = '';
@@ -60,11 +74,12 @@ function runTaCheck({ sku, poId, asnId, onProgress } = {}) {
     }, TIMEOUT_MS);
 
     child.on('close', (code) => {
+      _taActiveChild = null;
       clearTimeout(killTimer);
 
       let results = null;
       try {
-        if (fs.existsSync(TA_RESULTS_FILE)) {
+        if (code === 0 && fs.existsSync(TA_RESULTS_FILE)) {
           results = JSON.parse(fs.readFileSync(TA_RESULTS_FILE, 'utf8'));
         }
       } catch (_) {}
@@ -84,10 +99,11 @@ function runTaCheck({ sku, poId, asnId, onProgress } = {}) {
     });
 
     child.on('error', (err) => {
+      _taActiveChild = null;
       clearTimeout(killTimer);
       reject(new Error(`Spawn error: ${err.message}`));
     });
   });
 }
 
-module.exports = { runTaCheck, SCREENSHOT_DIR, TA_RESULTS_FILE };
+module.exports = { runTaCheck, cancelTaCheck, SCREENSHOT_DIR, TA_RESULTS_FILE };

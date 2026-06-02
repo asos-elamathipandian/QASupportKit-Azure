@@ -38,7 +38,7 @@ const {
   createFullSccFlow,
   cancelActiveSpec,
 } = require("./scc-launcher");
-const { runTaCheck, SCREENSHOT_DIR, TA_RESULTS_FILE } = require("./ta-checker");
+const { runTaCheck, cancelTaCheck, SCREENSHOT_DIR, TA_RESULTS_FILE } = require("./ta-checker");
 
 loadEnvironment();
 
@@ -644,7 +644,7 @@ app.post("/api/prod-upload", async (req, res) => {
 // ── Blob Search & Download ────────────────────────────────────────────────────
 
 app.post("/api/blob-search", async (req, res) => {
-  const { asn, hoursBack = 1440, maxBlobs = 1000 } = req.body;
+  const { asn, hoursBack = 1440, maxBlobs = 1000, startDate, endDate } = req.body;
   if (!asn || !asn.trim()) return res.status(400).json({ ok: false, error: "asn is required" });
 
   const connectionString = process.env.AZURE_BLOB_CONNECTION_STRING;
@@ -654,7 +654,7 @@ app.post("/api/blob-search", async (req, res) => {
 
   try {
     const containerName = process.env.AZURE_BLOB_CONTAINER || "sftp-inbound";
-    const result = await searchBlobsByAsn({ asn: asn.trim(), connectionString, containerName, hoursBack, maxBlobs });
+    const result = await searchBlobsByAsn({ asn: asn.trim(), connectionString, containerName, hoursBack, maxBlobs, startDate, endDate });
     res.json({ ok: true, ...result });
   } catch (e) {
     res.status(500).json({ ok: false, error: e.message });
@@ -1259,6 +1259,14 @@ app.post("/api/ta/check", async (req, res) => {
     broadcast(`[TA] Error: ${e.message}`);
     res.status(500).json({ ok: false, error: e.message });
   }
+});
+
+app.post("/api/ta/cancel", (req, res) => {
+  const stopped = cancelTaCheck();
+  const msg = stopped ? "[TA] Check cancelled by user." : "[TA] No active check to cancel.";
+  const payload = `data: ${JSON.stringify(msg)}\n\n`;
+  _taSseClients.forEach(c => { try { c.write(payload); } catch (_) {} });
+  res.json({ ok: true, stopped });
 });
 
 app.get("/api/ta/screenshot/:filename", (req, res) => {

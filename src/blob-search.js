@@ -21,11 +21,14 @@ async function searchBlobsByAsn({
   maxBlobs = 200,
   prefix,
   hoursBack = 48,
+  startDate,  // optional ISO date string e.g. "2026-05-18" — overrides hoursBack lower bound
+  endDate,    // optional ISO date string e.g. "2026-05-18" — overrides today as upper bound
 }) {
   const blobServiceClient = BlobServiceClient.fromConnectionString(connectionString);
   const containerClient = blobServiceClient.getContainerClient(containerName);
 
-  const cutoff = new Date(Date.now() - hoursBack * 60 * 60 * 1000);
+  const rangeEnd   = endDate   ? new Date(endDate)   : new Date();
+  const rangeStart = startDate ? new Date(startDate)  : new Date(Date.now() - hoursBack * 60 * 60 * 1000);
   const matches = [];
   let scanned = 0;
   let skipped = 0;
@@ -34,16 +37,20 @@ async function searchBlobsByAsn({
   // Blobs are stored as IN/YYYY/MM/DD/filename.xml
   // Reverse order: newest dates first so recent blobs are prioritised.
   const datePrefixes = [];
-  const d = new Date(cutoff);
-  while (d <= new Date()) {
+  const d = new Date(rangeStart);
+  while (d <= rangeEnd) {
     const ymd = `IN/${d.getUTCFullYear()}/${String(d.getUTCMonth() + 1).padStart(2, "0")}/${String(d.getUTCDate()).padStart(2, "0")}/`;
     datePrefixes.push(ymd);
     d.setUTCDate(d.getUTCDate() + 1);
   }
   datePrefixes.reverse();
 
-  // Collect blobs from each date prefix
+  // Collect blobs from each date prefix.
+  // Pre-filter by ASN in the blob name (outbound files include ASN in filename)
+  // so we don't fill maxBlobs with irrelevant blobs from recent dates before
+  // reaching older date prefixes.
   const blobs = [];
+  let nameFilterWorked = false;
   for (const datePrefix of datePrefixes) {
     const effectivePrefix = prefix ? `${datePrefix}${prefix}` : datePrefix;
     for await (const blob of containerClient.listBlobsFlat({ prefix: effectivePrefix })) {
@@ -51,14 +58,51 @@ async function searchBlobsByAsn({
         skipped++;
         continue;
       }
+      if (blob.name.includes(asn)) {
+        nameFilterWorked = true;
+        blobs.push(blob);
+      } else {
+        skipped++;
+      }
+    }
+  }
+
+  // Fallback 1: name filter found nothing — ASN is not in filename (e.g. E2ASOS_ASOS_856 files).
+  // Collect ALL blobs across all date prefixes (no cap) so older dates are not missed.
+  if (!nameFilterWorked) {
+    console.log('[blob-search] No blobs matched by name — falling back to full content scan across all date prefixes');
+    for (const datePrefix of datePrefixes) {
+      const effectivePrefix = prefix ? `${datePrefix}${prefix}` : datePrefix;
+      for await (const blob of containerClient.listBlobsFlat({ prefix: effectivePrefix })) {
+        if (!blob.name.endsWith(".xml") && !blob.name.endsWith(".XML")) {
+          skipped++;
+          continue;
+        }
+        blobs.push(blob);
+      }
+    }
+    console.log(`[blob-search] Collected ${blobs.length} blobs across all date prefixes for content scan`);
+  }
+
+  // Fallback 2: if date-prefix scan found nothing at all, do a flat scan by lastModified
+  if (blobs.length === 0) {
+    console.log('[blob-search] Date-prefix scan returned 0 blobs — falling back to flat scan');
+    for await (const blob of containerClient.listBlobsFlat({ prefix: prefix || '' })) {
+      if (!blob.name.endsWith(".xml") && !blob.name.endsWith(".XML")) {
+        skipped++;
+        continue;
+      }
+      if (blob.properties.lastModified && blob.properties.lastModified < cutoff) {
+        skipped++;
+        continue;
+      }
       blobs.push(blob);
       if (blobs.length >= maxBlobs) break;
     }
-    if (blobs.length >= maxBlobs) break;
   }
 
-  // Download and search content in parallel (batches of 10)
-  const BATCH_SIZE = 10;
+  // Download and search content in parallel (batches of 50)
+  const BATCH_SIZE = 50;
   for (let i = 0; i < blobs.length; i += BATCH_SIZE) {
     const batch = blobs.slice(i, i + BATCH_SIZE);
     const results = await Promise.all(

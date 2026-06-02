@@ -1,0 +1,16 @@
+{
+  "ok": true,
+  "vbReference": "VB-0000002161",
+  "bookingStatus": "Submitted",
+  "approvalPerformed": false,
+  "asns": "49870000003074",
+  "details": [
+    {
+      "asn": "",
+      "po": "",
+      "sku": "",
+      "units": "",
+      "carrier": ""
+    }
+  ]
+}
