@@ -24,7 +24,16 @@ function buildSftpConfigFromEnv(env) {
     readyTimeout: 30000,
   };
 
-  if (privateKeyPath) {
+  const inlineKey = env.SFTP_PRIVATE_KEY_CONTENT; // key content for Azure (base64-encoded or raw PEM)
+
+  if (inlineKey) {
+    // Decode base64 if the value doesn't look like a PEM header
+    const decoded = inlineKey.startsWith("-----")
+      ? inlineKey.replace(/\\n/g, "\n")
+      : Buffer.from(inlineKey, "base64").toString("utf8");
+    connectionOptions.privateKey = decoded;
+    if (passphrase) connectionOptions.passphrase = passphrase;
+  } else if (privateKeyPath) {
     const absoluteKeyPath = path.resolve(privateKeyPath);
     connectionOptions.privateKey = fs.readFileSync(absoluteKeyPath, "utf8");
     if (passphrase) {
@@ -34,7 +43,7 @@ function buildSftpConfigFromEnv(env) {
     connectionOptions.password = password;
   } else {
     throw new Error(
-      "SFTP auth missing. Set SFTP_PASSWORD, or SFTP_PRIVATE_KEY_PATH with optional SFTP_PASSPHRASE."
+      "SFTP auth missing. Set SFTP_PRIVATE_KEY (inline), SFTP_PRIVATE_KEY_PATH (file), or SFTP_PASSWORD."
     );
   }
 
