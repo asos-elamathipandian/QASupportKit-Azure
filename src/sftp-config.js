@@ -24,11 +24,12 @@ function buildSftpConfigFromEnv(env) {
     readyTimeout: 30000,
   };
 
-  const inlineKey = env.SFTP_PRIVATE_KEY_CONTENT; // key content for Azure (base64-encoded or raw PEM)
+  const inlineKey = env.SFTP_PRIVATE_KEY_CONTENT; // key content for Azure (base64-encoded, raw PEM, or PPK)
 
   if (inlineKey) {
-    // Decode base64 if the value doesn't look like a PEM header
-    const decoded = inlineKey.startsWith("-----")
+    // Pass PEM/PPK as-is (unescape literal \n); otherwise assume base64-encoded
+    const isTextKey = inlineKey.startsWith("-----") || inlineKey.startsWith("PuTTY-User-Key-File");
+    const decoded = isTextKey
       ? inlineKey.replace(/\\n/g, "\n")
       : Buffer.from(inlineKey, "base64").toString("utf8");
     connectionOptions.privateKey = decoded;
@@ -77,11 +78,12 @@ function buildProdSftpConfigFromEnv(env) {
     readyTimeout: 30000,
   };
 
-  const inlineKey = env.PROD_SFTP_PRIVATE_KEY; // key content for Azure (base64-encoded or raw)
+  const inlineKey = env.PROD_SFTP_PRIVATE_KEY; // key content for Azure (base64-encoded, raw PEM, or PPK)
 
   if (inlineKey) {
-    // Decode base64 if the value doesn't look like a PEM header
-    const decoded = inlineKey.startsWith("-----")
+    // Pass PEM/PPK as-is (unescape literal \n); otherwise assume base64-encoded
+    const isTextKey = inlineKey.startsWith("-----") || inlineKey.startsWith("PuTTY-User-Key-File");
+    const decoded = isTextKey
       ? inlineKey.replace(/\\n/g, "\n")
       : Buffer.from(inlineKey, "base64").toString("utf8");
     connectionOptions.privateKey = decoded;
