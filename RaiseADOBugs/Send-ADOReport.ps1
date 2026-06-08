@@ -401,25 +401,55 @@ function Format-TestPlanItemsToHtml {
         $id = $f.'System.Id'
         $title = [System.Net.WebUtility]::HtmlEncode($f.'System.Title')
         $state = [System.Net.WebUtility]::HtmlEncode($f.'System.State')
-        $assignedTo = if ($f.'System.AssignedTo') {
-            [System.Net.WebUtility]::HtmlEncode($f.'System.AssignedTo'.displayName)
-        } else { "Unassigned" }
         $created = if ($f.'System.CreatedDate') {
             (Get-Date $f.'System.CreatedDate').ToString("dd MMM yyyy")
         } else { "-" }
 
-        # Get test case count via testplan API (root suite ID = planId + 1)
+        # Get test case count and unique assignees via test points API (workItemProperties)
         $tcCount = 0
+        $assignedTo = "Unassigned"
         try {
             $rootSuiteId = $id + 1
-            $ptsResp = Invoke-ADOApi -Uri "https://dev.azure.com/$org/$project/_apis/testplan/Plans/$id/Suites/$rootSuiteId/TestPoint?api-version=7.1" -Headers $Headers
-            if ($ptsResp.count) {
+            $allPts = @()
+            $continuationToken = $null
+            do {
+                $ptUri = "https://dev.azure.com/$org/$project/_apis/test/Plans/$id/Suites/$rootSuiteId/points?api-version=7.1"
+                if ($continuationToken) { $ptUri += "&continuationToken=$continuationToken" }
+                $ptsResp = Invoke-ADOApi -Uri $ptUri -Headers $Headers
+                if ($ptsResp.value) { $allPts += @($ptsResp.value) }
+                $continuationToken = $ptsResp.continuationToken
+            } while ($continuationToken)
+
+            if ($allPts.Count -gt 0) {
+                $tcCount = $allPts.Count
+                # Collect unique assignees from System.AssignedTo in workItemProperties
+                $nameSet = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+                foreach ($pt in $allPts) {
+                    if ($pt.workItemProperties) {
+                        $assignedProps = @($pt.workItemProperties | Where-Object { $_.workItem.key -eq 'System.AssignedTo' })
+                        foreach ($ap in $assignedProps) {
+                            $name = ($ap.workItem.value -replace '<.*>', '').Trim()
+                            if ($name) { $null = $nameSet.Add($name) }
+                        }
+                    }
+                }
+                $names = @($nameSet | Where-Object { $_ -ne '' } | ForEach-Object { [System.Net.WebUtility]::HtmlEncode($_) })
+                if ($names.Count -gt 0) {
+                    $assignedTo = $names -join ', '
+                } elseif ($f.'System.AssignedTo') {
+                    $assignedTo = [System.Net.WebUtility]::HtmlEncode($f.'System.AssignedTo'.displayName)
+                }
+            } elseif ($ptsResp.count) {
                 $tcCount = $ptsResp.count
-            } elseif ($ptsResp.value) {
-                $tcCount = @($ptsResp.value).Count
+                if ($f.'System.AssignedTo') {
+                    $assignedTo = [System.Net.WebUtility]::HtmlEncode($f.'System.AssignedTo'.displayName)
+                }
             }
         } catch {
             $tcCount = "-"
+            if ($f.'System.AssignedTo') {
+                $assignedTo = [System.Net.WebUtility]::HtmlEncode($f.'System.AssignedTo'.displayName)
+            }
         }
 
         $stateColor = switch ($state) {
@@ -635,12 +665,15 @@ function Format-TestPointsToHtml {
         $outcome = if ([string]::IsNullOrWhiteSpace($tp.outcome) -or $tp.outcome -eq 'Unspecified') { 'Not Run' } else { $tp.outcome }
         $configuration = if ($tp.configuration) { [System.Net.WebUtility]::HtmlEncode($tp.configuration.name) } else { "-" }
 
-        # Get assigned to from workItemProperties
+        # Get assigned to from workItemProperties (may be multiple assignees)
         $assignedTo = "Unassigned"
         if ($tp.workItemProperties) {
-            $assignedProp = $tp.workItemProperties | Where-Object { $_.workItem.key -eq 'System.AssignedTo' }
-            if ($assignedProp -and $assignedProp.workItem.value) {
-                $assignedTo = [System.Net.WebUtility]::HtmlEncode(($assignedProp.workItem.value -replace '<.*>', '').Trim())
+            $assignedProps = @($tp.workItemProperties | Where-Object { $_.workItem.key -eq 'System.AssignedTo' })
+            if ($assignedProps.Count -gt 0) {
+                $names = $assignedProps | ForEach-Object {
+                    [System.Net.WebUtility]::HtmlEncode(($_.workItem.value -replace '<.*>', '').Trim())
+                } | Where-Object { $_ -ne '' }
+                if ($names) { $assignedTo = $names -join ', ' }
             }
         }
 

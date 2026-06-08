@@ -422,9 +422,12 @@ function formatTestCasesTable(testPoints) {
     
     let assignedTo = 'Unassigned';
     if (tp.workItemProperties && Array.isArray(tp.workItemProperties)) {
-      const assignProp = tp.workItemProperties.find(p => p.workItem?.key === 'System.AssignedTo');
-      if (assignProp?.workItem?.value) {
-        assignedTo = htmlEscape(assignProp.workItem.value.replace(/<.*>/g, '').trim());
+      const assignProps = tp.workItemProperties.filter(p => p.workItem?.key === 'System.AssignedTo');
+      if (assignProps.length > 0) {
+        const names = assignProps
+          .map(p => htmlEscape((p.workItem?.value || '').replace(/<.*>/g, '').trim()))
+          .filter(Boolean);
+        if (names.length > 0) assignedTo = names.join(', ');
       }
     }
     
@@ -518,7 +521,7 @@ async function getTodaysHighlights(bugs, testPoints) {
   });
   
   if (newBugsToday.length > 0) {
-    highlights.push(`<div style="margin:4px 0;font-size:13px;color:#333;">🔴 <strong>Bugs:</strong> ${newBugsToday.length} new bug(s) raised today</div>`);
+    highlights.push(`<div style="margin:4px 0;font-size:13px;color:#333;">&#128308; <strong>Bugs:</strong> ${newBugsToday.length} new bug(s) raised today</div>`);
   }
   
   // Test executions today
@@ -528,9 +531,9 @@ async function getTodaysHighlights(bugs, testPoints) {
   }).length;
   
   if (testTodayCount > 0) {
-    highlights.push(`<div style="margin:4px 0;font-size:13px;color:#333;">✅ <strong>Test Execution:</strong> ${testTodayCount} test case(s) executed today</div>`);
+    highlights.push(`<div style="margin:4px 0;font-size:13px;color:#333;">&#9989; <strong>Test Execution:</strong> ${testTodayCount} test case(s) executed today</div>`);
   } else {
-    highlights.push(`<div style="margin:4px 0;font-size:13px;color:#333;">📋 <strong>Test Execution:</strong> No test executions recorded today</div>`);
+    highlights.push(`<div style="margin:4px 0;font-size:13px;color:#333;">&#128203; <strong>Test Execution:</strong> No test executions recorded today</div>`);
   }
   
   if (highlights.length === 0) {
@@ -553,13 +556,13 @@ function getTargetDateRagHtml(targetDateStr, label) {
   
   if (daysRemaining < 0) {
     ragColor = '#D32F2F'; ragBg = '#FFEBEE'; ragBorder = '#D32F2F';
-    ragLabel = 'OVERDUE'; ragIcon = '🔴';
+    ragLabel = 'OVERDUE'; ragIcon = '&#128308;';
   } else if (daysRemaining <= 3) {
     ragColor = '#F57C00'; ragBg = '#FFF3E0'; ragBorder = '#F57C00';
-    ragLabel = 'AT RISK'; ragIcon = '🟠';
+    ragLabel = 'AT RISK'; ragIcon = '&#128992;';
   } else {
     ragColor = '#2E7D32'; ragBg = '#E8F5E9'; ragBorder = '#2E7D32';
-    ragLabel = 'ON TRACK'; ragIcon = '🟢';
+    ragLabel = 'ON TRACK'; ragIcon = '&#128994;';
   }
   
   const daysText = daysRemaining < 0 ? `${Math.abs(daysRemaining)} day(s) overdue` : `${daysRemaining} day(s) remaining`;
