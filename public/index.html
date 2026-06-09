@@ -47,6 +47,26 @@
       gap: 6px;
     }
     .btn-reset-all:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.6); }
+
+    /* ── Local-only section toggle ── */
+    .btn-local-toggle {
+      background: none;
+      border: 1.5px solid rgba(255,255,255,0.3);
+      color: white;
+      border-radius: 8px;
+      padding: 6px 14px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      cursor: pointer;
+      letter-spacing: 0.03em;
+      transition: background 0.2s, border-color 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn-local-toggle:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.6); }
+    .btn-local-toggle.active { background: rgba(16,185,129,0.25); border-color: #10b981; color: #6ee7b7; }
+    .local-only-section.local-hidden { display: none !important; }
     header .badge {
       background: #e94560;
       color: white;
@@ -584,6 +604,7 @@
 
 <header>
   <h1>Smart Data Assistant-Inbound</h1>
+  <button class="btn-local-toggle" id="btnLocalToggle" onclick="toggleLocalSections()" title="Show/hide localhost-only sections (TA Check, ASN Lookup, Booking, Full SCC Flow)">&#128273; Local Features</button>
   <button class="btn-reset-all" onclick="resetAll()" title="Reset all inputs, results and logs">&#8635; Reset</button>
 </header>
 
@@ -605,7 +626,7 @@
   <!-- ══════════════════════════════════════════════════════════════════════
        E2OPEN TA CHECK — SKU / PO / ASN availability + screenshots
        ══════════════════════════════════════════════════════════════════════ -->
-  <div class="card" id="ta-check-card" style="border-left:4px solid #0891b2;">
+  <div class="card local-only-section" id="ta-check-card" style="border-left:4px solid #0891b2;">
     <div class="card-title" style="color:#0891b2;">&#128247; E2open TA Check</div>
     <div style="background:#ecfeff;border:1px solid #a5f3fc;border-radius:6px;padding:11px 16px;margin-bottom:18px;font-size:0.83rem;color:#0e7490;line-height:1.7;">
       Enter the SKU, PO and/or ASN you want to verify in E2open TA, then click <strong>Run Check</strong>. Playwright will open E2open TA, search each record and return a screenshot showing whether it was found.
@@ -780,7 +801,7 @@
   </div>
 
   <!-- ── ASN Lookup in SCC (LOCAL ONLY) ── -->
-  <div class="card">
+  <div class="card local-only-section" id="asn-lookup-card">
     <div class="card-title">ASN Lookup in E2Open SCC</div>
     <div style="display:none; gap:10px; flex-wrap:wrap; margin-bottom:12px;">
       <button class="btn-lookup" id="btnSccBootstrap" onclick="bootstrapSccSession()" style="width:auto; padding:10px 14px; background:#0f766e;">
@@ -815,6 +836,41 @@ if (!clientId) {
     : Date.now().toString(36) + Math.random().toString(36).slice(2);
   sessionStorage.setItem('sdaClientId', clientId);
 }
+
+// ── Local-only section toggle (TA Check, ASN Lookup, Booking, Full SCC Flow) ─
+// Defaults: visible on localhost, hidden on Azure. Persisted per browser in localStorage.
+const LOCAL_SECTIONS_KEY = 'sdaLocalSectionsVisible';
+const isLocalhost = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+
+function getLocalSectionsVisible() {
+  const stored = localStorage.getItem(LOCAL_SECTIONS_KEY);
+  if (stored !== null) return stored === 'true';
+  return isLocalhost; // default: on for localhost, off for Azure
+}
+
+function applyLocalSectionsVisibility(visible) {
+  document.querySelectorAll('.local-only-section').forEach(el => {
+    el.classList.toggle('local-hidden', !visible);
+  });
+  const btn = document.getElementById('btnLocalToggle');
+  if (btn) {
+    btn.classList.toggle('active', visible);
+    btn.textContent = visible ? '\uD83D\uDD13 Local Features' : '\uD83D\uDD12 Local Features';
+    btn.title = visible
+      ? 'Click to hide localhost-only sections (TA Check, ASN Lookup, Booking, Full SCC Flow)'
+      : 'Click to show localhost-only sections (TA Check, ASN Lookup, Booking, Full SCC Flow)';
+  }
+}
+
+function toggleLocalSections() {
+  const current = getLocalSectionsVisible();
+  const next = !current;
+  localStorage.setItem(LOCAL_SECTIONS_KEY, String(next));
+  applyLocalSectionsVisibility(next);
+}
+
+// Apply on page load (before any other init so cards are hidden before reorder)
+applyLocalSectionsVisibility(getLocalSectionsVisible());
 
 // ── Live progress polling ───────────────────────────────────────────────────
 
@@ -1481,7 +1537,7 @@ async function fullSccFlow() {
   </div>
 
   <!-- ── Booking Creation (LOCAL ONLY) ── -->
-  <div class="card" style="opacity:0.6; border:2px dashed #ffc107;">
+  <div class="card local-only-section" id="scc-booking-card" style="opacity:0.6; border:2px dashed #ffc107;">
     <div class="card-title">Carrier Booking Creation</div>
     <div class="form-grid">
       <div class="form-group" style="grid-column: 1 / -1;">
@@ -1506,7 +1562,7 @@ async function fullSccFlow() {
   </div>
 
   <!-- ── Full SCC Flow (LOCAL ONLY) ── -->
-  <div class="card" style="opacity:0.6; border:2px dashed #ffc107;">
+  <div class="card local-only-section" id="full-scc-card" style="opacity:0.6; border:2px dashed #ffc107;">
     <div class="card-title">Full SCC Flow &mdash; One-Click Booking</div>
     <div class="form-grid">
       <div class="form-group" style="grid-column: 1 / -1;">
