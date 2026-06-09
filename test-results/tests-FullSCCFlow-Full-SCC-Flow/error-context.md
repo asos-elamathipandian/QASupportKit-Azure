@@ -1,0 +1,706 @@
+# Instructions
+
+- Following Playwright test failed.
+- Explain why, be concise, respect Playwright best practices.
+- Provide a snippet of code with the fix, if possible.
+
+# Test info
+
+- Name: tests\FullSCCFlow.spec.js >> Full SCC Flow
+- Location: tests\FullSCCFlow.spec.js:75:5
+
+# Error details
+
+```
+Test timeout of 300000ms exceeded.
+```
+
+# Page snapshot
+
+```yaml
+- generic [ref=e3]:
+  - banner [ref=e5]:
+    - generic [ref=e6]:
+      - link [ref=e7] [cursor=pointer]:
+        - /url: "#"
+      - generic [ref=e8]:
+        - button "search" [ref=e11] [cursor=pointer]
+        - link "list" [ref=e14] [cursor=pointer]:
+          - /url: javascript:void(0)
+          - generic [ref=e15]: list
+        - link "chat 0" [ref=e18] [cursor=pointer]:
+          - /url: javascript:void(0)
+          - generic [ref=e19]: chat
+          - generic [ref=e20]: "0"
+        - link "notifications 0" [ref=e23] [cursor=pointer]:
+          - /url: javascript:void(0)
+          - generic [ref=e24]: notifications
+          - generic [ref=e25]: "0"
+        - link "forum 0" [ref=e28] [cursor=pointer]:
+          - /url: javascript:void(0)
+          - generic [ref=e29]: forum
+          - superscript [ref=e30]: "0"
+        - link "help" [ref=e33] [cursor=pointer]:
+          - /url: javascript:void(0)
+          - generic [ref=e34]: help
+        - link "Checking the network status" [ref=e37] [cursor=pointer]:
+          - /url: javascript:void(0)
+          - img [ref=e38]
+        - link "elamathi pandian Administrator (Centralized Company)" [ref=e43] [cursor=pointer]:
+          - /url: javascript:void(0)
+          - generic [ref=e44]:
+            - generic [ref=e45]: elamathi pandian
+            - generic [ref=e46]: Administrator (Centralized Company)
+          - img [ref=e47]
+    - generic [ref=e48]:
+      - button "menu Menu" [ref=e51] [cursor=pointer]
+      - generic [ref=e53]:
+        - navigation [ref=e54]:
+          - generic "Saved pages" [ref=e56]:
+            - generic [ref=e57]: star add
+            - text: Add to Favorites
+          - list [ref=e58]
+        - button "settings" [ref=e60] [cursor=pointer]:
+          - generic [ref=e61]: settings
+  - iframe [active] [ref=e64]:
+    - generic [active] [ref=f6e1]:
+      - generic [ref=f6e2]:
+        - generic [ref=f6e3]:
+          - heading " Filters Load a saved filter..." [level=3] [ref=f6e4] [cursor=pointer]:
+            - generic [ref=f6e5]: 
+            - link "Filters" [ref=f6e6]:
+              - /url: "#searchPanelContent"
+            - button "Load a saved filter..." [ref=f6e7]
+          - region [ref=f6e8]:
+            - generic [ref=f6e9]:
+              - tablist [ref=f6e10]:
+                - tab "Dynamic" [selected] [ref=f6e11]:
+                  - link "Dynamic" [ref=f6e12]:
+                    - /url: "#dynamicTab"
+                - tab "Static" [ref=f6e13]:
+                  - link "Static" [ref=f6e14] [cursor=pointer]:
+                    - /url: "#staticTab"
+              - tabpanel "Dynamic" [ref=f6e15]:
+                - generic [ref=f6e16]:
+                  - generic "PO ID" [ref=f6e17]:
+                    - generic [ref=f6e18]: PO ID
+                    - generic [ref=f6e19]:
+                      - combobox "PO ID" [ref=f6e21] [cursor=pointer]:
+                        - option "Blank"
+                        - option "Not Blank"
+                        - option "Like" [selected]
+                        - option "Not Like"
+                      - textbox "Please Enter..." [ref=f6e23]
+                  - generic "Carrier" [ref=f6e24]:
+                    - generic [ref=f6e25]: Carrier
+                    - generic [ref=f6e26]:
+                      - combobox "Carrier -- Please Select -- " [ref=f6e28] [cursor=pointer]:
+                        - option "Blank"
+                        - option "Not Blank"
+                        - option "Is One Of" [selected]
+                      - button "-- Please Select -- " [ref=f6e31] [cursor=pointer]:
+                        - generic "-- Please Select --" [ref=f6e32]
+                        - generic [ref=f6e33]: 
+                  - generic "Booking Status" [ref=f6e34]:
+                    - generic [ref=f6e35]: Booking Status
+                    - generic [ref=f6e36]:
+                      - combobox "Booking Status -- Please Select -- " [ref=f6e38] [cursor=pointer]:
+                        - option "Blank"
+                        - option "Not Blank"
+                        - option "Is One Of" [selected]
+                      - button "-- Please Select -- " [ref=f6e41] [cursor=pointer]:
+                        - generic "-- Please Select --" [ref=f6e42]
+                        - generic [ref=f6e43]: 
+                  - generic "ASN ID" [ref=f6e44]:
+                    - generic [ref=f6e45]: ASN ID
+                    - generic [ref=f6e46]:
+                      - combobox "ASN ID 49870000003074" [ref=f6e48] [cursor=pointer]:
+                        - option "Blank"
+                        - option "Not Blank"
+                        - option "Like" [selected]
+                        - option "Not Like"
+                      - textbox "Please Enter..." [ref=f6e50]: "49870000003074"
+                  - generic "Supplier Site ID" [ref=f6e51]:
+                    - generic [ref=f6e52]: Supplier Site ID
+                    - generic [ref=f6e53]:
+                      - combobox "Supplier Site ID Please enter a search term " [ref=f6e55] [cursor=pointer]:
+                        - option "Like" [selected]
+                        - option "Blank"
+                        - option "Not Blank"
+                      - generic [ref=f6e57]:
+                        - list [ref=f6e61]:
+                          - listitem [ref=f6e62]:
+                            - textbox [ref=f6e64]: Please enter a search term
+                        - button "" [ref=f6e66] [cursor=pointer]:
+                          - generic [ref=f6e67]: 
+                  - generic "Buying Group Desc" [ref=f6e68]:
+                    - generic [ref=f6e69]: Buying Group Desc
+                    - generic [ref=f6e70]:
+                      - combobox "Buying Group Desc" [ref=f6e72] [cursor=pointer]:
+                        - option "Blank"
+                        - option "Not Blank"
+                        - option "Like" [selected]
+                        - option "Not Like"
+                      - textbox "Please Enter..." [ref=f6e74]
+                  - generic "Option ID" [ref=f6e75]:
+                    - generic [ref=f6e76]: Option ID
+                    - generic [ref=f6e77]:
+                      - combobox "Option ID" [ref=f6e79] [cursor=pointer]:
+                        - option "Blank"
+                        - option "Not Blank"
+                        - option "Like" [selected]
+                        - option "Not Like"
+                      - textbox "Please Enter..." [ref=f6e81]
+                  - generic "AIM Carrier Booking ID" [ref=f6e82]:
+                    - generic [ref=f6e83]: AIM Carrier Booking ID
+                    - generic [ref=f6e84]:
+                      - combobox "AIM Carrier Booking ID" [ref=f6e86] [cursor=pointer]:
+                        - option "Blank"
+                        - option "Not Blank"
+                        - option "Like" [selected]
+                        - option "Not Like"
+                      - textbox "Please Enter..." [ref=f6e88]
+                  - generic "Collection Type" [ref=f6e89]:
+                    - generic [ref=f6e90]: Collection Type
+                    - generic [ref=f6e91]:
+                      - combobox "Collection Type -- Please Select -- " [ref=f6e93] [cursor=pointer]:
+                        - option "Blank"
+                        - option "Not Blank"
+                        - option "Is One Of" [selected]
+                      - button "-- Please Select -- " [ref=f6e96] [cursor=pointer]:
+                        - generic "-- Please Select --" [ref=f6e97]
+                        - generic [ref=f6e98]: 
+                  - generic "Collection Category" [ref=f6e99]:
+                    - generic [ref=f6e100]: Collection Category
+                    - generic [ref=f6e101]:
+                      - combobox "Collection Category" [ref=f6e103] [cursor=pointer]:
+                        - option "Blank"
+                        - option "Not Blank"
+                        - option "Like" [selected]
+                        - option "Not Like"
+                      - textbox "Please Enter..." [ref=f6e105]
+                  - generic "Cargo Ready/Planned Collection Date" [ref=f6e106]:
+                    - generic [ref=f6e107]: Cargo Ready/Planned Collection Date
+                    - generic [ref=f6e108]:
+                      - combobox "Cargo Ready/Planned Collection Date  " [ref=f6e110] [cursor=pointer]:
+                        - option "Between" [selected]
+                        - option "Not Between"
+                        - option "Greater Than"
+                        - option "Greater Than Or Equal To"
+                        - option "Less Than"
+                        - option "Less Than Or Equal To"
+                        - option "Blank"
+                        - option "Not Blank"
+                        - option "Equals"
+                        - option "Does Not Equal"
+                        - option "Yesterday"
+                        - option "Today"
+                        - option "Tomorrow"
+                        - option "Last Week"
+                        - option "This Week"
+                        - option "Next Week"
+                        - option "Last Month"
+                        - option "This Month"
+                        - option "Next Month"
+                        - option "Last 7 Days"
+                        - option "Next 7 Days"
+                        - option "Last 30 Days"
+                        - option "Next 30 Days"
+                      - generic [ref=f6e111]:
+                        - generic [ref=f6e112]:
+                          - 'textbox "DD/MM/YYYY / Expression (e.g. NOW+1d/d, units: y,M,w,d)" [ref=f6e113]':
+                            - /placeholder: DD/MM/YYYY / Expression
+                          - generic [ref=f6e114]: 
+                        - generic [ref=f6e115]:
+                          - 'textbox "DD/MM/YYYY / Expression (e.g. NOW+1d/d, units: y,M,w,d)" [ref=f6e116]':
+                            - /placeholder: DD/MM/YYYY / Expression
+                          - generic [ref=f6e117]: 
+                  - generic "Planned Collection Time" [ref=f6e118]:
+                    - generic [ref=f6e119]: Planned Collection Time
+                    - generic [ref=f6e120]:
+                      - combobox "Planned Collection Time -- Please Select -- " [ref=f6e122] [cursor=pointer]:
+                        - option "Blank"
+                        - option "Not Blank"
+                        - option "Is One Of" [selected]
+                      - button "-- Please Select -- " [ref=f6e125] [cursor=pointer]:
+                        - generic "-- Please Select --" [ref=f6e126]
+                        - generic [ref=f6e127]: 
+            - generic [ref=f6e128]:
+              - button "Apply" [ref=f6e129] [cursor=pointer]
+              - button "Save" [ref=f6e130] [cursor=pointer]
+              - button "Clear All Filters" [ref=f6e131] [cursor=pointer]
+        - generic [ref=f6e133]:
+          - heading "ASOS Carrier Booking Detail" [level=2] [ref=f6e134]
+          - generic [ref=f6e135]: 1 records — record 1 - 1
+          - generic [ref=f6e136]:
+            - generic [ref=f6e137]:
+              - generic "Cross Page Selection" [ref=f6e138]
+              - generic [ref=f6e139]:
+                - checkbox "Cross Page Selection Off" [ref=f6e140]
+                - generic [ref=f6e142] [cursor=pointer]: "Off"
+            - text: 
+            - button "" [ref=f6e144] [cursor=pointer]:
+              - generic [ref=f6e145]: 
+            - text: check
+            - button "" [ref=f6e146] [cursor=pointer]:
+              - generic [ref=f6e147]: 
+            - button "" [ref=f6e148] [cursor=pointer]:
+              - generic [ref=f6e149]: 
+            - text:     
+        - grid [ref=f6e151]:
+          - generic [ref=f6e152]:
+            - row [ref=f6e154]:
+              - columnheader [ref=f6e155]:
+                - checkbox [ref=f6e158] [cursor=pointer]
+              - columnheader "AIM Carrier Booking ID " [ref=f6e159]:
+                - generic [ref=f6e160] [cursor=pointer]:
+                  - generic [ref=f6e161]: AIM Carrier Booking ID
+                  - button "" [ref=f6e162]
+              - columnheader "Carrier Booking ID " [ref=f6e164]:
+                - generic [ref=f6e165] [cursor=pointer]:
+                  - generic [ref=f6e166]: Carrier Booking ID
+                  - button "" [ref=f6e167]
+              - columnheader "Booking Status " [ref=f6e169]:
+                - generic [ref=f6e170] [cursor=pointer]:
+                  - generic [ref=f6e171]: Booking Status
+                  - button "" [ref=f6e172]
+              - columnheader "ASOS Tolerance Approval " [ref=f6e174]:
+                - generic [ref=f6e175] [cursor=pointer]:
+                  - generic [ref=f6e176]: ASOS Tolerance Approval
+                  - button "" [ref=f6e177]
+              - columnheader "Exception Reason " [ref=f6e179]:
+                - generic [ref=f6e180] [cursor=pointer]:
+                  - generic [ref=f6e181]: Exception Reason
+                  - button "" [ref=f6e182]
+              - columnheader "ASOS Booking Comment  " [ref=f6e184]:
+                - generic [ref=f6e185] [cursor=pointer]:
+                  - generic [ref=f6e186]: ASOS Booking Comment
+                  - generic [ref=f6e187]: 
+                  - button "" [ref=f6e188]
+              - columnheader "Buying Group " [ref=f6e190]:
+                - generic [ref=f6e191] [cursor=pointer]:
+                  - generic [ref=f6e192]: Buying Group
+                  - button "" [ref=f6e193]
+              - columnheader "PO ID " [ref=f6e195]:
+                - generic [ref=f6e196] [cursor=pointer]:
+                  - generic [ref=f6e197]: PO ID
+                  - button "" [ref=f6e198]
+              - columnheader "ASN ID " [ref=f6e200]:
+                - generic [ref=f6e201] [cursor=pointer]:
+                  - generic [ref=f6e202]: ASN ID
+                  - button "" [ref=f6e203]
+              - columnheader "PO/ASN Status " [ref=f6e205]:
+                - generic [ref=f6e206] [cursor=pointer]:
+                  - generic [ref=f6e207]: PO/ASN Status
+                  - button "" [ref=f6e208]
+              - columnheader "Option ID " [ref=f6e210]:
+                - generic [ref=f6e211] [cursor=pointer]:
+                  - generic [ref=f6e212]: Option ID
+                  - button "" [ref=f6e213]
+              - columnheader "SKU ID " [ref=f6e215]:
+                - generic [ref=f6e216] [cursor=pointer]:
+                  - generic [ref=f6e217]: SKU ID
+                  - button "" [ref=f6e218]
+              - columnheader "Barcode " [ref=f6e220]:
+                - generic [ref=f6e221]:
+                  - generic [ref=f6e222]: Barcode
+                  - button "" [ref=f6e223] [cursor=pointer]
+              - columnheader "Brand Size " [ref=f6e225]:
+                - generic [ref=f6e226] [cursor=pointer]:
+                  - generic [ref=f6e227]: Brand Size
+                  - button "" [ref=f6e228]
+              - columnheader "Brand " [ref=f6e230]:
+                - generic [ref=f6e231] [cursor=pointer]:
+                  - generic [ref=f6e232]: Brand
+                  - button "" [ref=f6e233]
+              - columnheader "Supplier Reference " [ref=f6e235]:
+                - generic [ref=f6e236] [cursor=pointer]:
+                  - generic [ref=f6e237]: Supplier Reference
+                  - button "" [ref=f6e238]
+              - columnheader "Reporting Colour " [ref=f6e240]:
+                - generic [ref=f6e241] [cursor=pointer]:
+                  - generic [ref=f6e242]: Reporting Colour
+                  - button "" [ref=f6e243]
+              - columnheader "Website Colour " [ref=f6e245]:
+                - generic [ref=f6e246] [cursor=pointer]:
+                  - generic [ref=f6e247]: Website Colour
+                  - button "" [ref=f6e248]
+              - columnheader "PO Unit Cost " [ref=f6e250]:
+                - generic [ref=f6e251] [cursor=pointer]:
+                  - generic [ref=f6e252]: PO Unit Cost
+                  - button "" [ref=f6e253]
+              - columnheader "PO SKU Quantity " [ref=f6e255]:
+                - generic [ref=f6e256] [cursor=pointer]:
+                  - generic [ref=f6e257]: PO SKU Quantity
+                  - button "" [ref=f6e258]
+              - columnheader "ASN Units " [ref=f6e260]:
+                - generic [ref=f6e261] [cursor=pointer]:
+                  - generic [ref=f6e262]: ASN Units
+                  - button "" [ref=f6e263]
+              - columnheader "Booking Units " [ref=f6e265]:
+                - generic [ref=f6e266] [cursor=pointer]:
+                  - generic [ref=f6e267]: Booking Units
+                  - button "" [ref=f6e268]
+              - columnheader "Var Unit " [ref=f6e270]:
+                - generic [ref=f6e271] [cursor=pointer]:
+                  - generic [ref=f6e272]: Var Unit
+                  - button "" [ref=f6e273]
+              - columnheader "Var % " [ref=f6e275]:
+                - generic [ref=f6e276] [cursor=pointer]:
+                  - generic [ref=f6e277]: Var %
+                  - button "" [ref=f6e278]
+              - columnheader "Pack Type " [ref=f6e280]:
+                - generic [ref=f6e281] [cursor=pointer]:
+                  - generic [ref=f6e282]: Pack Type
+                  - button "" [ref=f6e283]
+              - columnheader "Carton Type " [ref=f6e285]:
+                - generic [ref=f6e286] [cursor=pointer]:
+                  - generic [ref=f6e287]: Carton Type
+                  - button "" [ref=f6e288]
+              - columnheader "Carton Height (cm) " [ref=f6e290]:
+                - generic [ref=f6e291] [cursor=pointer]:
+                  - generic [ref=f6e292]: Carton Height (cm)
+                  - button "" [ref=f6e293]
+              - columnheader "Carton Length (cm) " [ref=f6e295]:
+                - generic [ref=f6e296] [cursor=pointer]:
+                  - generic [ref=f6e297]: Carton Length (cm)
+                  - button "" [ref=f6e298]
+              - columnheader "Carton Width (cm) " [ref=f6e300]:
+                - generic [ref=f6e301] [cursor=pointer]:
+                  - generic [ref=f6e302]: Carton Width (cm)
+                  - button "" [ref=f6e303]
+              - columnheader "Carton Weight (kg) " [ref=f6e305]:
+                - generic [ref=f6e306] [cursor=pointer]:
+                  - generic [ref=f6e307]: Carton Weight (kg)
+                  - button "" [ref=f6e308]
+              - columnheader "No. of Cartons " [ref=f6e310]:
+                - generic [ref=f6e311] [cursor=pointer]:
+                  - generic [ref=f6e312]: No. of Cartons
+                  - button "" [ref=f6e313]
+              - columnheader "Unit Weight " [ref=f6e315]:
+                - generic [ref=f6e316] [cursor=pointer]:
+                  - generic [ref=f6e317]: Unit Weight
+                  - button "" [ref=f6e318]
+              - columnheader "SKU Net Weight " [ref=f6e320]:
+                - generic [ref=f6e321] [cursor=pointer]:
+                  - generic [ref=f6e322]: SKU Net Weight
+                  - button "" [ref=f6e323]
+              - columnheader "SKU Gross Weight " [ref=f6e325]:
+                - generic [ref=f6e326] [cursor=pointer]:
+                  - generic [ref=f6e327]: SKU Gross Weight
+                  - button "" [ref=f6e328]
+              - columnheader "Line CBM " [ref=f6e330]:
+                - generic [ref=f6e331] [cursor=pointer]:
+                  - generic [ref=f6e332]: Line CBM
+                  - button "" [ref=f6e333]
+              - columnheader "ASN Handover Date " [ref=f6e335]:
+                - generic [ref=f6e336] [cursor=pointer]:
+                  - generic [ref=f6e337]: ASN Handover Date
+                  - button "" [ref=f6e338]
+              - columnheader "Booking Create Date " [ref=f6e340]:
+                - generic [ref=f6e341] [cursor=pointer]:
+                  - generic [ref=f6e342]: Booking Create Date
+                  - button "" [ref=f6e343]
+              - columnheader "Cargo Ready/Planned Collection Date " [ref=f6e345]:
+                - generic [ref=f6e346] [cursor=pointer]:
+                  - generic [ref=f6e347]: Cargo Ready/Planned Collection Date
+                  - button "" [ref=f6e348]
+              - columnheader "Carrier Booking Request Date " [ref=f6e350]:
+                - generic [ref=f6e351] [cursor=pointer]:
+                  - generic [ref=f6e352]: Carrier Booking Request Date
+                  - button "" [ref=f6e353]
+              - columnheader "Carrier " [ref=f6e355]:
+                - generic [ref=f6e356] [cursor=pointer]:
+                  - generic [ref=f6e357]: Carrier
+                  - button "" [ref=f6e358]
+              - columnheader "Traffic Mode (Origin) " [ref=f6e360]:
+                - generic [ref=f6e361] [cursor=pointer]:
+                  - generic [ref=f6e362]: Traffic Mode (Origin)
+                  - button "" [ref=f6e363]
+              - columnheader "Shipping Point ID " [ref=f6e365]:
+                - generic [ref=f6e366] [cursor=pointer]:
+                  - generic [ref=f6e367]: Shipping Point ID
+                  - button "" [ref=f6e368]
+              - columnheader "Shipping Point Name " [ref=f6e370]:
+                - generic [ref=f6e371] [cursor=pointer]:
+                  - generic [ref=f6e372]: Shipping Point Name
+                  - button "" [ref=f6e373]
+              - columnheader "Hazardous Flammable " [ref=f6e375]:
+                - generic [ref=f6e376] [cursor=pointer]:
+                  - generic [ref=f6e377]: Hazardous Flammable
+                  - button "" [ref=f6e378]
+              - columnheader "First Destination ID " [ref=f6e380]:
+                - generic [ref=f6e381] [cursor=pointer]:
+                  - generic [ref=f6e382]: First Destination ID
+                  - button "" [ref=f6e383]
+              - columnheader "First Destination Name " [ref=f6e385]:
+                - generic [ref=f6e386] [cursor=pointer]:
+                  - generic [ref=f6e387]: First Destination Name
+                  - button "" [ref=f6e388]
+              - columnheader "Final Destination ID " [ref=f6e390]:
+                - generic [ref=f6e391] [cursor=pointer]:
+                  - generic [ref=f6e392]: Final Destination ID
+                  - button "" [ref=f6e393]
+              - columnheader "Final Destination Name " [ref=f6e395]:
+                - generic [ref=f6e396] [cursor=pointer]:
+                  - generic [ref=f6e397]: Final Destination Name
+                  - button "" [ref=f6e398]
+              - columnheader "Factory Code " [ref=f6e400]:
+                - generic [ref=f6e401] [cursor=pointer]:
+                  - generic [ref=f6e402]: Factory Code
+                  - button "" [ref=f6e403]
+              - columnheader "Factory Name " [ref=f6e405]:
+                - generic [ref=f6e406] [cursor=pointer]:
+                  - generic [ref=f6e407]: Factory Name
+                  - button "" [ref=f6e408]
+              - columnheader "Country of Manufacture " [ref=f6e410]:
+                - generic [ref=f6e411] [cursor=pointer]:
+                  - generic [ref=f6e412]: Country of Manufacture
+                  - button "" [ref=f6e413]
+              - columnheader "Size Sequence " [ref=f6e415]:
+                - generic [ref=f6e416] [cursor=pointer]:
+                  - generic [ref=f6e417]: Size Sequence
+                  - button "" [ref=f6e418]
+              - columnheader "Remarks " [ref=f6e420]:
+                - generic [ref=f6e421] [cursor=pointer]:
+                  - generic [ref=f6e422]: Remarks
+                  - button "" [ref=f6e423]
+              - columnheader "Delegated Factory Code " [ref=f6e425]:
+                - generic [ref=f6e426] [cursor=pointer]:
+                  - generic [ref=f6e427]: Delegated Factory Code
+                  - button "" [ref=f6e428]
+              - columnheader "Delegated Factory Name " [ref=f6e430]:
+                - generic [ref=f6e431] [cursor=pointer]:
+                  - generic [ref=f6e432]: Delegated Factory Name
+                  - button "" [ref=f6e433]
+              - columnheader "Collection Category " [ref=f6e435]:
+                - generic [ref=f6e436] [cursor=pointer]:
+                  - generic [ref=f6e437]: Collection Category
+                  - button "" [ref=f6e438]
+              - columnheader "Planned Collection Time " [ref=f6e440]:
+                - generic [ref=f6e441] [cursor=pointer]:
+                  - generic [ref=f6e442]: Planned Collection Time
+                  - button "" [ref=f6e443]
+              - columnheader "Red Cutoff Date " [ref=f6e445]:
+                - generic [ref=f6e446] [cursor=pointer]:
+                  - generic [ref=f6e447]: Red Cutoff Date
+                  - button "" [ref=f6e448]
+              - columnheader "Supplier Zone " [ref=f6e450]:
+                - generic [ref=f6e451] [cursor=pointer]:
+                  - generic [ref=f6e452]: Supplier Zone
+                  - button "" [ref=f6e453]
+              - columnheader "Grey Cutoff Date " [ref=f6e455]:
+                - generic [ref=f6e456] [cursor=pointer]:
+                  - generic [ref=f6e457]: Grey Cutoff Date
+                  - button "" [ref=f6e458]
+              - columnheader "Exp Delivery Date (First Destination) " [ref=f6e460]:
+                - generic [ref=f6e461] [cursor=pointer]:
+                  - generic [ref=f6e462]: Exp Delivery Date (First Destination)
+                  - button "" [ref=f6e463]
+              - columnheader "Carrier Booking Scheduled Date " [ref=f6e465]:
+                - generic [ref=f6e466] [cursor=pointer]:
+                  - generic [ref=f6e467]: Carrier Booking Scheduled Date
+                  - button "" [ref=f6e468]
+              - columnheader "PO Type " [ref=f6e470]:
+                - generic [ref=f6e471] [cursor=pointer]:
+                  - generic [ref=f6e472]: PO Type
+                  - button "" [ref=f6e473]
+              - columnheader "Message Type " [ref=f6e475]:
+                - generic [ref=f6e476] [cursor=pointer]:
+                  - generic [ref=f6e477]: Message Type
+                  - button "" [ref=f6e478]
+              - columnheader "ASN Type " [ref=f6e480]:
+                - generic [ref=f6e481] [cursor=pointer]:
+                  - generic [ref=f6e482]: ASN Type
+                  - button "" [ref=f6e483]
+              - columnheader "ASN Delivery Date at First Destination " [ref=f6e485]:
+                - generic [ref=f6e486] [cursor=pointer]:
+                  - generic [ref=f6e487]: ASN Delivery Date at First Destination
+                  - button "" [ref=f6e488]
+              - columnheader "Shipping Method " [ref=f6e490]:
+                - generic [ref=f6e491] [cursor=pointer]:
+                  - generic [ref=f6e492]: Shipping Method
+                  - button "" [ref=f6e493]
+              - columnheader "Collection Type " [ref=f6e495]:
+                - generic [ref=f6e496] [cursor=pointer]:
+                  - generic [ref=f6e497]: Collection Type
+                  - button "" [ref=f6e498]
+              - columnheader "ASOS PO Type " [ref=f6e500]:
+                - generic [ref=f6e501] [cursor=pointer]:
+                  - generic [ref=f6e502]: ASOS PO Type
+                  - button "" [ref=f6e503]
+            - row "VB-0000002161 5548 Confirmed Denim TS 500034227740 49870000003074 Approved 149409035 148609059 W24L28 Topshop 148609059 2003 MID BLUE 13.07 100.00 100.00 100.00 0.00 0.00 Flat BDCM1 40.00 60.00 30.00 1.40 1.00 0.01 1.00 2.40 0.07 24/06/2026 02/06/2026 08:22:05  12/06/2026 14/06/2026 European Nom Carrier CFS POROP PORTUGAL OPORTO  N/A FC01 FC01 Barnsley FC01 FC01 Barnsley F103330 Ozon Tekstil Konfeksiyon San Ve Tic AS Sivas  TURKEY 10.00 Green 13 04/07/2026 14/06/2026 Finished Goods ASN SPEED TO MARKET 04/07/2026 Road Delivery Direct" [ref=f6e506]:
+              - gridcell [ref=f6e507]:
+                - generic [ref=f6e509]:
+                  - checkbox [ref=f6e510] [cursor=pointer]
+                  - text:  
+              - gridcell "VB-0000002161" [ref=f6e511]:
+                - link "VB-0000002161" [ref=f6e514] [cursor=pointer]:
+                  - /url: "#"
+              - gridcell "5548" [ref=f6e515]:
+                - generic [ref=f6e517]: "5548"
+              - gridcell "Confirmed" [ref=f6e518]:
+                - generic [ref=f6e520]: Confirmed
+              - gridcell [ref=f6e521]
+              - gridcell [ref=f6e523]
+              - gridcell [ref=f6e525]
+              - gridcell "Denim TS" [ref=f6e527]:
+                - generic [ref=f6e529]: Denim TS
+              - gridcell "500034227740" [ref=f6e530]:
+                - generic [ref=f6e532]: "500034227740"
+              - gridcell "49870000003074" [ref=f6e533]:
+                - generic [ref=f6e535]: "49870000003074"
+              - gridcell "Approved" [ref=f6e536]:
+                - generic [ref=f6e538]: Approved
+              - gridcell "149409035" [ref=f6e539]:
+                - generic [ref=f6e541]: "149409035"
+              - gridcell "148609059" [ref=f6e542]:
+                - link "148609059" [ref=f6e546] [cursor=pointer]:
+                  - /url: /asosap/OpenBDAction.do?OID=38802765
+              - gridcell [ref=f6e547]
+              - gridcell "W24L28" [ref=f6e549]:
+                - generic [ref=f6e551]: W24L28
+              - gridcell "Topshop" [ref=f6e552]:
+                - generic [ref=f6e554]: Topshop
+              - gridcell "148609059" [ref=f6e555]:
+                - generic [ref=f6e557]: "148609059"
+              - gridcell "2003" [ref=f6e558]:
+                - generic [ref=f6e560]: "2003"
+              - gridcell "MID BLUE" [ref=f6e561]:
+                - generic [ref=f6e563]: MID BLUE
+              - gridcell "13.07" [ref=f6e564]:
+                - generic "13.07" [ref=f6e567]
+              - gridcell "100.00" [ref=f6e568]:
+                - generic "100.00" [ref=f6e571]
+              - gridcell "100.00" [ref=f6e572]:
+                - generic "100.00" [ref=f6e575]
+              - gridcell "100.00" [ref=f6e576]:
+                - generic "100.00" [ref=f6e579]
+              - gridcell "0.00" [ref=f6e580]:
+                - generic "0.00" [ref=f6e583]
+              - gridcell "0.00" [ref=f6e584]:
+                - generic "0.00" [ref=f6e587]
+              - gridcell "Flat" [ref=f6e588]:
+                - generic [ref=f6e590]: Flat
+              - gridcell "BDCM1" [ref=f6e591]:
+                - generic [ref=f6e593]: BDCM1
+              - gridcell "40.00" [ref=f6e594]:
+                - generic "40.00" [ref=f6e597]
+              - gridcell "60.00" [ref=f6e598]:
+                - generic "60.00" [ref=f6e601]
+              - gridcell "30.00" [ref=f6e602]:
+                - generic "30.00" [ref=f6e605]
+              - gridcell "1.40" [ref=f6e606]:
+                - generic "1.40" [ref=f6e609]
+              - gridcell "1.00" [ref=f6e610]:
+                - generic "1.00" [ref=f6e613]
+              - gridcell "0.01" [ref=f6e614]:
+                - generic "0.01" [ref=f6e617]
+              - gridcell "1.00" [ref=f6e618]:
+                - generic "1.00" [ref=f6e621]
+              - gridcell "2.40" [ref=f6e622]:
+                - generic "2.40" [ref=f6e625]
+              - gridcell "0.07" [ref=f6e626]:
+                - generic "0.07" [ref=f6e629]
+              - gridcell "24/06/2026" [ref=f6e630]:
+                - generic [ref=f6e632]: 24/06/2026
+              - gridcell "02/06/2026 08:22:05 " [ref=f6e633]:
+                - generic [ref=f6e635]: 02/06/2026 08:22:05
+                - button "" [ref=f6e636] [cursor=pointer]
+              - gridcell "12/06/2026" [ref=f6e637]:
+                - generic [ref=f6e639]: 12/06/2026
+              - gridcell "14/06/2026" [ref=f6e640]:
+                - generic [ref=f6e642]: 14/06/2026
+              - gridcell "European Nom Carrier" [ref=f6e643]:
+                - generic [ref=f6e645]: European Nom Carrier
+              - gridcell "CFS" [ref=f6e646]:
+                - generic [ref=f6e648]: CFS
+              - gridcell "POROP" [ref=f6e649]:
+                - generic [ref=f6e651]: POROP
+              - gridcell "PORTUGAL OPORTO " [ref=f6e652]:
+                - generic [ref=f6e654]: PORTUGAL OPORTO
+                - button "" [ref=f6e655] [cursor=pointer]
+              - gridcell "N/A" [ref=f6e656]:
+                - generic [ref=f6e658]: N/A
+              - gridcell "FC01" [ref=f6e659]:
+                - generic [ref=f6e661]: FC01
+              - gridcell "FC01 Barnsley" [ref=f6e662]:
+                - generic [ref=f6e664]: FC01 Barnsley
+              - gridcell "FC01" [ref=f6e665]:
+                - generic [ref=f6e667]: FC01
+              - gridcell "FC01 Barnsley" [ref=f6e668]:
+                - generic [ref=f6e670]: FC01 Barnsley
+              - gridcell "F103330" [ref=f6e671]:
+                - generic [ref=f6e674]: F103330
+              - gridcell "Ozon Tekstil Konfeksiyon San Ve Tic AS Sivas " [ref=f6e675]:
+                - generic [ref=f6e677]: Ozon Tekstil Konfeksiyon San Ve Tic AS Sivas
+                - button "" [ref=f6e678] [cursor=pointer]
+              - gridcell "TURKEY" [ref=f6e679]:
+                - generic [ref=f6e681]: TURKEY
+              - gridcell "10.00" [ref=f6e682]:
+                - generic "10.00" [ref=f6e685]
+              - gridcell [ref=f6e686]
+              - gridcell [ref=f6e688]
+              - gridcell [ref=f6e690]
+              - gridcell "Green" [ref=f6e692]:
+                - generic [ref=f6e694]: Green
+              - gridcell [ref=f6e695]
+              - gridcell [ref=f6e697]
+              - gridcell "13" [ref=f6e699]:
+                - generic [ref=f6e701]: "13"
+              - gridcell [ref=f6e702]
+              - gridcell "04/07/2026" [ref=f6e704]:
+                - generic [ref=f6e706]: 04/07/2026
+              - gridcell "14/06/2026" [ref=f6e707]:
+                - generic [ref=f6e709]: 14/06/2026
+              - gridcell "Finished Goods" [ref=f6e710]:
+                - generic [ref=f6e712]: Finished Goods
+              - gridcell "ASN" [ref=f6e713]:
+                - generic [ref=f6e715]: ASN
+              - gridcell "SPEED TO MARKET" [ref=f6e716]:
+                - generic [ref=f6e718]: SPEED TO MARKET
+              - gridcell "04/07/2026" [ref=f6e719]:
+                - generic [ref=f6e721]: 04/07/2026
+              - gridcell "Road" [ref=f6e722]:
+                - generic [ref=f6e724]: Road
+              - gridcell "Delivery" [ref=f6e725]:
+                - generic [ref=f6e727]: Delivery
+              - gridcell "Direct" [ref=f6e728]:
+                - generic [ref=f6e730]: Direct
+        - heading " Summary" [level=4] [ref=f6e736] [cursor=pointer]:
+          - generic [ref=f6e737]: 
+          - link "Summary" [ref=f6e738]:
+            - /url: "#summaryPanelContent"
+        - generic [ref=f6e739]:
+          - generic [ref=f6e740]:
+            - text: Criterion
+            - generic [ref=f6e741]: ASN ID:49870000003074
+          - generic [ref=f6e742]:
+            - text: Order By
+            - generic [ref=f6e743]: ASOS Booking Comment:DESC
+          - button "" [ref=f6e744] [cursor=pointer]:
+            - generic [ref=f6e745]: 
+        - generic [ref=f6e746]:
+          - generic [ref=f6e747]:
+            - button "Export" [ref=f6e748] [cursor=pointer]
+            - button "Edit Booking" [ref=f6e749] [cursor=pointer]
+            - button "Submit Booking" [disabled]
+            - button "Cancel Booking" [disabled]
+            - button "Amend" [disabled]
+            - button "Remove ASN" [disabled]
+          - navigation [ref=f6e750]:
+            - generic [ref=f6e751]:
+              - generic [ref=f6e752]:
+                - button "" [disabled]:
+                  - generic: 
+                - link "1" [ref=f6e754] [cursor=pointer]:
+                  - /url: "#page-1"
+                - button "" [disabled]:
+                  - generic: 
+              - generic [ref=f6e755]:
+                - spinbutton [ref=f6e756]
+                - button "Go" [ref=f6e757] [cursor=pointer]
+      - text:           
+      - status [ref=f6e758]
+      - text:          warning check    
+```

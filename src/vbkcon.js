@@ -101,6 +101,7 @@ async function getNextAbv(counterFilePath = getAbvCounterFile()) {
   } catch {
     counter = { next: 300100 };
   }
+  if (counter.next < 300100) counter.next = 300100;
   const abv = counter.next;
   counter.next = abv + 1;
   await fs.mkdir(path.dirname(counterFilePath), { recursive: true });
