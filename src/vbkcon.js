@@ -99,7 +99,7 @@ async function getNextAbv(counterFilePath = getAbvCounterFile()) {
     const raw = await fs.readFile(counterFilePath, "utf8");
     counter = JSON.parse(raw);
   } catch {
-    counter = { next: 6100 };
+    counter = { next: 300100 };
   }
   const abv = counter.next;
   counter.next = abv + 1;
