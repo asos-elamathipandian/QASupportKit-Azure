@@ -80,18 +80,35 @@ function validate(body, fields) {
   return missing.length ? `Missing required fields: ${missing.join(", ")}` : null;
 }
 
-// ── Live progress log ─────────────────────────────────────────────────────────
+// ── Live progress log (per-session, multi-user safe) ─────────────────────────
 
-let progressLog = [];
+const progressLogs = new Map();      // sessionId → entry[]
+const sessionTimestamps = new Map(); // sessionId → last-used ms
+const SESSION_TTL_MS = 30 * 60 * 1000; // expire idle sessions after 30 min
 
-function clearProgress() {
-  progressLog = [];
+// Purge sessions that have been idle longer than SESSION_TTL_MS
+setInterval(() => {
+  const now = Date.now();
+  for (const [sid, ts] of sessionTimestamps) {
+    if (now - ts > SESSION_TTL_MS) {
+      progressLogs.delete(sid);
+      sessionTimestamps.delete(sid);
+    }
+  }
+}, 5 * 60 * 1000).unref();
+
+function clearProgress(sessionId) {
+  progressLogs.set(sessionId, []);
+  sessionTimestamps.set(sessionId, Date.now());
 }
 
-function addProgress(message) {
+function addProgress(message, sessionId) {
+  if (!progressLogs.has(sessionId)) progressLogs.set(sessionId, []);
+  const log = progressLogs.get(sessionId);
   const entry = { ts: new Date().toLocaleTimeString(), message };
-  progressLog.push(entry);
-  console.log(`[PROGRESS] ${entry.ts} — ${message}`);
+  log.push(entry);
+  sessionTimestamps.set(sessionId, Date.now());
+  console.log(`[PROGRESS:${String(sessionId).slice(0, 8)}] ${entry.ts} — ${message}`);
 }
 
 // Keywords to pick up from Playwright stdout/stderr as progress updates
@@ -145,9 +162,10 @@ const NOISE_PATTERNS = [
   /^=+$/,                // separator lines
 ];
 
-function parseStdoutForProgress(data) {
+function parseStdoutForProgress(data, sessionId) {
   const text = data.toString();
   const lines = text.split("\n").map((l) => l.trim()).filter(Boolean);
+  const log = progressLogs.get(sessionId) || [];
   for (const line of lines) {
     // Skip noise
     if (NOISE_PATTERNS.some((p) => p.test(line))) continue;
@@ -158,8 +176,8 @@ function parseStdoutForProgress(data) {
       if (m) {
         const msg = pat.extract(m);
         // Avoid duplicate consecutive messages
-        if (progressLog.length === 0 || progressLog[progressLog.length - 1].message !== msg) {
-          addProgress(msg);
+        if (log.length === 0 || log[log.length - 1].message !== msg) {
+          addProgress(msg, sessionId);
         }
         matched = true;
         break;
@@ -171,8 +189,9 @@ function parseStdoutForProgress(data) {
       // Only show lines that look like intentional log output (contains letters, not just symbols)
       if (/[a-zA-Z]{3,}/.test(line) && !/^[\s\d.:]+$/.test(line)) {
         const msg = line.substring(0, 150);
-        if (progressLog.length === 0 || progressLog[progressLog.length - 1].message !== msg) {
-          addProgress(msg);
+        const currentLog = progressLogs.get(sessionId) || [];
+        if (currentLog.length === 0 || currentLog[currentLog.length - 1].message !== msg) {
+          addProgress(msg, sessionId);
         }
       }
     }
@@ -180,9 +199,18 @@ function parseStdoutForProgress(data) {
 }
 
 app.get("/api/progress", (req, res) => {
+  const sessionId = req.query.sessionId || "default";
   const since = parseInt(req.query.since, 10) || 0;
-  const entries = progressLog.slice(since);
-  res.json({ entries, total: progressLog.length });
+  const log = progressLogs.get(sessionId) || [];
+  const entries = log.slice(since);
+  res.json({ entries, total: log.length });
+});
+
+// Clear the server-side progress log for a specific session (called on frontend Reset)
+app.post("/api/progress/reset", (req, res) => {
+  const sessionId = (req.body && req.body.sessionId) || req.query.sessionId;
+  if (sessionId) clearProgress(sessionId);
+  res.json({ ok: true });
 });
 
 // ── Individual endpoints ──────────────────────────────────────────────────────
@@ -933,10 +961,11 @@ app.post("/api/scc/asn-lookup", async (req, res) => {
       return res.status(400).json({ ok: false, error: "valid ASN list required" });
     }
 
+    const sessionId = String(req.body.sessionId || 'default');
     console.log(`[API] ASN Lookup requested for: ${asnList.join(',')}`);
-    clearProgress();
-    addProgress('Starting ASN lookup…');
-    const result = await lookupAsn(asnList, { onProgress: parseStdoutForProgress, onStep: addProgress });
+    clearProgress(sessionId);
+    addProgress('Starting ASN lookup…', sessionId);
+    const result = await lookupAsn(asnList, { onProgress: (d) => parseStdoutForProgress(d, sessionId), onStep: (m) => addProgress(m, sessionId) });
     res.json({ ok: true, result });
   } catch (err) {
     console.error('[API] ASN Lookup error:', err.message);
@@ -962,10 +991,11 @@ app.post("/api/scc/booking/create-single", async (req, res) => {
       return res.status(400).json({ ok: false, error: 'valid ASN list required' });
     }
 
+    const sessionId = String(req.body.sessionId || 'default');
     console.log(`[API] Single ASN booking requested for: ${asnList.join(',')}`);
-    clearProgress();
-    addProgress('Starting single booking creation…');
-    const result = await createSingleAsnBooking(asnList, { onProgress: parseStdoutForProgress, onStep: addProgress });
+    clearProgress(sessionId);
+    addProgress('Starting single booking creation…', sessionId);
+    const result = await createSingleAsnBooking(asnList, { onProgress: (d) => parseStdoutForProgress(d, sessionId), onStep: (m) => addProgress(m, sessionId) });
     res.json({ ok: true, result });
   } catch (err) {
     console.error('[API] Single ASN Booking error:', err.message);
@@ -991,10 +1021,11 @@ app.post("/api/scc/booking/create-multi", async (req, res) => {
       return res.status(400).json({ ok: false, error: 'valid ASN list required' });
     }
 
+    const sessionId = String(req.body.sessionId || 'default');
     console.log(`[API] Multi-ASN booking requested for: ${asnList.join(',')}`);
-    clearProgress();
-    addProgress('Starting multi-ASN booking creation…');
-    const result = await createMultiAsnBooking(asnList, { onProgress: parseStdoutForProgress, onStep: addProgress });
+    clearProgress(sessionId);
+    addProgress('Starting multi-ASN booking creation…', sessionId);
+    const result = await createMultiAsnBooking(asnList, { onProgress: (d) => parseStdoutForProgress(d, sessionId), onStep: (m) => addProgress(m, sessionId) });
     res.json({ ok: true, result });
   } catch (err) {
     console.error('[API] Multi-ASN Booking error:', err.message);
@@ -1075,10 +1106,11 @@ app.post("/api/full-scc-flow", async (req, res) => {
       return res.status(400).json({ ok: false, error: 'valid ASN list required' });
     }
 
+    const sessionId = String(req.body.sessionId || 'default');
     console.log(`[API] Full SCC flow requested for: ${asnList.join(',')}`);
-    clearProgress();
-    addProgress('Starting full SCC flow…');
-    const result = await createFullSccFlow(asnList, { onProgress: parseStdoutForProgress, onStep: addProgress });
+    clearProgress(sessionId);
+    addProgress('Starting full SCC flow…', sessionId);
+    const result = await createFullSccFlow(asnList, { onProgress: (d) => parseStdoutForProgress(d, sessionId), onStep: (m) => addProgress(m, sessionId) });
     res.json({ ok: true, result });
   } catch (err) {
     console.error('[API] Full SCC Flow error:', err.message);
@@ -1087,9 +1119,10 @@ app.post("/api/full-scc-flow", async (req, res) => {
 });
 
 app.post("/api/cancel", (req, res) => {
+  const sessionId = String((req.body && req.body.sessionId) || 'default');
   const killed = cancelActiveSpec();
-  clearProgress();
-  addProgress('⛔ Operation cancelled by user.');
+  clearProgress(sessionId);
+  addProgress('⛔ Operation cancelled by user.', sessionId);
   res.json({ ok: true, message: killed ? 'Playwright process killed' : 'Nothing running' });
 });
 

@@ -804,6 +804,15 @@
   </div>
 
 <script>
+// ── Per-session client ID (isolates this browser tab's logs from other users) ─
+let clientId = sessionStorage.getItem('sdaClientId');
+if (!clientId) {
+  clientId = (typeof crypto !== 'undefined' && crypto.randomUUID)
+    ? crypto.randomUUID()
+    : Date.now().toString(36) + Math.random().toString(36).slice(2);
+  sessionStorage.setItem('sdaClientId', clientId);
+}
+
 // ── Live progress polling ───────────────────────────────────────────────────
 
 let progressPollInterval = null;
@@ -840,7 +849,7 @@ async function stopProgressPollingAndFlush() {
 async function pollProgress() {
   progressPollCount++;
   try {
-    const res = await fetch(`/api/progress?since=${progressSeenIndex}`);
+    const res = await fetch(`/api/progress?since=${progressSeenIndex}&sessionId=${encodeURIComponent(clientId)}`);
     const data = await res.json();
     const logEl = document.getElementById(activeLogElementId);
     if (!logEl) return;
@@ -999,7 +1008,7 @@ async function asnLookup() {
     const res = await fetch('/api/scc/asn-lookup', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ asn })
+      body: JSON.stringify({ asn, sessionId: clientId })
     });
     const data = await res.json();
     if (data.ok) {
@@ -1044,7 +1053,7 @@ function renderBookingResult(results, label) {
 
 // --- Force Cancel booking ---
 async function forceCancelBooking() {
-  try { await fetch('/api/cancel', { method: 'POST' }); } catch (_) {}
+  try { await fetch('/api/cancel', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sessionId: clientId }) }); } catch (_) {}
   document.getElementById('btnCancelBooking').style.display = 'none';
   document.getElementById('btnBookingSingle').disabled = false;
   document.getElementById('btnBookingMulti').disabled = false;
@@ -1054,7 +1063,7 @@ async function forceCancelBooking() {
 }
 
 async function forceCancelLookup() {
-  try { await fetch('/api/cancel', { method: 'POST' }); } catch (_) {}
+  try { await fetch('/api/cancel', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sessionId: clientId }) }); } catch (_) {}
   document.getElementById('btnCancelLookup').style.display = 'none';
   document.getElementById('btnAsnLookup').disabled = false;
   const resultDiv = document.getElementById('asnLookupResult');
@@ -1063,7 +1072,7 @@ async function forceCancelLookup() {
 }
 
 async function forceCancelFullFlow() {
-  try { await fetch('/api/cancel', { method: 'POST' }); } catch (_) {}
+  try { await fetch('/api/cancel', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sessionId: clientId }) }); } catch (_) {}
   document.getElementById('btnCancelFullFlow').style.display = 'none';
   document.getElementById('btnFullSccFlow').disabled = false;
   const resultDiv = document.getElementById('fullSccResult');
@@ -1085,7 +1094,7 @@ async function bookingCreateSingle() {
     const res = await fetch('/api/scc/booking/create-single', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ asn })
+      body: JSON.stringify({ asn, sessionId: clientId })
     });
     const data = await res.json();
     if (data.ok) {
@@ -1118,7 +1127,7 @@ async function bookingCreateMulti() {
     const res = await fetch('/api/scc/booking/create-multi', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ asn })
+      body: JSON.stringify({ asn, sessionId: clientId })
     });
     const data = await res.json();
     if (data.ok) {
@@ -1152,7 +1161,7 @@ async function fullSccFlow() {
     const res = await fetch('/api/full-scc-flow', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ asn })
+      body: JSON.stringify({ asn, sessionId: clientId })
     });
     const data = await res.json();
     if (!data.ok) throw new Error(data.error || 'Full SCC flow failed');
@@ -1692,6 +1701,12 @@ async function fullSccFlow() {
     const carrier = document.getElementById("carrier");
     if (carrier) carrier.selectedIndex = 0;
     clearResults();
+    // Clear this session's progress log on the server so other users are unaffected
+    fetch('/api/progress/reset', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sessionId: clientId })
+    }).catch(() => {});
   }
 
   function showResults() {
