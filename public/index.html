@@ -869,8 +869,8 @@ function toggleLocalSections() {
   applyLocalSectionsVisibility(next);
 }
 
-// Apply on page load (before any other init so cards are hidden before reorder)
-applyLocalSectionsVisibility(getLocalSectionsVisible());
+// Apply on page load — called from DOMContentLoaded handler below (after all cards are in the DOM)
+// so that booking/full-flow cards (defined later in the HTML) are also correctly hidden.
 
 // ── Live progress polling ───────────────────────────────────────────────────
 
@@ -1714,6 +1714,7 @@ async function fullSccFlow() {
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
       enableUnifiedFeaturesAndOrder();
+      applyLocalSectionsVisibility(getLocalSectionsVisible());
       initSccStatus();
       refreshSccSessionStatus();
       // Pre-select assignee based on OS username (e.g. elamathi.pandian → "Elamathi Pandian")
@@ -1728,6 +1729,7 @@ async function fullSccFlow() {
     });
   } else {
     enableUnifiedFeaturesAndOrder();
+    applyLocalSectionsVisibility(getLocalSectionsVisible());
     initSccStatus();
     refreshSccSessionStatus();
   }
