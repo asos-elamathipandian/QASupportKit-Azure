@@ -753,6 +753,9 @@
   <!-- ── E2Open Outbound Message Search ── -->
   <div class="card" style="display:none;">
     <div class="card-title">&#9729; Blob search- E2open 856 outbound</div>
+    <div style="background:#fefce8;border:1px solid #fde68a;border-radius:7px;padding:10px 15px;margin-bottom:16px;font-size:0.82rem;color:#92400e;line-height:1.6;">
+      &#9200; <strong>Default search window: last 7 days.</strong> If your ASN is older, set a <strong>Date from</strong> below. Searches beyond 7 days scan more files and will take longer.
+    </div>
     <div class="form-grid">
       <div class="form-group" style="grid-column: 1 / -1;">
         <label for="blobAsn">ASN</label>
@@ -762,7 +765,7 @@
       <div class="form-group">
         <label for="blobDateFrom">Date from <span style="font-weight:400;color:#64748b;">(optional)</span></label>
         <input id="blobDateFrom" type="date" />
-        <span class="field-hint">Leave blank to search last 60 days.</span>
+        <span class="field-hint">Leave blank to search last 7 days. Use date filters to search further back.</span>
       </div>
       <div class="form-group">
         <label for="blobDateTo">Date to <span style="font-weight:400;color:#64748b;">(optional)</span></label>

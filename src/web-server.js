@@ -672,7 +672,7 @@ app.post("/api/prod-upload", async (req, res) => {
 // ── Blob Search & Download ────────────────────────────────────────────────────
 
 app.post("/api/blob-search", async (req, res) => {
-  const { asn, hoursBack = 1440, maxBlobs = 1000, startDate, endDate } = req.body;
+  const { asn, hoursBack = 168, maxBlobs = 1000, startDate, endDate } = req.body;
   if (!asn || !asn.trim()) return res.status(400).json({ ok: false, error: "asn is required" });
 
   const connectionString = process.env.AZURE_BLOB_CONNECTION_STRING;

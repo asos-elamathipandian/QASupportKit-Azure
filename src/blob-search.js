@@ -68,10 +68,11 @@ async function searchBlobsByAsn({
   }
 
   // Fallback 1: name filter found nothing — ASN is not in filename (e.g. E2ASOS_ASOS_856 files).
-  // Collect ALL blobs across all date prefixes (no cap) so older dates are not missed.
+  // Collect blobs up to maxBlobs across all date prefixes to avoid unbounded content scans.
   if (!nameFilterWorked) {
     console.log('[blob-search] No blobs matched by name — falling back to full content scan across all date prefixes');
     for (const datePrefix of datePrefixes) {
+      if (blobs.length >= maxBlobs) break;
       const effectivePrefix = prefix ? `${datePrefix}${prefix}` : datePrefix;
       for await (const blob of containerClient.listBlobsFlat({ prefix: effectivePrefix })) {
         if (!blob.name.endsWith(".xml") && !blob.name.endsWith(".XML")) {
@@ -79,6 +80,7 @@ async function searchBlobsByAsn({
           continue;
         }
         blobs.push(blob);
+        if (blobs.length >= maxBlobs) break;
       }
     }
     console.log(`[blob-search] Collected ${blobs.length} blobs across all date prefixes for content scan`);
@@ -101,8 +103,8 @@ async function searchBlobsByAsn({
     }
   }
 
-  // Download and search content in parallel (batches of 50)
-  const BATCH_SIZE = 50;
+  // Download and search content in parallel (batches of 150)
+  const BATCH_SIZE = 150;
   for (let i = 0; i < blobs.length; i += BATCH_SIZE) {
     const batch = blobs.slice(i, i + BATCH_SIZE);
     const results = await Promise.all(
