@@ -48,25 +48,28 @@
     }
     .btn-reset-all:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.6); }
 
-    /* ── Local-only section toggle ── */
-    .btn-local-toggle {
-      background: none;
-      border: 1.5px solid rgba(255,255,255,0.3);
-      color: white;
-      border-radius: 8px;
-      padding: 6px 14px;
-      font-size: 0.78rem;
-      font-weight: 700;
-      cursor: pointer;
-      letter-spacing: 0.03em;
-      transition: background 0.2s, border-color 0.2s;
-      display: flex;
+    /* ── Per-card hide toggle pill ── */
+    .local-card-body.local-hidden { display: none !important; }
+    .btn-hide-toggle {
+      display: inline-flex;
       align-items: center;
-      gap: 6px;
+      gap: 4px;
+      margin-left: 10px;
+      padding: 2px 10px;
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      border-radius: 20px;
+      border: 1.5px solid #e0e0e0;
+      background: #f1f5f9;
+      color: #64748b;
+      cursor: pointer;
+      vertical-align: middle;
+      transition: background 0.15s, border-color 0.15s, color 0.15s;
+      text-transform: uppercase;
     }
-    .btn-local-toggle:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.6); }
-    .btn-local-toggle.active { background: rgba(16,185,129,0.25); border-color: #10b981; color: #6ee7b7; }
-    .local-only-section.local-hidden { display: none !important; }
+    .btn-hide-toggle:hover { background: #e2e8f0; border-color: #94a3b8; color: #334155; }
+    .btn-hide-toggle.visible { background: #dcfce7; border-color: #86efac; color: #15803d; }
     header .badge {
       background: #e94560;
       color: white;
@@ -604,7 +607,6 @@
 
 <header>
   <h1>Smart Data Assistant-Inbound</h1>
-  <button class="btn-local-toggle" id="btnLocalToggle" onclick="toggleLocalSections()" title="Show/hide localhost-only sections (TA Check, ASN Lookup, Booking, Full SCC Flow)">&#128273; Local Features</button>
   <button class="btn-reset-all" onclick="resetAll()" title="Reset all inputs, results and logs">&#8635; Reset</button>
 </header>
 
@@ -627,7 +629,8 @@
        E2OPEN TA CHECK — SKU / PO / ASN availability + screenshots
        ══════════════════════════════════════════════════════════════════════ -->
   <div class="card local-only-section" id="ta-check-card" style="border-left:4px solid #0891b2;">
-    <div class="card-title" style="color:#0891b2;">&#128247; E2open TA Check</div>
+    <div class="card-title" style="color:#0891b2;">&#128247; E2open TA Check<button class="btn-hide-toggle" id="toggle-ta-check-card" title="Toggle section visibility">Hide: ON</button></div>
+    <div class="local-card-body" id="body-ta-check-card" style="display:none">
     <div style="background:#ecfeff;border:1px solid #a5f3fc;border-radius:6px;padding:11px 16px;margin-bottom:18px;font-size:0.83rem;color:#0e7490;line-height:1.7;">
       Enter the SKU, PO and/or ASN you want to verify in E2open TA, then click <strong>Run Check</strong>. Playwright will open E2open TA, search each record and return a screenshot showing whether it was found.
     </div>
@@ -670,6 +673,7 @@
     <div id="taCheckResults" style="display:none;margin-top:18px;">
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;" id="taCheckCards"></div>
     </div>
+    </div><!-- /local-card-body -->
   </div>
 
   <!-- ── Carrier & WMS Events ── -->
@@ -802,7 +806,8 @@
 
   <!-- ── ASN Lookup in SCC (LOCAL ONLY) ── -->
   <div class="card local-only-section" id="asn-lookup-card">
-    <div class="card-title">ASN Lookup in E2Open SCC</div>
+    <div class="card-title">ASN Lookup in E2Open SCC<button class="btn-hide-toggle" id="toggle-asn-lookup-card" title="Toggle section visibility">Hide: ON</button></div>
+    <div class="local-card-body" id="body-asn-lookup-card" style="display:none">
     <div style="display:none; gap:10px; flex-wrap:wrap; margin-bottom:12px;">
       <button class="btn-lookup" id="btnSccBootstrap" onclick="bootstrapSccSession()" style="width:auto; padding:10px 14px; background:#0f766e;">
         🔐 Initialize SCC Session (Optional)
@@ -825,6 +830,7 @@
     <button class="btn-cancel-booking" id="btnCancelLookup" onclick="forceCancelLookup()">&#9646;&#9646; Force Cancel</button>
     <div class="live-log" id="liveLogLookup"></div>
     <div id="asnLookupResult" style="margin-top:14px;"></div>
+    </div><!-- /local-card-body -->
   </div>
 
 <script>
@@ -837,40 +843,42 @@ if (!clientId) {
   sessionStorage.setItem('sdaClientId', clientId);
 }
 
-// ── Local-only section toggle (TA Check, ASN Lookup, Booking, Full SCC Flow) ─
-// Defaults: visible on localhost, hidden on Azure. Persisted per browser in localStorage.
-const LOCAL_SECTIONS_KEY = 'sdaLocalSectionsVisible';
-const isLocalhost = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+// ── Per-card hide toggle (TA Check, ASN Lookup, Booking, Full SCC Flow) ──────
+// Default: hidden (Hide: ON). Persisted per card in localStorage.
+const LOCAL_CARD_IDS = ['ta-check-card', 'asn-lookup-card', 'scc-booking-card', 'full-scc-card'];
 
-function getLocalSectionsVisible() {
-  const stored = localStorage.getItem(LOCAL_SECTIONS_KEY);
+function isCardVisible(cardId) {
+  const stored = localStorage.getItem('sdaCardVisible_' + cardId);
   if (stored !== null) return stored === 'true';
-  return isLocalhost; // default: on for localhost, off for Azure
+  return false; // default: hidden on all environments
 }
 
-function applyLocalSectionsVisibility(visible) {
-  document.querySelectorAll('.local-only-section').forEach(el => {
-    el.classList.toggle('local-hidden', !visible);
-  });
-  const btn = document.getElementById('btnLocalToggle');
+function applyCardVisibility(cardId, visible) {
+  const body = document.getElementById('body-' + cardId);
+  const btn  = document.getElementById('toggle-' + cardId);
+  if (body) body.style.display = visible ? '' : 'none';
   if (btn) {
-    btn.classList.toggle('active', visible);
-    btn.textContent = visible ? '\uD83D\uDD13 Local Features' : '\uD83D\uDD12 Local Features';
-    btn.title = visible
-      ? 'Click to hide localhost-only sections (TA Check, ASN Lookup, Booking, Full SCC Flow)'
-      : 'Click to show localhost-only sections (TA Check, ASN Lookup, Booking, Full SCC Flow)';
+    btn.textContent = visible ? 'Hide: OFF' : 'Hide: ON';
+    btn.classList.toggle('visible', visible);
   }
 }
 
-function toggleLocalSections() {
-  const current = getLocalSectionsVisible();
-  const next = !current;
-  localStorage.setItem(LOCAL_SECTIONS_KEY, String(next));
-  applyLocalSectionsVisibility(next);
+function toggleLocalCard(cardId) {
+  const next = !isCardVisible(cardId);
+  localStorage.setItem('sdaCardVisible_' + cardId, String(next));
+  applyCardVisibility(cardId, next);
 }
 
-// Apply on page load — called from DOMContentLoaded handler below (after all cards are in the DOM)
-// so that booking/full-flow cards (defined later in the HTML) are also correctly hidden.
+function initLocalCards() {
+  LOCAL_CARD_IDS.forEach(id => {
+    applyCardVisibility(id, isCardVisible(id));
+    // Attach click listener programmatically — more reliable than inline onclick
+    const btn = document.getElementById('toggle-' + id);
+    if (btn) {
+      btn.onclick = function(e) { e.stopPropagation(); toggleLocalCard(id); };
+    }
+  });
+}
 
 // ── Live progress polling ───────────────────────────────────────────────────
 
@@ -1538,7 +1546,8 @@ async function fullSccFlow() {
 
   <!-- ── Booking Creation (LOCAL ONLY) ── -->
   <div class="card local-only-section" id="scc-booking-card" style="opacity:0.6; border:2px dashed #ffc107;">
-    <div class="card-title">Carrier Booking Creation</div>
+    <div class="card-title">Carrier Booking Creation<button class="btn-hide-toggle" id="toggle-scc-booking-card" title="Toggle section visibility">Hide: ON</button></div>
+    <div class="local-card-body" id="body-scc-booking-card" style="display:none">
     <div class="form-grid">
       <div class="form-group" style="grid-column: 1 / -1;">
         <label>ASN for Booking</label>
@@ -1559,11 +1568,13 @@ async function fullSccFlow() {
     <button class="btn-cancel-booking" id="btnCancelBooking" onclick="forceCancelBooking()">&#9646;&#9646; Force Cancel</button>
     <div class="live-log" id="liveLogBooking"></div>
     <div id="bookingResult" style="margin-top:14px;"></div>
+    </div><!-- /local-card-body -->
   </div>
 
   <!-- ── Full SCC Flow (LOCAL ONLY) ── -->
   <div class="card local-only-section" id="full-scc-card" style="opacity:0.6; border:2px dashed #ffc107;">
-    <div class="card-title">Full SCC Flow &mdash; One-Click Booking</div>
+    <div class="card-title">Full SCC Flow &mdash; One-Click Booking<button class="btn-hide-toggle" id="toggle-full-scc-card" title="Toggle section visibility">Hide: ON</button></div>
+    <div class="local-card-body" id="body-full-scc-card" style="display:none">
     <div class="form-grid">
       <div class="form-group" style="grid-column: 1 / -1;">
         <label>ASN</label>
@@ -1578,6 +1589,7 @@ async function fullSccFlow() {
     <button class="btn-cancel-booking" id="btnCancelFullFlow" onclick="forceCancelFullFlow()">&#9646;&#9646; Force Cancel</button>
     <div class="live-log" id="liveLogFullFlow"></div>
     <div id="fullSccResult" style="margin-top:14px;"></div>
+    </div><!-- /local-card-body -->
   </div>
 
 </main>
@@ -1714,7 +1726,7 @@ async function fullSccFlow() {
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
       enableUnifiedFeaturesAndOrder();
-      applyLocalSectionsVisibility(getLocalSectionsVisible());
+      initLocalCards();
       initSccStatus();
       refreshSccSessionStatus();
       // Pre-select assignee based on OS username (e.g. elamathi.pandian → "Elamathi Pandian")
@@ -1729,7 +1741,7 @@ async function fullSccFlow() {
     });
   } else {
     enableUnifiedFeaturesAndOrder();
-    applyLocalSectionsVisibility(getLocalSectionsVisible());
+    initLocalCards();
     initSccStatus();
     refreshSccSessionStatus();
   }
