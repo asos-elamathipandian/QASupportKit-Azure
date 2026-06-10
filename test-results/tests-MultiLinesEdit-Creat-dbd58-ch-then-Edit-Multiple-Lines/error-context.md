@@ -1,0 +1,811 @@
+# Instructions
+
+- Following Playwright test failed.
+- Explain why, be concise, respect Playwright best practices.
+- Provide a snippet of code with the fix, if possible.
+
+# Test info
+
+- Name: tests\MultiLinesEdit.spec.js >> Create Draft Booking via Order Search then Edit Multiple Lines
+- Location: tests\MultiLinesEdit.spec.js:83:5
+
+# Error details
+
+```
+Test timeout of 600000ms exceeded.
+```
+
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e3]:
+    - banner [ref=e5]:
+      - generic [ref=e6]:
+        - link [ref=e7] [cursor=pointer]:
+          - /url: "#"
+        - generic [ref=e8]:
+          - button "search" [ref=e11] [cursor=pointer]
+          - link "list" [ref=e14] [cursor=pointer]:
+            - /url: javascript:void(0)
+            - generic [ref=e15]: list
+          - link "chat 0" [ref=e18] [cursor=pointer]:
+            - /url: javascript:void(0)
+            - generic [ref=e19]: chat
+            - generic [ref=e20]: "0"
+          - link "notifications 0" [ref=e23] [cursor=pointer]:
+            - /url: javascript:void(0)
+            - generic [ref=e24]: notifications
+            - generic [ref=e25]: "0"
+          - link "forum 0" [ref=e28] [cursor=pointer]:
+            - /url: javascript:void(0)
+            - generic [ref=e29]: forum
+            - superscript [ref=e30]: "0"
+          - link "help" [ref=e33] [cursor=pointer]:
+            - /url: javascript:void(0)
+            - generic [ref=e34]: help
+          - link "Checking the network status" [ref=e37] [cursor=pointer]:
+            - /url: javascript:void(0)
+            - img [ref=e38]
+          - link "elamathi pandian Administrator (Centralized Company)" [ref=e43] [cursor=pointer]:
+            - /url: javascript:void(0)
+            - generic [ref=e44]:
+              - generic [ref=e45]: elamathi pandian
+              - generic [ref=e46]: Administrator (Centralized Company)
+            - img [ref=e47]
+      - generic [ref=e48]:
+        - button "menu Menu" [ref=e51] [cursor=pointer]
+        - generic [ref=e53]:
+          - navigation [ref=e54]:
+            - generic "Saved pages" [ref=e56]:
+              - generic [ref=e57]: star add
+              - text: Add to Favorites
+            - list [ref=e58]:
+              - listitem [ref=e59]:
+                - link "factory dele-vendor" [ref=e60] [cursor=pointer]:
+                  - /url: https://asos.staging.e2open.com/asos/?p=%2Fasosap%2FRunView.do%3FviewId%3D3213
+              - listitem [ref=e61]:
+                - link "factory dele-vendor" [ref=e62] [cursor=pointer]:
+                  - /url: https://asos.staging.e2open.com/asos/?p=%2Fasosap%2FRunView.do%3FviewId%3D3213
+              - listitem [ref=e63]:
+                - link "Order detail" [ref=e64] [cursor=pointer]:
+                  - /url: https://asos.staging.e2open.com/asos/?p=%2Fasosap%2FRunView.do%3FviewId%3D2013
+              - listitem [ref=e65]:
+                - link "PL without VB" [ref=e66] [cursor=pointer]:
+                  - /url: https://asos.staging.e2open.com/asos/?p=%2Fasosap%2FRunView.do%3FviewName%3DAPP_PL_List%26status-folder-object-type-key%3DAPP_PL%26changeTab%3Dfalse%26fromMenu%3Dtrue%26currentTabModuleName%3DAPP_SHIPMENT_PREPARATION%26currentMenuModuleName%3DAPP_PL
+              - listitem [ref=e67]:
+                - link "CI" [ref=e68] [cursor=pointer]:
+                  - /url: https://asos.staging.e2open.com/asos/?p=%2Fasosap%2FRunView.do%3FviewId%3D1918
+              - listitem [ref=e69]:
+                - link "CI" [ref=e70] [cursor=pointer]:
+                  - /url: https://asos.staging.e2open.com/asos/?p=%2Fasosap%2FRunView.do%3FviewId%3D1918
+              - listitem [ref=e71]:
+                - link "PL from ASN" [ref=e72] [cursor=pointer]:
+                  - /url: https://asos.staging.e2open.com/asos/?p=%2Fasosap%2FRunView.do%3FviewId%3D1648
+              - listitem [ref=e73]:
+                - link "PL send" [ref=e74] [cursor=pointer]:
+                  - /url: https://asos.staging.e2open.com/asos/?p=%2Fasosap%2FRunView.do%3FviewName%3DAPP_PL_List%26status-folder-object-type-key%3DAPP_PL%26changeTab%3Dfalse%26fromMenu%3Dtrue%26currentTabModuleName%3DAPP_SHIPMENT_PREPARATION%26currentMenuModuleName%3DAPP_PL
+              - listitem [ref=e75]:
+                - link "Packing list" [ref=e76] [cursor=pointer]:
+                  - /url: https://asos.staging.e2open.com/asos/?p=%2Fasosap%2FRunView.do%3FviewId%3D1917
+              - listitem [ref=e77]:
+                - link "Booking approval" [ref=e78] [cursor=pointer]:
+                  - /url: https://asos.staging.e2open.com/asos/?p=%2Fasosap%2FRunView.do%3FviewId%3D3314
+              - listitem [ref=e79]:
+                - link "carrier booking details" [ref=e80] [cursor=pointer]:
+                  - /url: https://asos.staging.e2open.com/asos/?p=%2Fasosap%2FRunView.do%3FviewId%3D3513
+              - listitem [ref=e81]:
+                - link "ASOS order Search" [ref=e82] [cursor=pointer]:
+                  - /url: https://asos.staging.e2open.com/asos/?p=%2Fasosap%2FRunView.do%3FviewId%3D1913
+              - listitem [ref=e83]:
+                - link "SCC old carrier booking" [ref=e84] [cursor=pointer]:
+                  - /url: https://asos.staging.e2open.com/asos/?p=%2Fasosap%2FRunView.do%3FviewId%3D1914
+          - button "settings" [ref=e86] [cursor=pointer]:
+            - generic [ref=e87]: settings
+    - iframe [ref=e90]:
+      - generic [active] [ref=f7e1]:
+        - generic [ref=f7e2]:
+          - generic [ref=f7e3]:
+            - heading " Filters Load a saved filter..." [level=3] [ref=f7e4] [cursor=pointer]:
+              - generic [ref=f7e5]: 
+              - link "Filters" [ref=f7e6]:
+                - /url: "#searchPanelContent"
+              - button "Load a saved filter..." [ref=f7e7]
+            - text:    
+          - generic [ref=f7e8]:
+            - heading "View List" [level=2] [ref=f7e9]
+            - generic [ref=f7e10]: 61 records — record 1 - 20
+            - generic [ref=f7e11]:
+              - generic [ref=f7e12]:
+                - generic "Cross Page Selection" [ref=f7e13]
+                - generic [ref=f7e14]:
+                  - checkbox "Cross Page Selection Off" [ref=f7e15]
+                  - generic [ref=f7e17] [cursor=pointer]: "Off"
+              - text: 
+              - button "" [ref=f7e19] [cursor=pointer]:
+                - generic [ref=f7e20]: 
+              - text: check
+              - button "" [ref=f7e21] [cursor=pointer]:
+                - generic [ref=f7e22]: 
+              - button "" [ref=f7e23] [cursor=pointer]:
+                - generic [ref=f7e24]: 
+              - text:     
+          - grid [ref=f7e26]:
+            - generic [ref=f7e27]:
+              - row "Commands View Name  Description  Data Source  Category  Created  Updated   Created By (User)  Updated By (User) " [ref=f7e29]:
+                - columnheader [ref=f7e30]:
+                  - checkbox [ref=f7e33] [cursor=pointer]
+                - columnheader "Commands" [ref=f7e34]:
+                  - generic [ref=f7e36]: Commands
+                - columnheader "View Name " [ref=f7e38]:
+                  - generic [ref=f7e39] [cursor=pointer]:
+                    - generic [ref=f7e40]: View Name
+                    - button "" [ref=f7e41]
+                - columnheader "Description " [ref=f7e43]:
+                  - generic [ref=f7e44] [cursor=pointer]:
+                    - generic [ref=f7e45]: Description
+                    - button "" [ref=f7e46]
+                - columnheader "Data Source " [ref=f7e48]:
+                  - generic [ref=f7e49]:
+                    - generic [ref=f7e50]: Data Source
+                    - button "" [ref=f7e51] [cursor=pointer]
+                - columnheader "Category " [ref=f7e53]:
+                  - generic [ref=f7e54]:
+                    - generic [ref=f7e55]: Category
+                    - button "" [ref=f7e56] [cursor=pointer]
+                - columnheader "Created " [ref=f7e58]:
+                  - generic [ref=f7e59] [cursor=pointer]:
+                    - generic [ref=f7e60]: Created
+                    - button "" [ref=f7e61]
+                - columnheader "Updated  " [ref=f7e63]:
+                  - generic [ref=f7e64] [cursor=pointer]:
+                    - generic [ref=f7e65]: Updated
+                    - generic [ref=f7e66]: 
+                    - button "" [ref=f7e67]
+                - columnheader "Created By (User) " [ref=f7e69]:
+                  - generic [ref=f7e70] [cursor=pointer]:
+                    - generic [ref=f7e71]: Created By (User)
+                    - button "" [ref=f7e72]
+                - columnheader "Updated By (User) " [ref=f7e74]:
+                  - generic [ref=f7e75] [cursor=pointer]:
+                    - generic [ref=f7e76]: Updated By (User)
+                    - button "" [ref=f7e77]
+              - generic [ref=f7e79]:
+                - row "   Booking Header Summary BD Data Source 16/08/2023 20:32:16 20/02/2026 12:39:07 joycurry_ASOS _UAT  Shyam Pattni" [ref=f7e80]:
+                  - gridcell [ref=f7e81]:
+                    - generic [ref=f7e83]:
+                      - checkbox [ref=f7e84] [cursor=pointer]
+                      - text:  
+                  - gridcell "  " [ref=f7e85]:
+                    - generic [ref=f7e86]:
+                      - button "" [ref=f7e87] [cursor=pointer]:
+                        - generic [ref=f7e88]: 
+                      - button "" [ref=f7e89] [cursor=pointer]:
+                        - generic [ref=f7e90]: 
+                      - button "" [ref=f7e91] [cursor=pointer]:
+                        - generic [ref=f7e92]: 
+                  - gridcell "Booking Header Summary" [ref=f7e93]:
+                    - link "Booking Header Summary" [ref=f7e96] [cursor=pointer]:
+                      - /url: /asosap/RunView.do?viewId=3813
+                  - gridcell [ref=f7e97]
+                  - gridcell "BD Data Source" [ref=f7e99]:
+                    - generic [ref=f7e101]: BD Data Source
+                  - gridcell [ref=f7e102]
+                  - gridcell "16/08/2023 20:32:16" [ref=f7e104]:
+                    - generic [ref=f7e106]: 16/08/2023 20:32:16
+                  - gridcell "20/02/2026 12:39:07" [ref=f7e107]:
+                    - generic [ref=f7e109]: 20/02/2026 12:39:07
+                  - gridcell "joycurry_ASOS _UAT " [ref=f7e110]:
+                    - generic [ref=f7e112]: joycurry_ASOS _UAT
+                    - button "" [ref=f7e113] [cursor=pointer]
+                  - gridcell "Shyam Pattni" [ref=f7e114]:
+                    - generic [ref=f7e116]: Shyam Pattni
+                - row "   ASOS Order Search BD Data Source 02/03/2023 21:00:38 16/10/2025 16:09:36 joycurry_ASOS _UAT  ASOS Admin2" [ref=f7e117]:
+                  - gridcell [ref=f7e118]:
+                    - generic [ref=f7e120]:
+                      - checkbox [ref=f7e121] [cursor=pointer]
+                      - text:  
+                  - gridcell "  " [ref=f7e122]:
+                    - generic [ref=f7e123]:
+                      - button "" [ref=f7e124] [cursor=pointer]:
+                        - generic [ref=f7e125]: 
+                      - button "" [ref=f7e126] [cursor=pointer]:
+                        - generic [ref=f7e127]: 
+                      - button "" [ref=f7e128] [cursor=pointer]:
+                        - generic [ref=f7e129]: 
+                  - gridcell "ASOS Order Search" [ref=f7e130]:
+                    - link "ASOS Order Search" [ref=f7e133] [cursor=pointer]:
+                      - /url: /asosap/RunView.do?viewId=1913
+                  - gridcell [ref=f7e134]
+                  - gridcell "BD Data Source" [ref=f7e136]:
+                    - generic [ref=f7e138]: BD Data Source
+                  - gridcell [ref=f7e139]
+                  - gridcell "02/03/2023 21:00:38" [ref=f7e141]:
+                    - generic [ref=f7e143]: 02/03/2023 21:00:38
+                  - gridcell "16/10/2025 16:09:36" [ref=f7e144]:
+                    - generic [ref=f7e146]: 16/10/2025 16:09:36
+                  - gridcell "joycurry_ASOS _UAT " [ref=f7e147]:
+                    - generic [ref=f7e149]: joycurry_ASOS _UAT
+                    - button "" [ref=f7e150] [cursor=pointer]
+                  - gridcell "ASOS Admin2" [ref=f7e151]:
+                    - generic [ref=f7e153]: ASOS Admin2
+                - row "   ASOS Order Search v2 (TBR) BD Data Source 25/01/2024 17:35:29 16/10/2025 15:56:57 ASOS Admin2 ASOS Admin2" [ref=f7e154]:
+                  - gridcell [ref=f7e155]:
+                    - generic [ref=f7e157]:
+                      - checkbox [ref=f7e158] [cursor=pointer]
+                      - text:  
+                  - gridcell "  " [ref=f7e159]:
+                    - generic [ref=f7e160]:
+                      - button "" [ref=f7e161] [cursor=pointer]:
+                        - generic [ref=f7e162]: 
+                      - button "" [ref=f7e163] [cursor=pointer]:
+                        - generic [ref=f7e164]: 
+                      - button "" [ref=f7e165] [cursor=pointer]:
+                        - generic [ref=f7e166]: 
+                  - gridcell "ASOS Order Search v2 (TBR)" [ref=f7e167]:
+                    - link "ASOS Order Search v2 (TBR)" [ref=f7e170] [cursor=pointer]:
+                      - /url: /asosap/RunView.do?viewId=4313
+                  - gridcell [ref=f7e171]
+                  - gridcell "BD Data Source" [ref=f7e173]:
+                    - generic [ref=f7e175]: BD Data Source
+                  - gridcell [ref=f7e176]
+                  - gridcell "25/01/2024 17:35:29" [ref=f7e178]:
+                    - generic [ref=f7e180]: 25/01/2024 17:35:29
+                  - gridcell "16/10/2025 15:56:57" [ref=f7e181]:
+                    - generic [ref=f7e183]: 16/10/2025 15:56:57
+                  - gridcell "ASOS Admin2" [ref=f7e184]:
+                    - generic [ref=f7e186]: ASOS Admin2
+                  - gridcell "ASOS Admin2" [ref=f7e187]:
+                    - generic [ref=f7e189]: ASOS Admin2
+                - row "   ASOS Carrier Booking Detail BD Data Source 07/06/2023 15:06:03 02/09/2025 10:30:26 KC Cheng Elamathi Pandian" [ref=f7e190]:
+                  - gridcell [ref=f7e191]:
+                    - generic [ref=f7e193]:
+                      - checkbox [ref=f7e194] [cursor=pointer]
+                      - text:  
+                  - gridcell "  " [ref=f7e195]:
+                    - generic [ref=f7e196]:
+                      - button "" [ref=f7e197] [cursor=pointer]:
+                        - generic [ref=f7e198]: 
+                      - button "" [ref=f7e199] [cursor=pointer]:
+                        - generic [ref=f7e200]: 
+                      - button "" [ref=f7e201] [cursor=pointer]:
+                        - generic [ref=f7e202]: 
+                  - gridcell "ASOS Carrier Booking Detail" [ref=f7e203]:
+                    - link "ASOS Carrier Booking Detail" [ref=f7e206] [cursor=pointer]:
+                      - /url: /asosap/RunView.do?viewId=3513
+                  - gridcell [ref=f7e207]
+                  - gridcell "BD Data Source" [ref=f7e209]:
+                    - generic [ref=f7e211]: BD Data Source
+                  - gridcell [ref=f7e212]
+                  - gridcell "07/06/2023 15:06:03" [ref=f7e214]:
+                    - generic [ref=f7e216]: 07/06/2023 15:06:03
+                  - gridcell "02/09/2025 10:30:26" [ref=f7e217]:
+                    - generic [ref=f7e219]: 02/09/2025 10:30:26
+                  - gridcell "KC Cheng" [ref=f7e220]:
+                    - generic [ref=f7e222]: KC Cheng
+                  - gridcell "Elamathi Pandian" [ref=f7e223]:
+                    - generic [ref=f7e225]: Elamathi Pandian
+                - row "   VB - PL - TEST BD Data Source 02/09/2025 04:15:56 02/09/2025 04:15:56 ASOS Admin ASOS Admin" [ref=f7e226]:
+                  - gridcell [ref=f7e227]:
+                    - generic [ref=f7e229]:
+                      - checkbox [ref=f7e230] [cursor=pointer]
+                      - text:  
+                  - gridcell "  " [ref=f7e231]:
+                    - generic [ref=f7e232]:
+                      - button "" [ref=f7e233] [cursor=pointer]:
+                        - generic [ref=f7e234]: 
+                      - button "" [ref=f7e235] [cursor=pointer]:
+                        - generic [ref=f7e236]: 
+                      - button "" [ref=f7e237] [cursor=pointer]:
+                        - generic [ref=f7e238]: 
+                  - gridcell "VB - PL - TEST" [ref=f7e239]:
+                    - link "VB - PL - TEST" [ref=f7e242] [cursor=pointer]:
+                      - /url: /asosap/RunView.do?viewId=6214
+                  - gridcell [ref=f7e243]
+                  - gridcell "BD Data Source" [ref=f7e245]:
+                    - generic [ref=f7e247]: BD Data Source
+                  - gridcell [ref=f7e248]
+                  - gridcell "02/09/2025 04:15:56" [ref=f7e250]:
+                    - generic [ref=f7e252]: 02/09/2025 04:15:56
+                  - gridcell "02/09/2025 04:15:56" [ref=f7e253]:
+                    - generic [ref=f7e255]: 02/09/2025 04:15:56
+                  - gridcell "ASOS Admin" [ref=f7e256]:
+                    - generic [ref=f7e258]: ASOS Admin
+                  - gridcell "ASOS Admin" [ref=f7e259]:
+                    - generic [ref=f7e261]: ASOS Admin
+                - row "   ASN Handover Query List BD Data Source 22/04/2025 16:27:10 21/08/2025 14:17:42 ASOS Admin2 Elamathi Pandian" [ref=f7e262]:
+                  - gridcell [ref=f7e263]:
+                    - generic [ref=f7e265]:
+                      - checkbox [ref=f7e266] [cursor=pointer]
+                      - text:  
+                  - gridcell "  " [ref=f7e267]:
+                    - generic [ref=f7e268]:
+                      - button "" [ref=f7e269] [cursor=pointer]:
+                        - generic [ref=f7e270]: 
+                      - button "" [ref=f7e271] [cursor=pointer]:
+                        - generic [ref=f7e272]: 
+                      - button "" [ref=f7e273] [cursor=pointer]:
+                        - generic [ref=f7e274]: 
+                  - gridcell "ASN Handover Query List" [ref=f7e275]:
+                    - link "ASN Handover Query List" [ref=f7e278] [cursor=pointer]:
+                      - /url: /asosap/RunView.do?viewId=5913
+                  - gridcell [ref=f7e279]
+                  - gridcell "BD Data Source" [ref=f7e281]:
+                    - generic [ref=f7e283]: BD Data Source
+                  - gridcell [ref=f7e284]
+                  - gridcell "22/04/2025 16:27:10" [ref=f7e286]:
+                    - generic [ref=f7e288]: 22/04/2025 16:27:10
+                  - gridcell "21/08/2025 14:17:42" [ref=f7e289]:
+                    - generic [ref=f7e291]: 21/08/2025 14:17:42
+                  - gridcell "ASOS Admin2" [ref=f7e292]:
+                    - generic [ref=f7e294]: ASOS Admin2
+                  - gridcell "Elamathi Pandian" [ref=f7e295]:
+                    - generic [ref=f7e297]: Elamathi Pandian
+                - row "   ASOS ASN In-Query BD Data Source 04/04/2024 15:39:27 21/08/2025 09:29:38 Hannah Edwards ASOS Admin2" [ref=f7e298]:
+                  - gridcell [ref=f7e299]:
+                    - generic [ref=f7e301]:
+                      - checkbox [ref=f7e302] [cursor=pointer]
+                      - text:  
+                  - gridcell "  " [ref=f7e303]:
+                    - generic [ref=f7e304]:
+                      - button "" [ref=f7e305] [cursor=pointer]:
+                        - generic [ref=f7e306]: 
+                      - button "" [ref=f7e307] [cursor=pointer]:
+                        - generic [ref=f7e308]: 
+                      - button "" [ref=f7e309] [cursor=pointer]:
+                        - generic [ref=f7e310]: 
+                  - gridcell "ASOS ASN In-Query" [ref=f7e311]:
+                    - link "ASOS ASN In-Query" [ref=f7e314] [cursor=pointer]:
+                      - /url: /asosap/RunView.do?viewId=4813
+                  - gridcell [ref=f7e315]
+                  - gridcell "BD Data Source" [ref=f7e317]:
+                    - generic [ref=f7e319]: BD Data Source
+                  - gridcell [ref=f7e320]
+                  - gridcell "04/04/2024 15:39:27" [ref=f7e322]:
+                    - generic [ref=f7e324]: 04/04/2024 15:39:27
+                  - gridcell "21/08/2025 09:29:38" [ref=f7e325]:
+                    - generic [ref=f7e327]: 21/08/2025 09:29:38
+                  - gridcell "Hannah Edwards" [ref=f7e328]:
+                    - generic [ref=f7e330]: Hannah Edwards
+                  - gridcell "ASOS Admin2" [ref=f7e331]:
+                    - generic [ref=f7e333]: ASOS Admin2
+                - row "   ASOS Order Detail BD Data Source 02/03/2023 21:57:17 08/08/2025 12:25:49 joycurry_ASOS _UAT  Elamathi Pandian" [ref=f7e334]:
+                  - gridcell [ref=f7e335]:
+                    - generic [ref=f7e337]:
+                      - checkbox [ref=f7e338] [cursor=pointer]
+                      - text:  
+                  - gridcell "  " [ref=f7e339]:
+                    - generic [ref=f7e340]:
+                      - button "" [ref=f7e341] [cursor=pointer]:
+                        - generic [ref=f7e342]: 
+                      - button "" [ref=f7e343] [cursor=pointer]:
+                        - generic [ref=f7e344]: 
+                      - button "" [ref=f7e345] [cursor=pointer]:
+                        - generic [ref=f7e346]: 
+                  - gridcell "ASOS Order Detail" [ref=f7e347]:
+                    - link "ASOS Order Detail" [ref=f7e350] [cursor=pointer]:
+                      - /url: /asosap/RunView.do?viewId=2013
+                  - gridcell [ref=f7e351]
+                  - gridcell "BD Data Source" [ref=f7e353]:
+                    - generic [ref=f7e355]: BD Data Source
+                  - gridcell [ref=f7e356]
+                  - gridcell "02/03/2023 21:57:17" [ref=f7e358]:
+                    - generic [ref=f7e360]: 02/03/2023 21:57:17
+                  - gridcell "08/08/2025 12:25:49" [ref=f7e361]:
+                    - generic [ref=f7e363]: 08/08/2025 12:25:49
+                  - gridcell "joycurry_ASOS _UAT " [ref=f7e364]:
+                    - generic [ref=f7e366]: joycurry_ASOS _UAT
+                    - button "" [ref=f7e367] [cursor=pointer]
+                  - gridcell "Elamathi Pandian" [ref=f7e368]:
+                    - generic [ref=f7e370]: Elamathi Pandian
+                - row "   ASOS Carrier Booking Approvals BD Data Source 01/06/2023 07:18:09 05/08/2025 08:57:29 KC Cheng Elamathi Pandian" [ref=f7e371]:
+                  - gridcell [ref=f7e372]:
+                    - generic [ref=f7e374]:
+                      - checkbox [ref=f7e375] [cursor=pointer]
+                      - text:  
+                  - gridcell "  " [ref=f7e376]:
+                    - generic [ref=f7e377]:
+                      - button "" [ref=f7e378] [cursor=pointer]:
+                        - generic [ref=f7e379]: 
+                      - button "" [ref=f7e380] [cursor=pointer]:
+                        - generic [ref=f7e381]: 
+                      - button "" [ref=f7e382] [cursor=pointer]:
+                        - generic [ref=f7e383]: 
+                  - gridcell "ASOS Carrier Booking Approvals" [ref=f7e384]:
+                    - link "ASOS Carrier Booking Approvals" [ref=f7e387] [cursor=pointer]:
+                      - /url: /asosap/RunView.do?viewId=3314
+                  - gridcell [ref=f7e388]
+                  - gridcell "BD Data Source" [ref=f7e390]:
+                    - generic [ref=f7e392]: BD Data Source
+                  - gridcell [ref=f7e393]
+                  - gridcell "01/06/2023 07:18:09" [ref=f7e395]:
+                    - generic [ref=f7e397]: 01/06/2023 07:18:09
+                  - gridcell "05/08/2025 08:57:29" [ref=f7e398]:
+                    - generic [ref=f7e400]: 05/08/2025 08:57:29
+                  - gridcell "KC Cheng" [ref=f7e401]:
+                    - generic [ref=f7e403]: KC Cheng
+                  - gridcell "Elamathi Pandian" [ref=f7e404]:
+                    - generic [ref=f7e406]: Elamathi Pandian
+                - row "   VB - PL BD Data Source 19/03/2024 02:25:35 24/06/2025 03:59:27 ASOS Admin2 KC Cheng" [ref=f7e407]:
+                  - gridcell [ref=f7e408]:
+                    - generic [ref=f7e410]:
+                      - checkbox [ref=f7e411] [cursor=pointer]
+                      - text:  
+                  - gridcell "  " [ref=f7e412]:
+                    - generic [ref=f7e413]:
+                      - button "" [ref=f7e414] [cursor=pointer]:
+                        - generic [ref=f7e415]: 
+                      - button "" [ref=f7e416] [cursor=pointer]:
+                        - generic [ref=f7e417]: 
+                      - button "" [ref=f7e418] [cursor=pointer]:
+                        - generic [ref=f7e419]: 
+                  - gridcell "VB - PL" [ref=f7e420]:
+                    - link "VB - PL" [ref=f7e423] [cursor=pointer]:
+                      - /url: /asosap/RunView.do?viewId=4513
+                  - gridcell [ref=f7e424]
+                  - gridcell "BD Data Source" [ref=f7e426]:
+                    - generic [ref=f7e428]: BD Data Source
+                  - gridcell [ref=f7e429]
+                  - gridcell "19/03/2024 02:25:35" [ref=f7e431]:
+                    - generic [ref=f7e433]: 19/03/2024 02:25:35
+                  - gridcell "24/06/2025 03:59:27" [ref=f7e434]:
+                    - generic [ref=f7e436]: 24/06/2025 03:59:27
+                  - gridcell "ASOS Admin2" [ref=f7e437]:
+                    - generic [ref=f7e439]: ASOS Admin2
+                  - gridcell "KC Cheng" [ref=f7e440]:
+                    - generic [ref=f7e442]: KC Cheng
+                - row "   ASOS Packing List Detail OLD BD Data Source 03/03/2023 00:32:56 14/05/2025 13:16:55 joycurry_ASOS _UAT  Elamathi Pandian" [ref=f7e443]:
+                  - gridcell [ref=f7e444]:
+                    - generic [ref=f7e446]:
+                      - checkbox [ref=f7e447] [cursor=pointer]
+                      - text:  
+                  - gridcell "  " [ref=f7e448]:
+                    - generic [ref=f7e449]:
+                      - button "" [ref=f7e450] [cursor=pointer]:
+                        - generic [ref=f7e451]: 
+                      - button "" [ref=f7e452] [cursor=pointer]:
+                        - generic [ref=f7e453]: 
+                      - button "" [ref=f7e454] [cursor=pointer]:
+                        - generic [ref=f7e455]: 
+                  - gridcell "ASOS Packing List Detail OLD" [ref=f7e456]:
+                    - link "ASOS Packing List Detail OLD" [ref=f7e459] [cursor=pointer]:
+                      - /url: /asosap/RunView.do?viewId=1917
+                  - gridcell [ref=f7e460]
+                  - gridcell "BD Data Source" [ref=f7e462]:
+                    - generic [ref=f7e464]: BD Data Source
+                  - gridcell [ref=f7e465]
+                  - gridcell "03/03/2023 00:32:56" [ref=f7e467]:
+                    - generic [ref=f7e469]: 03/03/2023 00:32:56
+                  - gridcell "14/05/2025 13:16:55" [ref=f7e470]:
+                    - generic [ref=f7e472]: 14/05/2025 13:16:55
+                  - gridcell "joycurry_ASOS _UAT " [ref=f7e473]:
+                    - generic [ref=f7e475]: joycurry_ASOS _UAT
+                    - button "" [ref=f7e476] [cursor=pointer]
+                  - gridcell "Elamathi Pandian" [ref=f7e477]:
+                    - generic [ref=f7e479]: Elamathi Pandian
+                - row "   ASOS Packing List Detail - test BD Data Source 07/01/2025 14:22:39 09/04/2025 10:19:32 ASOS Admin2 ASOS Admin2" [ref=f7e480]:
+                  - gridcell [ref=f7e481]:
+                    - generic [ref=f7e483]:
+                      - checkbox [ref=f7e484] [cursor=pointer]
+                      - text:  
+                  - gridcell "  " [ref=f7e485]:
+                    - generic [ref=f7e486]:
+                      - button "" [ref=f7e487] [cursor=pointer]:
+                        - generic [ref=f7e488]: 
+                      - button "" [ref=f7e489] [cursor=pointer]:
+                        - generic [ref=f7e490]: 
+                      - button "" [ref=f7e491] [cursor=pointer]:
+                        - generic [ref=f7e492]: 
+                  - gridcell "ASOS Packing List Detail - test" [ref=f7e493]:
+                    - link "ASOS Packing List Detail - test" [ref=f7e496] [cursor=pointer]:
+                      - /url: /asosap/RunView.do?viewId=5613
+                  - gridcell [ref=f7e497]
+                  - gridcell "BD Data Source" [ref=f7e499]:
+                    - generic [ref=f7e501]: BD Data Source
+                  - gridcell [ref=f7e502]
+                  - gridcell "07/01/2025 14:22:39" [ref=f7e504]:
+                    - generic [ref=f7e506]: 07/01/2025 14:22:39
+                  - gridcell "09/04/2025 10:19:32" [ref=f7e507]:
+                    - generic [ref=f7e509]: 09/04/2025 10:19:32
+                  - gridcell "ASOS Admin2" [ref=f7e510]:
+                    - generic [ref=f7e512]: ASOS Admin2
+                  - gridcell "ASOS Admin2" [ref=f7e513]:
+                    - generic [ref=f7e515]: ASOS Admin2
+                - row "   ASOS_CONFIG_ITM_COLLECTION_CUTOFF_WINDOW_List_for_Excel APP_CONFIG#_#APP_CONFIG_ITM BD Data Source Excel Connector 27/03/2025 04:52:39 27/03/2025 04:52:39 ASOS Admin2 ASOS Admin2" [ref=f7e516]:
+                  - gridcell [ref=f7e517]:
+                    - generic [ref=f7e519]:
+                      - checkbox [ref=f7e520] [cursor=pointer]
+                      - text:  
+                  - gridcell "  " [ref=f7e521]:
+                    - generic [ref=f7e522]:
+                      - button "" [ref=f7e523] [cursor=pointer]:
+                        - generic [ref=f7e524]: 
+                      - button "" [ref=f7e525] [cursor=pointer]:
+                        - generic [ref=f7e526]: 
+                      - button "" [ref=f7e527] [cursor=pointer]:
+                        - generic [ref=f7e528]: 
+                  - gridcell "ASOS_CONFIG_ITM_COLLECTION_CUTOFF_WINDOW_List_for_Excel" [ref=f7e529]:
+                    - link "ASOS_CONFIG_ITM_COLLECTION_CUTOFF_WINDOW_List_for_Excel" [ref=f7e532] [cursor=pointer]:
+                      - /url: /asosap/RunView.do?viewId=5813
+                  - gridcell "APP_CONFIG#_#APP_CONFIG_ITM" [ref=f7e533]:
+                    - generic [ref=f7e535]: APP_CONFIG#_#APP_CONFIG_ITM
+                  - gridcell "BD Data Source" [ref=f7e536]:
+                    - generic [ref=f7e538]: BD Data Source
+                  - gridcell "Excel Connector" [ref=f7e539]:
+                    - generic [ref=f7e541]: Excel Connector
+                  - gridcell "27/03/2025 04:52:39" [ref=f7e542]:
+                    - generic [ref=f7e544]: 27/03/2025 04:52:39
+                  - gridcell "27/03/2025 04:52:39" [ref=f7e545]:
+                    - generic [ref=f7e547]: 27/03/2025 04:52:39
+                  - gridcell "ASOS Admin2" [ref=f7e548]:
+                    - generic [ref=f7e550]: ASOS Admin2
+                  - gridcell "ASOS Admin2" [ref=f7e551]:
+                    - generic [ref=f7e553]: ASOS Admin2
+                - row "   ASOS Tolerance Checks Removed static filer to report on all tolerance checks  BD Data Source 04/12/2024 12:46:41 04/12/2024 13:34:14 ASOS Admin2 elamathi pandian" [ref=f7e554]:
+                  - gridcell [ref=f7e555]:
+                    - generic [ref=f7e557]:
+                      - checkbox [ref=f7e558] [cursor=pointer]
+                      - text:  
+                  - gridcell "  " [ref=f7e559]:
+                    - generic [ref=f7e560]:
+                      - button "" [ref=f7e561] [cursor=pointer]:
+                        - generic [ref=f7e562]: 
+                      - button "" [ref=f7e563] [cursor=pointer]:
+                        - generic [ref=f7e564]: 
+                      - button "" [ref=f7e565] [cursor=pointer]:
+                        - generic [ref=f7e566]: 
+                  - gridcell "ASOS Tolerance Checks" [ref=f7e567]:
+                    - link "ASOS Tolerance Checks" [ref=f7e570] [cursor=pointer]:
+                      - /url: /asosap/RunView.do?viewId=5513
+                  - gridcell "Removed static filer to report on all tolerance checks " [ref=f7e571]:
+                    - generic [ref=f7e573]: Removed static filer to report on all tolerance checks
+                    - button "" [ref=f7e574] [cursor=pointer]
+                  - gridcell "BD Data Source" [ref=f7e575]:
+                    - generic [ref=f7e577]: BD Data Source
+                  - gridcell [ref=f7e578]
+                  - gridcell "04/12/2024 12:46:41" [ref=f7e580]:
+                    - generic [ref=f7e582]: 04/12/2024 12:46:41
+                  - gridcell "04/12/2024 13:34:14" [ref=f7e583]:
+                    - generic [ref=f7e585]: 04/12/2024 13:34:14
+                  - gridcell "ASOS Admin2" [ref=f7e586]:
+                    - generic [ref=f7e588]: ASOS Admin2
+                  - gridcell "elamathi pandian" [ref=f7e589]:
+                    - generic [ref=f7e591]: elamathi pandian
+                - row "   PO - Factory Delegation BD Data Source 22/05/2023 13:36:08 12/11/2024 13:27:16 joycurry_ASOS _UAT  elamathi pandian" [ref=f7e592]:
+                  - gridcell [ref=f7e593]:
+                    - generic [ref=f7e595]:
+                      - checkbox [ref=f7e596] [cursor=pointer]
+                      - text:  
+                  - gridcell "  " [ref=f7e597]:
+                    - generic [ref=f7e598]:
+                      - button "" [ref=f7e599] [cursor=pointer]:
+                        - generic [ref=f7e600]: 
+                      - button "" [ref=f7e601] [cursor=pointer]:
+                        - generic [ref=f7e602]: 
+                      - button "" [ref=f7e603] [cursor=pointer]:
+                        - generic [ref=f7e604]: 
+                  - gridcell "PO - Factory Delegation" [ref=f7e605]:
+                    - link "PO - Factory Delegation" [ref=f7e608] [cursor=pointer]:
+                      - /url: /asosap/RunView.do?viewId=3113
+                  - gridcell [ref=f7e609]
+                  - gridcell "BD Data Source" [ref=f7e611]:
+                    - generic [ref=f7e613]: BD Data Source
+                  - gridcell [ref=f7e614]
+                  - gridcell "22/05/2023 13:36:08" [ref=f7e616]:
+                    - generic [ref=f7e618]: 22/05/2023 13:36:08
+                  - gridcell "12/11/2024 13:27:16" [ref=f7e619]:
+                    - generic [ref=f7e621]: 12/11/2024 13:27:16
+                  - gridcell "joycurry_ASOS _UAT " [ref=f7e622]:
+                    - generic [ref=f7e624]: joycurry_ASOS _UAT
+                    - button "" [ref=f7e625] [cursor=pointer]
+                  - gridcell "elamathi pandian" [ref=f7e626]:
+                    - generic [ref=f7e628]: elamathi pandian
+                - row "   Factory Delegation - Vendor BD Data Source 22/05/2023 17:56:30 28/10/2024 11:46:13 joycurry_ASOS _UAT  elamathi pandian" [ref=f7e629]:
+                  - gridcell [ref=f7e630]:
+                    - generic [ref=f7e632]:
+                      - checkbox [ref=f7e633] [cursor=pointer]
+                      - text:  
+                  - gridcell "  " [ref=f7e634]:
+                    - generic [ref=f7e635]:
+                      - button "" [ref=f7e636] [cursor=pointer]:
+                        - generic [ref=f7e637]: 
+                      - button "" [ref=f7e638] [cursor=pointer]:
+                        - generic [ref=f7e639]: 
+                      - button "" [ref=f7e640] [cursor=pointer]:
+                        - generic [ref=f7e641]: 
+                  - gridcell "Factory Delegation - Vendor" [ref=f7e642]:
+                    - link "Factory Delegation - Vendor" [ref=f7e645] [cursor=pointer]:
+                      - /url: /asosap/RunView.do?viewId=3213
+                  - gridcell [ref=f7e646]
+                  - gridcell "BD Data Source" [ref=f7e648]:
+                    - generic [ref=f7e650]: BD Data Source
+                  - gridcell [ref=f7e651]
+                  - gridcell "22/05/2023 17:56:30" [ref=f7e653]:
+                    - generic [ref=f7e655]: 22/05/2023 17:56:30
+                  - gridcell "28/10/2024 11:46:13" [ref=f7e656]:
+                    - generic [ref=f7e658]: 28/10/2024 11:46:13
+                  - gridcell "joycurry_ASOS _UAT " [ref=f7e659]:
+                    - generic [ref=f7e661]: joycurry_ASOS _UAT
+                    - button "" [ref=f7e662] [cursor=pointer]
+                  - gridcell "elamathi pandian" [ref=f7e663]:
+                    - generic [ref=f7e665]: elamathi pandian
+                - row "   ASOS Order Search - remove ADV BD Data Source 31/07/2024 09:45:19 05/09/2024 10:36:39 Hannah Edwards Hannah Edwards" [ref=f7e666]:
+                  - gridcell [ref=f7e667]:
+                    - generic [ref=f7e669]:
+                      - checkbox [ref=f7e670] [cursor=pointer]
+                      - text:  
+                  - gridcell "  " [ref=f7e671]:
+                    - generic [ref=f7e672]:
+                      - button "" [ref=f7e673] [cursor=pointer]:
+                        - generic [ref=f7e674]: 
+                      - button "" [ref=f7e675] [cursor=pointer]:
+                        - generic [ref=f7e676]: 
+                      - button "" [ref=f7e677] [cursor=pointer]:
+                        - generic [ref=f7e678]: 
+                  - gridcell "ASOS Order Search - remove ADV" [ref=f7e679]:
+                    - link "ASOS Order Search - remove ADV" [ref=f7e682] [cursor=pointer]:
+                      - /url: /asosap/RunView.do?viewId=5113
+                  - gridcell [ref=f7e683]
+                  - gridcell "BD Data Source" [ref=f7e685]:
+                    - generic [ref=f7e687]: BD Data Source
+                  - gridcell [ref=f7e688]
+                  - gridcell "31/07/2024 09:45:19" [ref=f7e690]:
+                    - generic [ref=f7e692]: 31/07/2024 09:45:19
+                  - gridcell "05/09/2024 10:36:39" [ref=f7e693]:
+                    - generic [ref=f7e695]: 05/09/2024 10:36:39
+                  - gridcell "Hannah Edwards" [ref=f7e696]:
+                    - generic [ref=f7e698]: Hannah Edwards
+                  - gridcell "Hannah Edwards" [ref=f7e699]:
+                    - generic [ref=f7e701]: Hannah Edwards
+                - row "   e2open support testing vendor booking BD Data Source 03/09/2024 01:35:20 03/09/2024 01:35:20 alan mars alan mars" [ref=f7e702]:
+                  - gridcell [ref=f7e703]:
+                    - generic [ref=f7e705]:
+                      - checkbox [ref=f7e706] [cursor=pointer]
+                      - text:  
+                  - gridcell "  " [ref=f7e707]:
+                    - generic [ref=f7e708]:
+                      - button "" [ref=f7e709] [cursor=pointer]:
+                        - generic [ref=f7e710]: 
+                      - button "" [ref=f7e711] [cursor=pointer]:
+                        - generic [ref=f7e712]: 
+                      - button "" [ref=f7e713] [cursor=pointer]:
+                        - generic [ref=f7e714]: 
+                  - gridcell "e2open support testing vendor booking" [ref=f7e715]:
+                    - link "e2open support testing vendor booking" [ref=f7e718] [cursor=pointer]:
+                      - /url: /asosap/RunView.do?viewId=5214
+                  - gridcell [ref=f7e719]
+                  - gridcell "BD Data Source" [ref=f7e721]:
+                    - generic [ref=f7e723]: BD Data Source
+                  - gridcell [ref=f7e724]
+                  - gridcell "03/09/2024 01:35:20" [ref=f7e726]:
+                    - generic [ref=f7e728]: 03/09/2024 01:35:20
+                  - gridcell "03/09/2024 01:35:20" [ref=f7e729]:
+                    - generic [ref=f7e731]: 03/09/2024 01:35:20
+                  - gridcell "alan mars" [ref=f7e732]:
+                    - generic [ref=f7e734]: alan mars
+                  - gridcell "alan mars" [ref=f7e735]:
+                    - generic [ref=f7e737]: alan mars
+                - row "   Item Master (SKU ID) - e2open testing BD Data Source 08/08/2024 02:20:30 08/08/2024 02:20:30 alan mars alan mars" [ref=f7e738]:
+                  - gridcell [ref=f7e739]:
+                    - generic [ref=f7e741]:
+                      - checkbox [ref=f7e742] [cursor=pointer]
+                      - text:  
+                  - gridcell "  " [ref=f7e743]:
+                    - generic [ref=f7e744]:
+                      - button "" [ref=f7e745] [cursor=pointer]:
+                        - generic [ref=f7e746]: 
+                      - button "" [ref=f7e747] [cursor=pointer]:
+                        - generic [ref=f7e748]: 
+                      - button "" [ref=f7e749] [cursor=pointer]:
+                        - generic [ref=f7e750]: 
+                  - gridcell "Item Master (SKU ID) - e2open testing" [ref=f7e751]:
+                    - link "Item Master (SKU ID) - e2open testing" [ref=f7e754] [cursor=pointer]:
+                      - /url: /asosap/RunView.do?viewId=5213
+                  - gridcell [ref=f7e755]
+                  - gridcell "BD Data Source" [ref=f7e757]:
+                    - generic [ref=f7e759]: BD Data Source
+                  - gridcell [ref=f7e760]
+                  - gridcell "08/08/2024 02:20:30" [ref=f7e762]:
+                    - generic [ref=f7e764]: 08/08/2024 02:20:30
+                  - gridcell "08/08/2024 02:20:30" [ref=f7e765]:
+                    - generic [ref=f7e767]: 08/08/2024 02:20:30
+                  - gridcell "alan mars" [ref=f7e768]:
+                    - generic [ref=f7e770]: alan mars
+                  - gridcell "alan mars" [ref=f7e771]:
+                    - generic [ref=f7e773]: alan mars
+                - row "   ASOS Carrier Booking Approvals v2 (TBR) BD Data Source 12/02/2024 10:09:51 26/04/2024 15:10:21 ASOS Admin2 ASOS Admin2" [ref=f7e774]:
+                  - gridcell [ref=f7e775]:
+                    - generic [ref=f7e777]:
+                      - checkbox [ref=f7e778] [cursor=pointer]
+                      - text:  
+                  - gridcell "  " [ref=f7e779]:
+                    - generic [ref=f7e780]:
+                      - button "" [ref=f7e781] [cursor=pointer]:
+                        - generic [ref=f7e782]: 
+                      - button "" [ref=f7e783] [cursor=pointer]:
+                        - generic [ref=f7e784]: 
+                      - button "" [ref=f7e785] [cursor=pointer]:
+                        - generic [ref=f7e786]: 
+                  - gridcell "ASOS Carrier Booking Approvals v2 (TBR)" [ref=f7e787]:
+                    - link "ASOS Carrier Booking Approvals v2 (TBR)" [ref=f7e790] [cursor=pointer]:
+                      - /url: /asosap/RunView.do?viewId=4414
+                  - gridcell [ref=f7e791]
+                  - gridcell "BD Data Source" [ref=f7e793]:
+                    - generic [ref=f7e795]: BD Data Source
+                  - gridcell [ref=f7e796]
+                  - gridcell "12/02/2024 10:09:51" [ref=f7e798]:
+                    - generic [ref=f7e800]: 12/02/2024 10:09:51
+                  - gridcell "26/04/2024 15:10:21" [ref=f7e801]:
+                    - generic [ref=f7e803]: 26/04/2024 15:10:21
+                  - gridcell "ASOS Admin2" [ref=f7e804]:
+                    - generic [ref=f7e806]: ASOS Admin2
+                  - gridcell "ASOS Admin2" [ref=f7e807]:
+                    - generic [ref=f7e809]: ASOS Admin2
+          - generic [ref=f7e814]:
+            - generic [ref=f7e815]:
+              - text: Order By
+              - generic [ref=f7e816]: Updated:DESC
+            - button "" [ref=f7e817] [cursor=pointer]:
+              - generic [ref=f7e818]: 
+          - generic [ref=f7e819]:
+            - generic [ref=f7e820]:
+              - button "Create" [ref=f7e821] [cursor=pointer]
+              - button "Import" [ref=f7e822] [cursor=pointer]
+              - button "Export" [disabled]
+              - button "Delete" [disabled]
+            - navigation [ref=f7e823]:
+              - generic [ref=f7e824]:
+                - generic [ref=f7e825]:
+                  - button "" [disabled]:
+                    - generic: 
+                  - generic [ref=f7e826]:
+                    - link "1" [ref=f7e827] [cursor=pointer]:
+                      - /url: "#page-1"
+                    - link "2" [ref=f7e828] [cursor=pointer]:
+                      - /url: "#page-2"
+                    - link "3" [ref=f7e829] [cursor=pointer]:
+                      - /url: "#page-3"
+                    - link "4" [ref=f7e830] [cursor=pointer]:
+                      - /url: "#page-4"
+                  - button "" [ref=f7e831] [cursor=pointer]:
+                    - generic [ref=f7e832]: 
+                - generic [ref=f7e833]:
+                  - spinbutton [ref=f7e834]
+                  - button "Go" [ref=f7e835] [cursor=pointer]
+        - text:   
+        - status [ref=f7e836]
+        - text:  warning check    
+  - dialog "Operation Result" [ref=e91]:
+    - generic [ref=e92]:
+      - generic [ref=e93]: Operation Result
+      - button "close" [ref=e94] [cursor=pointer]:
+        - generic [ref=e95]: close
+    - iframe [ref=e97]:
+      - iframe [ref=f5e3]:
+        - generic [ref=f6e3]:
+          - heading " Create vendor booking successfully." [ref=f6e4] [cursor=pointer]:
+            - generic [ref=f6e5]: 
+            - link "Create vendor booking successfully." [ref=f6e6]:
+              - /url: "#section_content_ui_type_listing_listing-success"
+          - region [ref=f6e7]:
+            - grid [ref=f6e8]:
+              - generic [ref=f6e9]:
+                - row "New Document Document ID System Message" [ref=f6e11]:
+                  - columnheader [ref=f6e12]:
+                    - checkbox [ref=f6e15] [cursor=pointer]
+                  - columnheader "New Document" [ref=f6e16]:
+                    - generic [ref=f6e18]: New Document
+                  - columnheader "Document ID" [ref=f6e20]:
+                    - generic [ref=f6e22]: Document ID
+                  - columnheader "System Message" [ref=f6e24]:
+                    - generic [ref=f6e26]: System Message
+                - row "VB-0000002172 Success" [ref=f6e29]:
+                  - gridcell [ref=f6e30]:
+                    - checkbox [ref=f6e33] [cursor=pointer]
+                  - gridcell "VB-0000002172" [ref=f6e34]:
+                    - generic [ref=f6e36]: VB-0000002172
+                  - gridcell [ref=f6e37]
+                  - gridcell "Success" [ref=f6e39]:
+                    - generic [ref=f6e41]: Success
+    - generic [ref=e102]: 
+```

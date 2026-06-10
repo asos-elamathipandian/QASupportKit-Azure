@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Automated Azure DevOps Bug & Test Execution Report
 .DESCRIPTION
@@ -759,13 +759,13 @@ function Get-TodaysHighlights {
         $byOutcome = $todayTestUpdates | Group-Object { if ([string]::IsNullOrWhiteSpace($_.outcome) -or $_.outcome -eq 'Unspecified') { 'Not Run' } else { $_.outcome } }
         $outcomeSummary = ($byOutcome | ForEach-Object { "$($_.Count) $($_.Name)" }) -join ", "
         $highlights += @{
-            Icon = "&#9989;"
+            Icon = "#2E7D32"
             Category = "Test Execution (CR144)"
             Text = "$($todayTestUpdates.Count) test case(s) updated today - $outcomeSummary"
         }
     } else {
         $highlights += @{
-            Icon = "&#128203;"
+            Icon = "#888888"
             Category = "Test Execution (CR144)"
             Text = "No test executions recorded today"
         }
@@ -787,13 +787,13 @@ function Get-TodaysHighlights {
         $byOutcome = $todayCr147Updates | Group-Object { if ([string]::IsNullOrWhiteSpace($_.outcome) -or $_.outcome -eq 'Unspecified') { 'Not Run' } else { $_.outcome } }
         $outcomeSummary = ($byOutcome | ForEach-Object { "$($_.Count) $($_.Name)" }) -join ", "
         $highlights += @{
-            Icon = "&#9989;"
+            Icon = "#2E7D32"
             Category = "Test Execution (CR147)"
             Text = "$($todayCr147Updates.Count) test case(s) updated today - $outcomeSummary"
         }
     } else {
         $highlights += @{
-            Icon = "&#128203;"
+            Icon = "#888888"
             Category = "Test Execution (CR147)"
             Text = "No test executions recorded today"
         }
@@ -815,13 +815,13 @@ function Get-TodaysHighlights {
         $byOutcome = $todayCr140Updates | Group-Object { if ([string]::IsNullOrWhiteSpace($_.outcome) -or $_.outcome -eq 'Unspecified') { 'Not Run' } else { $_.outcome } }
         $outcomeSummary = ($byOutcome | ForEach-Object { "$($_.Count) $($_.Name)" }) -join ", "
         $highlights += @{
-            Icon = "&#9989;"
+            Icon = "#2E7D32"
             Category = "Test Execution (CR140)"
             Text = "$($todayCr140Updates.Count) test case(s) updated today - $outcomeSummary"
         }
     } else {
         $highlights += @{
-            Icon = "&#128203;"
+            Icon = "#888888"
             Category = "Test Execution (CR140)"
             Text = "No test executions recorded today"
         }
@@ -837,7 +837,7 @@ function Get-TodaysHighlights {
         if ($changedDate -eq $today) {
             $planTitle = [System.Net.WebUtility]::HtmlEncode($f.'System.Title')
             $highlights += @{
-                Icon = "&#128196;"
+                Icon = "#888888"
                 Category = "Test Plan"
                 Text = "<strong>$planTitle</strong> (ID: $($f.'System.Id')) was updated today"
             }
@@ -867,7 +867,7 @@ function Get-TodaysHighlights {
             "<a href='$baseUrl/_workitems/edit/$i' style='color:#0078D4;text-decoration:none;'>$i</a> - $t"
         }) -join "<br/>&nbsp;&nbsp;&nbsp;&nbsp;"
         $highlights += @{
-            Icon = "&#128308;"
+            Icon = "#D32F2F"
             Category = "Bugs"
             Text = "<strong>$($newBugsToday.Count) new bug(s) raised today:</strong><br/>&nbsp;&nbsp;&nbsp;&nbsp;$bugTitles"
         }
@@ -881,7 +881,7 @@ function Get-TodaysHighlights {
             "<a href='$baseUrl/_workitems/edit/$i' style='color:#0078D4;text-decoration:none;'>$i</a> - $t [<strong>$s</strong>]"
         }) -join "<br/>&nbsp;&nbsp;&nbsp;&nbsp;"
         $highlights += @{
-            Icon = "&#128260;"
+            Icon = "#0078D4"
             Category = "Bugs"
             Text = "<strong>$($todayBugUpdates.Count) bug(s) updated today:</strong><br/>&nbsp;&nbsp;&nbsp;&nbsp;$stateUpdates"
         }
@@ -889,7 +889,7 @@ function Get-TodaysHighlights {
 
     if ($newBugsToday.Count -eq 0 -and $todayBugUpdates.Count -eq 0) {
         $highlights += @{
-            Icon = "&#128155;"
+            Icon = "#2E7D32"
             Category = "Bugs"
             Text = "No bug updates today"
         }
@@ -915,7 +915,7 @@ function Get-TodaysHighlights {
             "<a href='$baseUrl/_workitems/edit/$_' style='color:#0078D4;text-decoration:none;'>$_</a>"
         }) -join ", "
         $highlights += @{
-            Icon = "&#128172;"
+            Icon = "#0078D4"
             Category = "Bugs"
             Text = "New comments added today on bug(s): $commentLinks"
         }
@@ -924,7 +924,14 @@ function Get-TodaysHighlights {
     # --- Build HTML ---
     $highlightItems = foreach ($h in $highlights) {
         @"
-        <div style="margin:4px 0;font-size:13px;color:#333;font-family:Segoe UI,Arial,sans-serif;">$($h.Icon) <strong>$($h.Category):</strong> $($h.Text)</div>
+        <table cellpadding="0" cellspacing="0" border="0" style="margin:2px 0;"><tr>
+          <td width="18" height="18" valign="middle" align="center" style="padding-right:6px;">
+            <table cellpadding="0" cellspacing="0" border="0"><tr>
+              <td bgcolor="$($h.Icon)" width="10" height="10" style="font-size:1px;line-height:1px;">&nbsp;</td>
+            </tr></table>
+          </td>
+          <td style="font-size:13px;color:#333;font-family:Segoe UI,Arial,sans-serif;line-height:18px;vertical-align:middle;"><strong>$($h.Category):</strong> $($h.Text)</td>
+        </tr></table>
 "@
     }
 
@@ -959,7 +966,7 @@ function Get-TargetDateRagHtml {
         $daysText = "$daysRemaining day(s) remaining"
     }
 
-    # RAG logic — manual override takes priority
+    # RAG logic â€” manual override takes priority
     $effectiveRag = $Override
     if ([string]::IsNullOrWhiteSpace($effectiveRag) -or $effectiveRag -eq 'Auto') {
         if ($daysRemaining -lt 0) {
@@ -977,21 +984,21 @@ function Get-TargetDateRagHtml {
             $ragBg     = '#FFEBEE'
             $ragBorder = '#D32F2F'
             $ragLabel  = if ($daysRemaining -lt 0) { 'OVERDUE' } else { 'BLOCKED' }
-            $ragIcon   = '&#128308;'
+            $ragIcon   = '<span style=''display:inline-block;width:18px;height:18px;border-radius:50%;background:#D32F2F;vertical-align:middle;''></span>'
         }
         'Amber' {
             $ragColor  = '#F57C00'
             $ragBg     = '#FFF3E0'
             $ragBorder = '#F57C00'
             $ragLabel  = 'AT RISK'
-            $ragIcon   = '&#128992;'
+            $ragIcon   = '<span style=''display:inline-block;width:18px;height:18px;border-radius:50%;background:#F57C00;vertical-align:middle;''></span>'
         }
         default {
             $ragColor  = '#2E7D32'
             $ragBg     = '#E8F5E9'
             $ragBorder = '#2E7D32'
             $ragLabel  = 'ON TRACK'
-            $ragIcon   = '&#128994;'
+            $ragIcon   = '<span style=''display:inline-block;width:18px;height:18px;border-radius:50%;background:#2E7D32;vertical-align:middle;''></span>'
         }
     }
 
@@ -1166,3 +1173,6 @@ if ($PreviewOnly) {
 Write-Host ""
 Write-Host "=== Report Complete ===" -ForegroundColor Cyan
 #endregion
+
+
+
