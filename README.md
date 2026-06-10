@@ -68,11 +68,28 @@ Environment and runtime behavior:
 
 	npm install
 
-2. Start the app:
+2. Create a `.env` file in the project root with the following values:
+
+	```
+	SFTP_HOST=<sftp hostname>
+	SFTP_PORT=22
+	SFTP_USERNAME=<username>
+	SFTP_REMOTE_DIR=<remote path e.g. /outbound>
+
+	# Choose one authentication method:
+	SFTP_PASSWORD=<password>
+	# OR
+	SFTP_PRIVATE_KEY_PATH=<path to .ppk or .pem key file>
+	SFTP_PASSPHRASE=<passphrase if key is protected>
+	```
+
+	> The `.env` file is gitignored — never commit it. Ask the team lead for the correct values.
+
+3. Start the app:
 
 	npm start
 
-3. Open:
+4. Open:
 
 	http://localhost:3000
 
