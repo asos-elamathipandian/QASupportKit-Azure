@@ -148,7 +148,6 @@ test('Multi ASN Booking - Create one booking with all ASNs', async ({ page }) =>
     console.log('Status is Draft. Proceeding with approval flow.');
     await retryStep('approve draft booking', async () => {
       await navigateToCarrierApproval(scchomePage, sccviewlistPage);
-      await ordersearchPage.clearFilter();
       await carrierbookingapprovalPage.fillasnAndSearch(asnFromFile);
       await carrierbookingapprovalPage.selectAndApproveBooking();
     }, 2, 2500);

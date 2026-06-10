@@ -23,6 +23,8 @@ class CarrierBookingPage {
         // Wait for the page to finish navigating before interacting with the iframe
         await this.page.waitForLoadState('domcontentloaded');
         await this.frame.locator('body').waitFor({ state: 'attached', timeout: 15000 });
+        // Wait for any loading overlay to clear before touching filter buttons
+        await this.frame.locator(this.loadingOverlay).waitFor({ state: 'hidden', timeout: 60000 }).catch(() => {});
         const clearFilterButton = this.frame.getByRole('button', this.clearButton);
         try {
             if (await clearFilterButton.isVisible({ timeout: 5000 })) {
@@ -31,13 +33,14 @@ class CarrierBookingPage {
             else {
                 await this.frame.locator(this.expandFilter).waitFor({ timeout: 5000 });
                 await this.frame.locator(this.expandFilter).click();
-                await clearFilterButton.click();
+                await clearFilterButton.click({ timeout: 10000 });
             }
         } catch (e) {
             // Frame may have reloaded; try expanding filter as fallback
+            await this.frame.locator(this.loadingOverlay).waitFor({ state: 'hidden', timeout: 30000 }).catch(() => {});
             await this.frame.locator(this.expandFilter).waitFor({ timeout: 10000 });
             await this.frame.locator(this.expandFilter).click();
-            await clearFilterButton.click();
+            await clearFilterButton.click({ timeout: 10000 });
         }
     }
     async searchWithasnAndstatus(asns) {

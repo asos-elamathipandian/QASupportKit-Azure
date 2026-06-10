@@ -11,16 +11,21 @@ class CarrierBookingApprovalPage {
     }
 
     async waitForGridToBeReady() {
-        await this.frame.locator(this.loadingOverlay).waitFor({ state: 'hidden', timeout: 15000 });
+        // Wait briefly for overlay to appear first (navigation may take a moment to trigger it)
+        await this.frame.locator(this.loadingOverlay).waitFor({ state: 'visible', timeout: 5000 }).catch(() => {});
+        await this.frame.locator(this.loadingOverlay).waitFor({ state: 'hidden', timeout: 60000 });
     }
 
     async fillasnAndSearch(asns) {
+        await this.frame.locator(this.approvalasnField).waitFor({ state: 'visible', timeout: 20000 });
         await this.frame.locator(this.approvalasnField).click();
         await this.frame.locator(this.approvalasnField).fill(asns);
         await this.frame.locator(this.applyButton).click();
-    }
-    async selectAndApproveBooking() {
+        // Wait for results to load
         await this.waitForGridToBeReady();
+    }
+
+    async selectAndApproveBooking() {
         // Check there are rows to approve — empty grid means booking is no longer in Draft
         const rowCount = await this.frame.locator('#resultTable .ui-grid-body-row').count();
         if (rowCount === 0) {
@@ -28,7 +33,7 @@ class CarrierBookingApprovalPage {
             return;
         }
         const checkbox = this.frame.locator(this.selectAllCheck);
-        await checkbox.waitFor();
+        await checkbox.waitFor({ state: 'visible', timeout: 15000 });
         await this.waitForGridToBeReady();
         // SCC auto-selects rows on load — only click if not already checked
         const isChecked = await checkbox.isChecked().catch(() => false);
@@ -36,6 +41,9 @@ class CarrierBookingApprovalPage {
             await checkbox.click({ force: true });
         }
         await this.frame.getByRole('button', this.approveBooking).click();
+        // Wait for approval to process
+        await this.frame.locator(this.loadingOverlay).waitFor({ state: 'visible', timeout: 5000 }).catch(() => {});
+        await this.frame.locator(this.loadingOverlay).waitFor({ state: 'hidden', timeout: 30000 }).catch(() => {});
     }
 
 }

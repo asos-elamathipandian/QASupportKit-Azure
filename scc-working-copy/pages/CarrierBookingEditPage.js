@@ -44,15 +44,26 @@ class CarrierBookingEditPage {
 
         // Fill cartons for all rows.
         // SCC's inline editor input is NOT a DOM child of the resultfield_ cell — it appears
-        // as a sibling/overlay. After safeClick the input is already focused, so use
-        // keyboard to clear + type, which works regardless of DOM structure.
+        // as a sibling/overlay. Wait for the active input to be ready before typing.
         for (let i = 0; i < recordCount; i++) {
             const cartonCell = this.frame.locator(this.numOfCartons).nth(i);
             await this.safeClick(cartonCell);
-            await new Promise(r => setTimeout(r, 500));
+            // Wait for an input field to become focused/visible in the frame after clicking
+            await this.frame.locator('input[type="text"]:focus, input[type="number"]:focus, input.ui-spinner-input:focus')
+                .waitFor({ state: 'attached', timeout: 5000 }).catch(() => {});
+            await new Promise(r => setTimeout(r, 300));
             if (this.page) {
                 await this.page.keyboard.press('Control+a');
                 await this.page.keyboard.type('1');
+                // Short pause then verify — if still empty, click again and retype
+                await new Promise(r => setTimeout(r, 300));
+                const cellText = await cartonCell.textContent({ timeout: 1000 }).catch(() => '');
+                if (!cellText.trim() || cellText.trim() === '0') {
+                    await this.safeClick(cartonCell);
+                    await new Promise(r => setTimeout(r, 400));
+                    await this.page.keyboard.press('Control+a');
+                    await this.page.keyboard.type('1');
+                }
             } else {
                 // Fallback when page not available: fill directly on the resultfield_ element
                 await cartonCell.fill('1').catch(async () => {

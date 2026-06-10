@@ -25,6 +25,8 @@ class SCCHomepage {
         const viewList = this.page.getByRole('link', this.viewListLink);
         await viewList.waitFor({ state: 'visible', timeout: 10000 });
         await viewList.click();
+        // Wait for the iframe to attach and start loading before caller tries to interact with it
+        await this.page.waitForLoadState('domcontentloaded').catch(() => {});
     }
 }
 module.exports = { SCCHomepage };

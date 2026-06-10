@@ -18,7 +18,7 @@ const fileReader = new FileReader(asnFilePath);
 const asnFromFile = fileReader.getFileContents();
 const RESULTS_FILE = path.join(__dirname, '..', 'multi-lines-edit-results.json');
 
-test.setTimeout(600 * 1000);
+test.setTimeout(900 * 1000);
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -120,31 +120,34 @@ test('Create Draft Booking via Order Search then Edit Multiple Lines', async ({ 
   await navigateToCarrierBooking(scchomePage, sccviewlistPage, listenDialog);
   let submittedVbRef = null;
   await retryStep('filter, edit and submit booking lines', async () => {
+    console.log('[multi-lines-edit] Step 2a: expanding filter and clearing...');
     await carrierbookingPage.expandandClearFilter();
+    console.log('[multi-lines-edit] Step 2b: searching with ASN + Draft status...');
     await carrierbookingPage.searchWithasnAndstatus(asnFromFile);
+    console.log('[multi-lines-edit] Step 2c: waiting for grid...');
     await carrierbookingPage.waitForGridToBeReady();
 
     const rowCount = await frame.locator('#resultTable .ui-grid-body-row').count();
+    console.log(`[multi-lines-edit] Step 2d: rowCount=${rowCount}`);
     if (rowCount === 0) {
       throw new Error(`No Draft booking rows found for ASNs: ${asnFromFile} after booking creation.`);
     }
     console.log(`[multi-lines-edit] Found ${rowCount} booking line(s) to edit.`);
 
-    // Select all rows and open the inline multi-line edit form
+    console.log('[multi-lines-edit] Step 2e: selecting and opening edit form...');
     await carrierbookingPage.selectAndEditBooking();
 
-    // Edit line-level fields for all rows: No. of Cartons + Unit Weight
+    console.log('[multi-lines-edit] Step 2f: editing line details...');
     await carrierbookingeditPage.editCarrierBookingDetails();
 
-    // Edit header-level fields for all rows:
-    //   Cargo Ready Date, Cargo Delivery Date,
-    //   Carrier Booking Request Date, Traffic Mode (Origin)
+    console.log('[multi-lines-edit] Step 2g: editing header details...');
     await carrierbookingeditPage.editCarrierHeaderDetails();
 
     await acceptDialogIfPresent(listenDialog);
 
-    // Save and submit; captures the VB reference
+    console.log('[multi-lines-edit] Step 2h: saving and submitting...');
     submittedVbRef = await carrierbookingeditPage.saveSubmitAfterEdit();
+    console.log(`[multi-lines-edit] Step 2i: submitted VB ref = ${submittedVbRef}`);
     await acceptDialogIfPresent(listenDialog);
   }, 2, 2000);
 

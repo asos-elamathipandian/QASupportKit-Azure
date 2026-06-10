@@ -7,13 +7,19 @@ class SCCViewListPage {
     }
 
     async navigateToOrderSearch() {
-        await this.frame.getByRole('link', this.orderSearchLink).click();
+        const link = this.frame.getByRole('link', this.orderSearchLink);
+        await link.waitFor({ state: 'visible', timeout: 30000 });
+        await link.click();
     }
     async navigateToCarrierBooking() {
-        await this.frame.getByRole('link', this.carrierBookingDetail).click();
+        const link = this.frame.getByRole('link', this.carrierBookingDetail);
+        await link.waitFor({ state: 'visible', timeout: 30000 });
+        await link.click();
     }
     async navigateToCarrierApproval() {
-        await this.frame.getByRole('link', this.carrierApproval).click();
+        const link = this.frame.getByRole('link', this.carrierApproval);
+        await link.waitFor({ state: 'visible', timeout: 30000 });
+        await link.click();
     }
 
 }

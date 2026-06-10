@@ -453,7 +453,7 @@ async function createMultiAsnBooking(asnList, options = {}) {
   if (onStep) onStep('Launching Playwright browser\u2026');
 
   try {
-    await runWorkingSpec(paths.multiLinesEditSpec, {}, 600000, options);
+    await runWorkingSpec(paths.multiLinesEditSpec, {}, 960000, options);
 
     if (onStep) onStep('Playwright test completed, reading results\u2026');
     const result = readJsonIfExists(paths.multiLinesEditResults) || readJsonIfExists(paths.bookingResults) || [];
