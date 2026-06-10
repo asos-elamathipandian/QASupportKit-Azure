@@ -72,7 +72,7 @@ class CarrierBookingPage {
     // When waitForNonDraft:true, scans ALL rows for a Submitted/Approved booking first;
     // only retries (up to 4×2s) when every active row is still Draft.
     async getActiveBookingResult({ waitForNonDraft = false } = {}) {
-        const maxAttempts = waitForNonDraft ? 4 : 1;
+        const maxAttempts = waitForNonDraft ? 8 : 1;
         for (let attempt = 1; attempt <= maxAttempts; attempt++) {
             await this.waitForGridToBeReady();
             const rows = this.frame.locator('#resultTable .ui-grid-body-row');
@@ -99,8 +99,8 @@ class CarrierBookingPage {
             }
             // All active rows are still Draft — wait and retry
             if (firstDraftResult && attempt < maxAttempts) {
-                console.log(`[getActiveBookingResult] All active rows are Draft (e.g. ${firstDraftResult.vbReference}), waiting 2s… (attempt ${attempt}/${maxAttempts})`);
-                await new Promise(resolve => setTimeout(resolve, 2000));
+                console.log(`[getActiveBookingResult] All active rows are Draft (e.g. ${firstDraftResult.vbReference}), waiting 3s… (attempt ${attempt}/${maxAttempts})`);
+                await new Promise(resolve => setTimeout(resolve, 3000));
             } else if (firstDraftResult) {
                 return firstDraftResult; // gave up waiting, return best available
             }
@@ -112,13 +112,13 @@ class CarrierBookingPage {
     }
 
     async getBookingStatus(vbReference, { waitForNonDraft = false } = {}) {
-        const maxAttempts = waitForNonDraft ? 4 : 1;
+        const maxAttempts = waitForNonDraft ? 8 : 1;
         let status = 'Unknown';
         for (let attempt = 1; attempt <= maxAttempts; attempt++) {
             status = await this._readBookingStatus(vbReference);
             if (!waitForNonDraft || status.toLowerCase() !== 'draft') break;
-            console.log(`[getBookingStatus] Status is Draft on attempt ${attempt}, waiting 2s for SCC to process submission…`);
-            await new Promise(resolve => setTimeout(resolve, 2000));
+            console.log(`[getBookingStatus] Status is Draft on attempt ${attempt}/${maxAttempts}, waiting 3s for SCC to process submission…`);
+            await new Promise(resolve => setTimeout(resolve, 3000));
             await this.waitForGridToBeReady();
         }
         return status;

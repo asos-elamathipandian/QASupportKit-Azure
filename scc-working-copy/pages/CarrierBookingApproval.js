@@ -35,15 +35,31 @@ class CarrierBookingApprovalPage {
         const checkbox = this.frame.locator(this.selectAllCheck);
         await checkbox.waitFor({ state: 'visible', timeout: 15000 });
         await this.waitForGridToBeReady();
-        // SCC auto-selects rows on load — only click if not already checked
-        const isChecked = await checkbox.isChecked().catch(() => false);
-        if (!isChecked) {
-            await checkbox.click({ force: true });
+
+        const approveButton = this.frame.getByRole('button', this.approveBooking);
+
+        // Retry selecting rows until Approve button becomes enabled (mirrors Edit Booking pattern)
+        for (let attempt = 1; attempt <= 8; attempt++) {
+            await this.frame.locator(this.loadingOverlay).waitFor({ state: 'hidden', timeout: 10000 }).catch(() => {});
+            const isChecked = await checkbox.isChecked().catch(() => false);
+            if (!isChecked) {
+                await checkbox.click({ force: true });
+            }
+            await new Promise(r => setTimeout(r, 1000));
+            const ariaDisabled = await approveButton.getAttribute('aria-disabled').catch(() => 'true');
+            const className = (await approveButton.getAttribute('class').catch(() => '')) || '';
+            const isDisabled = ariaDisabled === 'true' || className.includes('ui-state-disabled') || className.includes('ui-button-disabled');
+            if (!isDisabled) {
+                await approveButton.click();
+                // Wait for approval to process
+                await this.frame.locator(this.loadingOverlay).waitFor({ state: 'visible', timeout: 5000 }).catch(() => {});
+                await this.frame.locator(this.loadingOverlay).waitFor({ state: 'hidden', timeout: 30000 }).catch(() => {});
+                return;
+            }
+            console.log(`[CarrierBookingApproval] Approve button still disabled on attempt ${attempt}/8, retrying...`);
+            await new Promise(r => setTimeout(r, 1500));
         }
-        await this.frame.getByRole('button', this.approveBooking).click();
-        // Wait for approval to process
-        await this.frame.locator(this.loadingOverlay).waitFor({ state: 'visible', timeout: 5000 }).catch(() => {});
-        await this.frame.locator(this.loadingOverlay).waitFor({ state: 'hidden', timeout: 30000 }).catch(() => {});
+        throw new Error('Approve button remained disabled after selecting rows');
     }
 
 }
