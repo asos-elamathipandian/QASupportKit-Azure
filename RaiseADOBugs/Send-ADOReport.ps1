@@ -173,10 +173,27 @@ function Get-TestOutcomeDonutChart {
 
     $total = $TestPoints.Count
 
+    # Debug: log distinct state/outcome values to help diagnose missing statuses
+    $distinctValues = $TestPoints | ForEach-Object { "state=$($_.state)|outcome=$($_.outcome)" } | Sort-Object -Unique
+    Write-Host "[$ChartTitle] Distinct state/outcome values: $($distinctValues -join ', ')" -ForegroundColor Cyan
+
     # Group by outcome (top-level .outcome field, or "Not Run" if blank)
+    # ADO REST API: .state tracks current execution state (e.g. "inProgress"), .outcome is the LAST result.
+    # A test being actively run will have state="inProgress" but outcome="unspecified" — check state first.
     $grouped = $TestPoints | Group-Object {
+        $state   = $_.state
         $outcome = $_.outcome
-        if ([string]::IsNullOrWhiteSpace($outcome) -or $outcome -eq 'Unspecified') { 'Not Run' }
+
+        # Current execution state takes priority
+        if ($state -eq 'inProgress' -or $state -eq 'InProgress') { 'In Progress' }
+        # Then map outcome value
+        elseif ([string]::IsNullOrWhiteSpace($outcome) -or $outcome -eq 'Unspecified' -or $outcome -eq 'unspecified' -or $outcome -eq 'none' -or $outcome -eq 'None') { 'Not Run' }
+        elseif ($outcome -eq 'inProgress' -or $outcome -eq 'InProgress') { 'In Progress' }
+        elseif ($outcome -eq 'notApplicable' -or $outcome -eq 'NotApplicable') { 'NotApplicable' }
+        elseif ($outcome -eq 'passed' -or $outcome -eq 'Passed') { 'Passed' }
+        elseif ($outcome -eq 'failed' -or $outcome -eq 'Failed') { 'Failed' }
+        elseif ($outcome -eq 'blocked' -or $outcome -eq 'Blocked') { 'Blocked' }
+        elseif ($outcome -eq 'paused' -or $outcome -eq 'Paused') { 'Paused' }
         else { $outcome }
     }
 
@@ -188,7 +205,7 @@ function Get-TestOutcomeDonutChart {
         'Not Run'       = [System.Drawing.Color]::FromArgb(33, 150, 243)   # Blue
         'NotApplicable' = [System.Drawing.Color]::FromArgb(120, 144, 156)  # Blue Grey
         'Paused'        = [System.Drawing.Color]::FromArgb(255, 152, 0)    # Orange
-        'In Progress'   = [System.Drawing.Color]::FromArgb(33, 150, 243)   # Blue
+        'In Progress'   = [System.Drawing.Color]::FromArgb(156, 39, 176)   # Purple
         'None'          = [System.Drawing.Color]::FromArgb(158, 158, 158)  # Grey
     }
     $defaultColor = [System.Drawing.Color]::FromArgb(96, 125, 139)
