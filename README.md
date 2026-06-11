@@ -81,6 +81,10 @@ Environment and runtime behavior:
 	# OR
 	SFTP_PRIVATE_KEY_PATH=<path to .ppk or .pem key file>
 	SFTP_PASSPHRASE=<passphrase if key is protected>
+
+	# Azure Blob Storage — for searching E2Open outbound files
+	AZURE_BLOB_CONNECTION_STRING=<blob SAS connection string>
+	AZURE_BLOB_CONTAINER=<container name e.g. sftp-inbound>
 	```
 
 	> The `.env` file is gitignored — never commit it. Ask the team lead for the correct values.
