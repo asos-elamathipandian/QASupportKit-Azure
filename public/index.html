@@ -1460,6 +1460,15 @@ async function fullSccFlow() {
               style="background:#2e7d32; color:white; font-weight:600; padding:8px 20px; border:none; border-radius:4px; cursor:pointer;">
         &#9993; Send Email
       </button>
+      <div style="display:flex; align-items:center; gap:6px; background:#f0f4f8; border:1px solid #cdd8e3; border-radius:4px; padding:4px 10px;">
+        <label style="font-size:0.78rem; color:#444; font-weight:600; white-space:nowrap;">Send to:</label>
+        <label style="font-size:0.78rem; color:#333; display:flex; align-items:center; gap:3px; cursor:pointer;">
+          <input type="radio" name="emailSendMode" value="self" checked style="cursor:pointer;"> Self
+        </label>
+        <label style="font-size:0.78rem; color:#333; display:flex; align-items:center; gap:3px; cursor:pointer;">
+          <input type="radio" name="emailSendMode" value="team" style="cursor:pointer;"> Team
+        </label>
+      </div>
       <span id="emailStatus" style="font-size:0.82rem;"></span>
     </div>
   </div>
@@ -2504,11 +2513,16 @@ function confirmAndUploadGpm() {
   async function sendStatusEmail() {
     const btn = document.getElementById("btnSendEmail");
     const status = document.getElementById("emailStatus");
+    const sendMode = (document.querySelector('input[name="emailSendMode"]:checked') || {}).value || 'self';
     btn.disabled = true;
     btn.textContent = "⏳ Sending...";
     status.textContent = "";
     try {
-      const res = await fetch("/api/send-status-email", { method: "POST" });
+      const res = await fetch("/api/send-status-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sendMode })
+      });
       const data = await res.json();
       if (data.ok) {
         status.style.color = "#2e7d32";
@@ -2531,6 +2545,7 @@ function confirmAndUploadGpm() {
     closePreview();
     const btn = document.getElementById("btnSendEmail");
     const status = document.getElementById("emailStatus");
+    const sendMode = (document.querySelector('input[name="emailSendMode"]:checked') || {}).value || 'self';
     btn.disabled = true;
     btn.textContent = "⏳ Sending...";
     status.textContent = "";
@@ -2538,7 +2553,7 @@ function confirmAndUploadGpm() {
       const res = await fetch("/api/send-edited-email", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ html: editedHtml })
+        body: JSON.stringify({ html: editedHtml, sendMode })
       });
       const data = await res.json();
       if (data.ok) {

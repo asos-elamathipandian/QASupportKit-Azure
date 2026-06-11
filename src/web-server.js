@@ -1221,8 +1221,8 @@ app.post("/api/preview-status-email", async (req, res) => {
 
 app.post("/api/send-status-email", async (req, res) => {
   try {
-    const { html, subject } = req.body || {};
-    const result = await sendAdoReportEmail({ htmlOverride: html, subjectOverride: subject });
+    const { html, subject, sendMode } = req.body || {};
+    const result = await sendAdoReportEmail({ htmlOverride: html, subjectOverride: subject, sendMode });
     res.json({ ok: true, message: "ADO status email sent.", transport: result.transport });
   } catch (e) {
     res.status(500).json({ ok: false, error: e.message });
@@ -1231,8 +1231,8 @@ app.post("/api/send-status-email", async (req, res) => {
 
 app.post("/api/send-edited-email", async (req, res) => {
   try {
-    const { html, subject } = req.body || {};
-    const result = await sendEditedAdoReportEmail({ html, subjectOverride: subject });
+    const { html, subject, sendMode } = req.body || {};
+    const result = await sendEditedAdoReportEmail({ html, subjectOverride: subject, sendMode });
     res.json({
       ok: true,
       message: "Edited ADO status email sent.",

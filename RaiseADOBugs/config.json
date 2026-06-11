@@ -17,6 +17,15 @@
     "Recipients": [
       "elamathi.pandian@asos.com"
     ],
+    "TeamRecipients": [
+      "elamathi.pandian@asos.com",
+      "Martinmo@ASOS.com",
+      "Marcus.Bateson@asos.com",
+      "ShyamP@ASOS.com",
+      "Frazer.Green@asos.com",
+      "kurtis.thomas@asos.com"
+    ],
+    "SendMode": "self",
     "From": "elamathi.pandian@asos.com",
     "Subject": "AIM Test Execution Progress & Bug Report",
     "SmtpServer": "smtp.office365.com",

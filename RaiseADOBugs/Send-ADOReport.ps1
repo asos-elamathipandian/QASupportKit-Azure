@@ -16,7 +16,9 @@ param(
     [string]$TargetDate,
     [ValidateSet('Auto','Red','Amber','Green')]
     [string]$RagStatus,
-    [string]$RagReason
+    [string]$RagReason,
+    [ValidateSet('self','team')]
+    [string]$SendMode
 )
 
 $ErrorActionPreference = "Stop"
@@ -44,7 +46,16 @@ $cr140TestPlanId  = $config.AzureDevOps.Cr140TestPlanId
 $cr140TestSuiteId = $config.AzureDevOps.Cr140TestSuiteId
 $patEnvVar  = $config.AzureDevOps.PatTokenEnvVar
 
-$recipients = $config.Email.Recipients
+# Resolve send mode: CLI param > config.json SendMode > default 'self'
+$effectiveSendMode = if ($SendMode) { $SendMode } elseif ($config.Email.SendMode) { $config.Email.SendMode } else { 'self' }
+if ($effectiveSendMode -eq 'team') {
+    $recipients = @($config.Email.TeamRecipients)
+    Write-Host "Send mode: TEAM ($($recipients.Count) recipients)" -ForegroundColor Cyan
+} else {
+    # 'self' = send only to the sender (From address), works for any user running the script
+    $recipients = @($config.Email.From)
+    Write-Host "Send mode: SELF ($($recipients -join ', '))" -ForegroundColor Cyan
+}
 $fromAddr   = $config.Email.From
 $subject    = "$($config.Email.Subject) - $(Get-Date -Format 'dd MMM yyyy')"
 $smtpServer = $config.Email.SmtpServer

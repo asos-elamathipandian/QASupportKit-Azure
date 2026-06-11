@@ -148,7 +148,7 @@ async function sendViaPowerShellOutlook() {
   }
 }
 
-async function sendViaPowerShellOutlookWithHtml({ html, subjectLine }) {
+async function sendViaPowerShellOutlookWithHtml({ html, subjectLine, recipientList }) {
   if (process.platform !== 'win32') {
     throw new Error('PowerShell Outlook fallback is only supported on Windows');
   }
@@ -163,7 +163,7 @@ async function sendViaPowerShellOutlookWithHtml({ html, subjectLine }) {
   const psPath = path.join(tempDir, `ado-send-${stamp}.ps1`);
   fs.writeFileSync(htmlPath, html, 'utf8');
 
-  const recipientsArg = recipients.join(';');
+  const recipientsArg = (recipientList || recipients).join(';');
   const psScript = [
     'param(',
     '  [string]$HtmlPath,',
@@ -608,11 +608,18 @@ async function generateAdoReportHtml() {
 }
 
 async function sendAdoReportEmail(options = {}) {
-  const { htmlOverride, subjectOverride } = options;
+  const { htmlOverride, subjectOverride, sendMode } = options;
   const availability = getAdoAvailability();
   if (!availability.available) {
     throw new Error(`ADO email is not configured: ${availability.issues.join('; ')}`);
   }
+
+  // Resolve recipient list based on sendMode
+  const effectiveMode = sendMode || config.Email.SendMode || 'self';
+  const recipientList = effectiveMode === 'team'
+    ? (config.Email.TeamRecipients || [config.Email.From])
+    : [config.Email.From];
+  console.log(`[EMAIL] Send mode: ${effectiveMode} → ${recipientList.join(', ')}`);
 
   let htmlToSend = htmlOverride;
   let subjectToSend = subjectOverride;
@@ -628,7 +635,7 @@ async function sendAdoReportEmail(options = {}) {
   
   if (!hasSmtpPassword) {
     console.log('[EMAIL] Using PowerShell Outlook COM fallback (SMTP_PASSWORD not set)');
-    await sendViaPowerShellOutlookWithHtml({ html: htmlToSend, subjectLine: subjectToSend });
+    await sendViaPowerShellOutlookWithHtml({ html: htmlToSend, subjectLine: subjectToSend, recipientList });
     return { transport: 'outlook-fallback' };
   }
 
@@ -651,7 +658,7 @@ async function sendAdoReportEmail(options = {}) {
   try {
     await transporter.sendMail({
       from: fromAddr,
-      to: recipients.join(','),
+      to: recipientList.join(','),
       subject: subjectToSend,
       html: htmlToSend
     });
@@ -659,7 +666,7 @@ async function sendAdoReportEmail(options = {}) {
   } catch (error) {
     console.log(`[EMAIL] SMTP failed: ${error.message}. Attempting PowerShell Outlook fallback...`);
     if (shouldUsePowerShellFallback(error)) {
-      await sendViaPowerShellOutlookWithHtml({ html: htmlToSend, subjectLine: subjectToSend });
+      await sendViaPowerShellOutlookWithHtml({ html: htmlToSend, subjectLine: subjectToSend, recipientList });
       return { transport: 'outlook-fallback' };
     }
     throw error;
@@ -667,7 +674,7 @@ async function sendAdoReportEmail(options = {}) {
 }
 
 async function sendEditedAdoReportEmail(options = {}) {
-  const { html, subjectOverride } = options;
+  const { html, subjectOverride, sendMode } = options;
   if (!html || !String(html).trim()) {
     throw new Error('Edited email HTML is required');
   }
@@ -689,7 +696,7 @@ async function sendEditedAdoReportEmail(options = {}) {
   const dateLabel = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
   const subjectToSend = subjectOverride || `${subject} - ${dateLabel}`;
 
-  const result = await sendAdoReportEmail({ htmlOverride: html, subjectOverride: subjectToSend });
+  const result = await sendAdoReportEmail({ htmlOverride: html, subjectOverride: subjectToSend, sendMode });
   return {
     transport: result.transport,
     savedPath,
