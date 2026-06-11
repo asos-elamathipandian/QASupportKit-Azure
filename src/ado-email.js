@@ -616,8 +616,9 @@ async function sendAdoReportEmail(options = {}) {
 
   // Resolve recipient list based on sendMode
   const effectiveMode = sendMode || config.Email.SendMode || 'self';
+  const fromLower = (config.Email.From || '').toLowerCase();
   const recipientList = effectiveMode === 'team'
-    ? (config.Email.TeamRecipients || [config.Email.From])
+    ? (config.Email.TeamRecipients || [config.Email.From]).filter(r => r.toLowerCase() !== fromLower)
     : [config.Email.From];
   console.log(`[EMAIL] Send mode: ${effectiveMode} → ${recipientList.join(', ')}`);
 

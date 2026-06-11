@@ -759,8 +759,7 @@ function Get-TodaysHighlights {
         [array]$Cr147TestPoints,
         [array]$Cr140TestPoints,
         [array]$TestPlanItems,
-        [array]$Bugs,
-        [hashtable]$Headers
+        [array]$Bugs
     )
 
     $today = (Get-Date).Date
@@ -780,7 +779,15 @@ function Get-TodaysHighlights {
     }
 
     if ($todayTestUpdates.Count -gt 0) {
-        $byOutcome = $todayTestUpdates | Group-Object { if ([string]::IsNullOrWhiteSpace($_.outcome) -or $_.outcome -eq 'Unspecified') { 'Not Run' } else { $_.outcome } }
+        $byOutcome = $todayTestUpdates | Group-Object {
+            $s = $_.state; $o = $_.outcome
+            if ($s -eq 'inProgress' -or $s -eq 'InProgress') { 'In Progress' }
+            elseif ([string]::IsNullOrWhiteSpace($o) -or $o -eq 'Unspecified' -or $o -eq 'unspecified' -or $o -eq 'none' -or $o -eq 'None') { 'Not Run' }
+            elseif ($o -eq 'inProgress' -or $o -eq 'InProgress') { 'In Progress' }
+            elseif ($o -eq 'passed') { 'Passed' } elseif ($o -eq 'failed') { 'Failed' }
+            elseif ($o -eq 'blocked') { 'Blocked' } elseif ($o -eq 'paused') { 'Paused' }
+            else { $o }
+        }
         $outcomeSummary = ($byOutcome | ForEach-Object { "$($_.Count) $($_.Name)" }) -join ", "
         $highlights += @{
             Icon = "#2E7D32"
@@ -808,7 +815,15 @@ function Get-TodaysHighlights {
     }
 
     if ($todayCr147Updates.Count -gt 0) {
-        $byOutcome = $todayCr147Updates | Group-Object { if ([string]::IsNullOrWhiteSpace($_.outcome) -or $_.outcome -eq 'Unspecified') { 'Not Run' } else { $_.outcome } }
+        $byOutcome = $todayCr147Updates | Group-Object {
+            $s = $_.state; $o = $_.outcome
+            if ($s -eq 'inProgress' -or $s -eq 'InProgress') { 'In Progress' }
+            elseif ([string]::IsNullOrWhiteSpace($o) -or $o -eq 'Unspecified' -or $o -eq 'unspecified' -or $o -eq 'none' -or $o -eq 'None') { 'Not Run' }
+            elseif ($o -eq 'inProgress' -or $o -eq 'InProgress') { 'In Progress' }
+            elseif ($o -eq 'passed') { 'Passed' } elseif ($o -eq 'failed') { 'Failed' }
+            elseif ($o -eq 'blocked') { 'Blocked' } elseif ($o -eq 'paused') { 'Paused' }
+            else { $o }
+        }
         $outcomeSummary = ($byOutcome | ForEach-Object { "$($_.Count) $($_.Name)" }) -join ", "
         $highlights += @{
             Icon = "#2E7D32"
@@ -836,7 +851,15 @@ function Get-TodaysHighlights {
     }
 
     if ($todayCr140Updates.Count -gt 0) {
-        $byOutcome = $todayCr140Updates | Group-Object { if ([string]::IsNullOrWhiteSpace($_.outcome) -or $_.outcome -eq 'Unspecified') { 'Not Run' } else { $_.outcome } }
+        $byOutcome = $todayCr140Updates | Group-Object {
+            $s = $_.state; $o = $_.outcome
+            if ($s -eq 'inProgress' -or $s -eq 'InProgress') { 'In Progress' }
+            elseif ([string]::IsNullOrWhiteSpace($o) -or $o -eq 'Unspecified' -or $o -eq 'unspecified' -or $o -eq 'none' -or $o -eq 'None') { 'Not Run' }
+            elseif ($o -eq 'inProgress' -or $o -eq 'InProgress') { 'In Progress' }
+            elseif ($o -eq 'passed') { 'Passed' } elseif ($o -eq 'failed') { 'Failed' }
+            elseif ($o -eq 'blocked') { 'Blocked' } elseif ($o -eq 'paused') { 'Paused' }
+            else { $o }
+        }
         $outcomeSummary = ($byOutcome | ForEach-Object { "$($_.Count) $($_.Name)" }) -join ", "
         $highlights += @{
             Icon = "#2E7D32"
@@ -916,32 +939,6 @@ function Get-TodaysHighlights {
             Icon = "#2E7D32"
             Category = "Bugs"
             Text = "No bug updates today"
-        }
-    }
-
-    # --- Also check for today's comments on bugs ---
-    $bugsWithNewComments = @()
-    foreach ($wi in $Bugs) {
-        $id = $wi.fields.'System.Id'
-        try {
-            $commentsUri = "https://dev.azure.com/$org/$project/_apis/wit/workItems/$id/comments?`$top=1&order=desc&api-version=7.1-preview.4"
-            $commentsResp = Invoke-ADOApi -Uri $commentsUri -Headers $Headers
-            if ($commentsResp.comments -and @($commentsResp.comments).Count -gt 0) {
-                $commentDate = (Get-Date @($commentsResp.comments)[0].createdDate).Date
-                if ($commentDate -eq $today) {
-                    $bugsWithNewComments += $id
-                }
-            }
-        } catch { }
-    }
-    if ($bugsWithNewComments.Count -gt 0) {
-        $commentLinks = ($bugsWithNewComments | ForEach-Object {
-            "<a href='$baseUrl/_workitems/edit/$_' style='color:#0078D4;text-decoration:none;'>$_</a>"
-        }) -join ", "
-        $highlights += @{
-            Icon = "#0078D4"
-            Category = "Bugs"
-            Text = "New comments added today on bug(s): $commentLinks"
         }
     }
 
@@ -1092,7 +1089,7 @@ Write-Host "Building HTML report..." -ForegroundColor Yellow
 
 # Generate today's highlights
 Write-Host "Generating today's highlights..." -ForegroundColor Yellow
-$todaysHighlights = Get-TodaysHighlights -TestPoints $testPoints -Cr147TestPoints $cr147TestPoints -Cr140TestPoints $cr140TestPoints -TestPlanItems $testItems -Bugs $bugs -Headers $headers
+$todaysHighlights = Get-TodaysHighlights -TestPoints $testPoints -Cr147TestPoints $cr147TestPoints -Cr140TestPoints $cr140TestPoints -TestPlanItems $testItems -Bugs $bugs
 
 $cr144Chart = Get-TestOutcomeDonutChart -TestPoints $testPoints -ChartTitle "CR144 Test Cases Stats"
 $cr147Chart = Get-TestOutcomeDonutChart -TestPoints $cr147TestPoints -ChartTitle "CR147 Test Cases Stats"

@@ -1210,6 +1210,17 @@ app.get("/api/ado-status", (req, res) => {
   res.json(getAdoAvailability());
 });
 
+app.get("/api/email-recipients", (req, res) => {
+  try {
+    const cfg = JSON.parse(require('fs').readFileSync(require('path').join(__dirname, '../RaiseADOBugs/config.json'), 'utf8'));
+    const from = (cfg.Email.From || '').toLowerCase();
+    const team = (cfg.Email.TeamRecipients || []).filter(r => r.toLowerCase() !== from);
+    res.json({ self: cfg.Email.From || '', team });
+  } catch (e) {
+    res.status(500).json({ self: '', team: [] });
+  }
+});
+
 app.post("/api/preview-status-email", async (req, res) => {
   try {
     const report = await generateAdoReportHtml();

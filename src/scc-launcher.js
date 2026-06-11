@@ -458,13 +458,23 @@ async function createMultiAsnBooking(asnList, options = {}) {
     if (onStep) onStep('Playwright test completed, reading results\u2026');
     const result = readJsonIfExists(paths.multiLinesEditResults) || readJsonIfExists(paths.bookingResults) || [];
     const count = Array.isArray(result) ? result.length : asnList.length;
-    if (onStep) onStep(`\u2705 Multi-ASN booking created with ${count} ASN${count !== 1 ? 's' : ''}`);
+
+    // Detect ASNs that were not included in the booking
+    const bookedAsns = Array.isArray(result) ? result.map(r => String(r.asn || '').trim()).filter(Boolean) : [];
+    const unclubbed = asnList.filter(a => !bookedAsns.includes(String(a).trim()));
+
+    if (unclubbed.length > 0) {
+      if (onStep) onStep(`⚠️ Booking created but ${unclubbed.length} ASN${unclubbed.length !== 1 ? 's' : ''} could not be clubbed: ${unclubbed.join(', ')}`);
+    } else {
+      if (onStep) onStep(`✅ Multi-ASN booking created with ${count} ASN${count !== 1 ? 's' : ''}`);
+    }
 
     return {
       success: true,
       asns: asnList,
       count,
       results: result,
+      unclubbed,
       message: `Multi-ASN booking flow completed via working automation project`,
     };
   } catch (err) {

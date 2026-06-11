@@ -1199,8 +1199,17 @@ async function bookingCreateMulti() {
     const data = await res.json();
     if (data.ok) {
       const results = data.result.results || [];
+      const unclubbed = data.result.unclubbed || [];
       const label = `Multi-ASN booking completed — ${results.length} ASN${results.length !== 1 ? 's' : ''} in 1 booking`;
-      resultDiv.innerHTML = renderBookingResult(results, label);
+      let html = renderBookingResult(results, label);
+      if (unclubbed.length > 0) {
+        html += `<div style='margin-top:10px;padding:12px 14px;background:#fffbeb;border-left:4px solid #f59e0b;border-radius:6px;color:#92400e;'>
+          <strong>&#9888;&#65039; ${unclubbed.length} ASN${unclubbed.length !== 1 ? 's' : ''} could not be clubbed into this booking:</strong>
+          <div style='margin-top:6px;font-family:monospace;font-size:0.9rem;'>${unclubbed.join(', ')}</div>
+          <div style='margin-top:6px;font-size:0.82rem;'>These ASNs may belong to a different PO, supplier, or warehouse. Book them separately.</div>
+        </div>`;
+      }
+      resultDiv.innerHTML = html;
     } else {
       const error = data.error || 'Booking creation failed';
       resultDiv.innerHTML = `<div style='color:#b91c1c;padding:12px;background:#fef2f2;border-left:4px solid #ef4444;border-radius:6px;'><strong>&#10060; ${error}</strong></div>`;
@@ -1463,11 +1472,14 @@ async function fullSccFlow() {
       <div style="display:flex; align-items:center; gap:6px; background:#f0f4f8; border:1px solid #cdd8e3; border-radius:4px; padding:4px 10px;">
         <label style="font-size:0.78rem; color:#444; font-weight:600; white-space:nowrap;">Send to:</label>
         <label style="font-size:0.78rem; color:#333; display:flex; align-items:center; gap:3px; cursor:pointer;">
-          <input type="radio" name="emailSendMode" value="self" checked style="cursor:pointer;"> Self
+          <input type="radio" name="emailSendMode" value="self" checked onchange="onSendModeChange()" style="cursor:pointer;"> Self
         </label>
         <label style="font-size:0.78rem; color:#333; display:flex; align-items:center; gap:3px; cursor:pointer;">
-          <input type="radio" name="emailSendMode" value="team" style="cursor:pointer;"> Team
+          <input type="radio" name="emailSendMode" value="team" onchange="onSendModeChange()" style="cursor:pointer;"> Team
         </label>
+      </div>
+      <div id="teamRecipientsNote" style="display:none; margin-top:6px; width:100%; padding:8px 12px; background:#fffbeb; border:1px solid #f59e0b; border-radius:4px; font-size:0.78rem; color:#78350f;">
+        <strong>&#128101; Email will be sent to:</strong> <span id="teamRecipientsList" style="font-family:monospace;"></span>
       </div>
       <span id="emailStatus" style="font-size:0.82rem;"></span>
     </div>
@@ -2439,6 +2451,39 @@ function confirmAndUploadGpm() {
   // ── ADO Status Email: Preview & Send ───────────────────────────────────
   let isEditMode = false;
   let originalPreviewHtml = "";
+
+  // Load team recipients once and wire send-mode toggle
+  let _emailRecipients = { self: '', team: [] };
+  (async function loadEmailRecipients() {
+    try {
+      const data = await fetch('/api/email-recipients').then(r => r.json());
+      _emailRecipients = data;
+    } catch (_) {}
+  })();
+
+  async function onSendModeChange() {
+    const mode = (document.querySelector('input[name="emailSendMode"]:checked') || {}).value || 'self';
+    const note = document.getElementById('teamRecipientsNote');
+    const list = document.getElementById('teamRecipientsList');
+    if (mode === 'team') {
+      // Fetch fresh if not yet loaded
+      if (_emailRecipients.team.length === 0) {
+        try {
+          const data = await fetch('/api/email-recipients').then(r => r.json());
+          _emailRecipients = data;
+        } catch (_) {}
+      }
+      if (_emailRecipients.team.length > 0) {
+        list.textContent = _emailRecipients.team.join(', ');
+        note.style.display = 'block';
+      } else {
+        list.textContent = '(unable to load recipient list)';
+        note.style.display = 'block';
+      }
+    } else {
+      note.style.display = 'none';
+    }
+  }
 
   async function previewStatusEmail() {
     const btn = document.getElementById("btnPreviewEmail");
