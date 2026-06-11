@@ -173,10 +173,6 @@ function Get-TestOutcomeDonutChart {
 
     $total = $TestPoints.Count
 
-    # Debug: log distinct state/outcome values to help diagnose missing statuses
-    $distinctValues = $TestPoints | ForEach-Object { "state=$($_.state)|outcome=$($_.outcome)" } | Sort-Object -Unique
-    Write-Host "[$ChartTitle] Distinct state/outcome values: $($distinctValues -join ', ')" -ForegroundColor Cyan
-
     # Group by outcome (top-level .outcome field, or "Not Run" if blank)
     # ADO REST API: .state tracks current execution state (e.g. "inProgress"), .outcome is the LAST result.
     # A test being actively run will have state="inProgress" but outcome="unspecified" — check state first.
