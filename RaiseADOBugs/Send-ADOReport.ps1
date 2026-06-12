@@ -942,6 +942,46 @@ function Get-TodaysHighlights {
         }
     }
 
+    # --- Overall Test Completion Percentage (all three CRs) ---
+    # Uses same outcome grouping as Get-TestOutcomeDonutChart so numbers match the charts
+    function Get-CrTestCasesStats {
+        param([array]$Points)
+        $total   = $Points.Count
+        $passed  = 0; $notRun = 0; $inProg = 0
+        foreach ($tp in $Points) {
+            $s = $tp.state; $o = $tp.outcome
+            if ($s -eq 'inProgress' -or $s -eq 'InProgress') { $inProg++ }
+            elseif ([string]::IsNullOrWhiteSpace($o) -or $o -eq 'Unspecified' -or $o -eq 'unspecified' -or $o -eq 'none' -or $o -eq 'None') { $notRun++ }
+            elseif ($o -eq 'inProgress' -or $o -eq 'InProgress') { $inProg++ }
+            elseif ($o -eq 'passed' -or $o -eq 'Passed' -or $o -eq 'completed' -or $o -eq 'Completed') { $passed++ }
+        }
+        $executed = $total - $notRun - $inProg
+        return @{ Total = $total; Executed = $executed; Passed = $passed; NotRun = $notRun }
+    }
+
+    $stats144 = Get-CrTestCasesStats -Points $TestPoints
+    $stats147 = Get-CrTestCasesStats -Points $Cr147TestPoints
+    $stats140 = Get-CrTestCasesStats -Points $Cr140TestPoints
+
+    $totalAllCr    = $stats144.Total    + $stats147.Total    + $stats140.Total
+    $executedAllCr = $stats144.Executed + $stats147.Executed + $stats140.Executed
+    $passedAllCr   = $stats144.Passed   + $stats147.Passed   + $stats140.Passed
+
+    if ($totalAllCr -gt 0) {
+        $completionPct = [Math]::Round(($executedAllCr / $totalAllCr) * 100, 1)
+        $passedPct     = [Math]::Round(($passedAllCr   / $totalAllCr) * 100, 1)
+
+        if ($passedPct -ge 80)     { $pctColor = "#2E7D32" }
+        elseif ($passedPct -ge 50) { $pctColor = "#F57C00" }
+        else                       { $pctColor = "#D32F2F" }
+
+        $highlights += @{
+            Icon     = $pctColor
+            Category = "Overall Test Completion"
+            Text     = "<strong style='font-size:15px;'>$passedPct%</strong> passed ($passedAllCr / $totalAllCr across CR144, CR147 &amp; CR140)&nbsp;&nbsp;|&nbsp;&nbsp;<strong>$completionPct%</strong> executed ($executedAllCr / $totalAllCr)"
+        }
+    }
+
     # --- Build HTML ---
     $highlightItems = foreach ($h in $highlights) {
         @"
