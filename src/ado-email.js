@@ -338,16 +338,21 @@ function createDonutChartSvg(items, title = 'Stats', label = 'Passed') {
 
   // Sort by count descending
   const sorted = Object.entries(grouped).sort((a, b) => b[1] - a[1]);
+
+  // Exclude NA (NotApplicable) from percentage denominator
+  const naCount = grouped['NotApplicable'] || grouped['notApplicable'] || 0;
+  const effectiveTotal = (total - naCount) > 0 ? (total - naCount) : 1;
   
   // Color palette
   const colors = {
     'Passed': '#00C800', 'Failed': '#FF0000', 'Blocked': '#9E9E9E', 'Not Run': '#2196F3',
     'Closed': '#4CAF50', 'Done': '#4CAF50', 'Resolved': '#8BC34A', 'Active': '#2196F3',
     'In Progress': '#2196F3', 'New': '#9E9E9E', 'Design': '#FF9800', 'Ready': '#FF9800',
+    'NotApplicable': '#78909C', 'notApplicable': '#78909C',
   };
 
-  // Calculate percentages and center label
-  const centerValue = Math.round((sorted.filter(([k]) => k === 'Passed' || k === 'Closed' || k === 'Done' || k === 'Resolved')[0]?.[1] || 0) / total * 100);
+  // Calculate center percentage excluding NA
+  const centerValue = Math.round((sorted.filter(([k]) => k === 'Passed' || k === 'Closed' || k === 'Done' || k === 'Resolved')[0]?.[1] || 0) / effectiveTotal * 100);
   
   // Build SVG
   let svg = '<svg viewBox="0 0 600 300" xmlns="http://www.w3.org/2000/svg" style="max-width:100%;height:auto;background:#fff;">';
@@ -382,16 +387,20 @@ function createDonutChartSvg(items, title = 'Stats', label = 'Passed') {
   svg += `<text x="300" y="140" font-size="32" font-weight="bold" text-anchor="middle" fill="#333">${centerValue}%</text>`;
   svg += `<text x="300" y="162" font-size="14" text-anchor="middle" fill="#999">${label}</text>`;
   
-  // Legend
+  // Legend (percentages exclude NA)
   let legendY = 30;
   sorted.forEach(([name, count]) => {
-    const percent = Math.round(count / total * 100);
+    const isNA = name === 'NotApplicable' || name === 'notApplicable';
+    const percentLabel = isNA
+      ? `${count} (excl. from %)`
+      : `${count} (${Math.round(count / effectiveTotal * 100)}%)`;
     const color = colors[name] || '#607D8B';
     svg += `<rect x="380" y="${legendY}" width="14" height="14" fill="${color}"/>`;
-    svg += `<text x="400" y="${legendY + 12}" font-size="12" fill="#333">${name}: ${count} (${percent}%)</text>`;
+    svg += `<text x="400" y="${legendY + 12}" font-size="12" fill="#333">${name}: ${percentLabel}</text>`;
     legendY += 25;
   });
-  svg += `<text x="380" y="${legendY + 5}" font-size="13" font-weight="bold" fill="#333">Total: ${total}</text>`;
+  const totalLabel = naCount > 0 ? `Total: ${total} (excl. ${naCount} NA)` : `Total: ${total}`;
+  svg += `<text x="380" y="${legendY + 5}" font-size="13" font-weight="bold" fill="#333">${totalLabel}</text>`;
   
   svg += '</svg>';
 

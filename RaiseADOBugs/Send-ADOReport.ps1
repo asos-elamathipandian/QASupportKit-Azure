@@ -206,10 +206,15 @@ function Get-TestOutcomeDonutChart {
     }
     $defaultColor = [System.Drawing.Color]::FromArgb(96, 125, 139)
 
-    # Calculate passed percentage for center
+    # Exclude NA (NotApplicable) from percentage calculations
+    $naCount = ($grouped | Where-Object { $_.Name -eq 'NotApplicable' } | Measure-Object -Property Count -Sum).Sum
+    if ($null -eq $naCount) { $naCount = 0 }
+    $effectiveTotal = if (($total - $naCount) -gt 0) { $total - $naCount } else { 1 }
+
+    # Calculate passed percentage for center (excluding NA)
     $passedCount = ($grouped | Where-Object { $_.Name -eq 'Passed' } | Measure-Object -Property Count -Sum).Sum
     if ($null -eq $passedCount) { $passedCount = 0 }
-    $passedPct = [math]::Round(($passedCount / $total) * 100, 0)
+    $passedPct = [math]::Round(($passedCount / $effectiveTotal) * 100, 0)
 
     # --- Generate Donut Chart PNG ---
     $imgWidth = 600
@@ -275,17 +280,22 @@ function Get-TestOutcomeDonutChart {
 
     foreach ($s in $sortedGroups) {
         $color = if ($outcomeColors.ContainsKey($s.Name)) { $outcomeColors[$s.Name] } else { $defaultColor }
-        $pct = [math]::Round(($s.Count / $total) * 100, 1)
         $swatchBrush = New-Object System.Drawing.SolidBrush($color)
         $g.FillRectangle($swatchBrush, $legendX, $legendY + 2, 14, 14)
         $swatchBrush.Dispose()
-        $legendEntry = "$($s.Name): $($s.Count) (${pct}%)"
+        if ($s.Name -eq 'NotApplicable') {
+            $legendEntry = "$($s.Name): $($s.Count) (excl. from %)"
+        } else {
+            $pct = [math]::Round(($s.Count / $effectiveTotal) * 100, 1)
+            $legendEntry = "$($s.Name): $($s.Count) (${pct}%)"
+        }
         $g.DrawString($legendEntry, $legendFont, $textBrush, ($legendX + 22), $legendY)
         $legendY += 30
     }
 
     $legendY += 10
-    $g.DrawString("Total: $total", $legendCountFont, $textBrush, $legendX, $legendY)
+    $totalLabel = if ($naCount -gt 0) { "Total: $total (excl. $naCount NA)" } else { "Total: $total" }
+    $g.DrawString($totalLabel, $legendCountFont, $textBrush, $legendX, $legendY)
 
     $legendFont.Dispose()
     $legendCountFont.Dispose()
@@ -947,29 +957,32 @@ function Get-TodaysHighlights {
     function Get-CrTestCasesStats {
         param([array]$Points)
         $total   = $Points.Count
-        $passed  = 0; $notRun = 0; $inProg = 0
+        $passed  = 0; $notRun = 0; $inProg = 0; $naCount = 0
         foreach ($tp in $Points) {
             $s = $tp.state; $o = $tp.outcome
             if ($s -eq 'inProgress' -or $s -eq 'InProgress') { $inProg++ }
             elseif ([string]::IsNullOrWhiteSpace($o) -or $o -eq 'Unspecified' -or $o -eq 'unspecified' -or $o -eq 'none' -or $o -eq 'None') { $notRun++ }
             elseif ($o -eq 'inProgress' -or $o -eq 'InProgress') { $inProg++ }
+            elseif ($o -eq 'notApplicable' -or $o -eq 'NotApplicable') { $naCount++ }
             elseif ($o -eq 'passed' -or $o -eq 'Passed' -or $o -eq 'completed' -or $o -eq 'Completed') { $passed++ }
         }
-        $executed = $total - $notRun - $inProg
-        return @{ Total = $total; Executed = $executed; Passed = $passed; NotRun = $notRun }
+        $effectiveTotal = $total - $naCount
+        $executed = if ($effectiveTotal -gt 0) { $effectiveTotal - $notRun - $inProg } else { 0 }
+        return @{ Total = $total; EffectiveTotal = $effectiveTotal; Executed = $executed; Passed = $passed; NotRun = $notRun; NA = $naCount }
     }
 
     $stats144 = Get-CrTestCasesStats -Points $TestPoints
     $stats147 = Get-CrTestCasesStats -Points $Cr147TestPoints
     $stats140 = Get-CrTestCasesStats -Points $Cr140TestPoints
 
-    $totalAllCr    = $stats144.Total    + $stats147.Total    + $stats140.Total
-    $executedAllCr = $stats144.Executed + $stats147.Executed + $stats140.Executed
-    $passedAllCr   = $stats144.Passed   + $stats147.Passed   + $stats140.Passed
+    $totalAllCr      = $stats144.Total          + $stats147.Total          + $stats140.Total
+    $effectiveAllCr  = $stats144.EffectiveTotal  + $stats147.EffectiveTotal  + $stats140.EffectiveTotal
+    $executedAllCr   = $stats144.Executed        + $stats147.Executed        + $stats140.Executed
+    $passedAllCr     = $stats144.Passed          + $stats147.Passed          + $stats140.Passed
 
-    if ($totalAllCr -gt 0) {
-        $completionPct = [Math]::Round(($executedAllCr / $totalAllCr) * 100, 1)
-        $passedPct     = [Math]::Round(($passedAllCr   / $totalAllCr) * 100, 1)
+    if ($effectiveAllCr -gt 0) {
+        $completionPct = [Math]::Round(($executedAllCr / $effectiveAllCr) * 100, 1)
+        $passedPct     = [Math]::Round(($passedAllCr   / $effectiveAllCr) * 100, 1)
 
         if ($passedPct -ge 80)     { $pctColor = "#2E7D32" }
         elseif ($passedPct -ge 50) { $pctColor = "#F57C00" }
@@ -978,7 +991,7 @@ function Get-TodaysHighlights {
         $highlights += @{
             Icon     = $pctColor
             Category = "Overall Test Completion"
-            Text     = "<strong style='font-size:15px;'>$passedPct%</strong> passed ($passedAllCr / $totalAllCr across CR144, CR147 &amp; CR140)&nbsp;&nbsp;|&nbsp;&nbsp;<strong>$completionPct%</strong> executed ($executedAllCr / $totalAllCr)"
+            Text     = "<strong style='font-size:15px;'>$passedPct%</strong> passed ($passedAllCr / $effectiveAllCr across CR144, CR147 &amp; CR140)&nbsp;&nbsp;|&nbsp;&nbsp;<strong>$completionPct%</strong> executed ($executedAllCr / $effectiveAllCr)"
         }
     }
 
