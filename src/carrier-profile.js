@@ -54,8 +54,8 @@ function getCarrierProfile(carrierInput = "DT") {
       shipmentCaName: "USA to USA Repro Carrier",
       shipmentCaId: "10",
       filePrefix: "RBTWTEST",
-      receiver: "RBTWTEST",
-      sender: "E2ASOS",
+      receiver: "E2ASOS",
+      sender: "RBTWTEST",
     };
   }
 
