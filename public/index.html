@@ -2415,6 +2415,15 @@ function showXmlReviewModal(fileName, xml, endpoint, label, rowId) {
 
 function closeGpmReviewModal() {
   document.getElementById('gpmReviewModal').style.display = 'none';
+  // Remove orphaned loading row if the user cancelled without uploading
+  const { rowId } = _xmlReviewContext;
+  if (rowId) {
+    const div = document.getElementById("row-" + rowId);
+    if (div && div.classList.contains("loading")) {
+      div.remove();
+    }
+  }
+  _xmlReviewContext = {};
   setAllButtons(false);
 }
 
