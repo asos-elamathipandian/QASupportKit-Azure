@@ -15,6 +15,8 @@ function getCarrierProfile(carrierInput = "DT") {
       shipmentCaName: "Davies Turner",
       shipmentCaId: "DT",
       filePrefix: "DAVIESTN",
+      receiver: "E2ASOS",
+      sender: "DAVIESTN",
     };
   }
 
@@ -26,6 +28,8 @@ function getCarrierProfile(carrierInput = "DT") {
       shipmentCaName: "Maersk",
       shipmentCaId: "12",
       filePrefix: "MAEU",
+      receiver: "E2ASOS",
+      sender: "MAEU",
     };
   }
 
@@ -37,11 +41,26 @@ function getCarrierProfile(carrierInput = "DT") {
       shipmentCaName: "Advanced Processing",
       shipmentCaId: "5",
       filePrefix: "ADV",
+      receiver: "E2ASOS",
+      sender: "ADV",
+    };
+  }
+
+  if (["chr", "usa", "usa to usa repro carrier"].includes(normalized)) {
+    return {
+      input: "CHR",
+      vbkconCaName: "USA to USA Repro Carrier",
+      vbkconCaId: "10",
+      shipmentCaName: "USA to USA Repro Carrier",
+      shipmentCaId: "10",
+      filePrefix: "RBTWTEST",
+      receiver: "RBTWTEST",
+      sender: "E2ASOS",
     };
   }
 
   throw new Error(
-    `Invalid carrier: ${carrierInput}. Allowed values: DT, Maersk, Advanced`
+    `Invalid carrier: ${carrierInput}. Allowed values: DT, Maersk, Advanced, CHR`
   );
 }
 

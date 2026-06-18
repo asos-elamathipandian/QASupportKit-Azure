@@ -62,7 +62,7 @@ function buildBulkStatusXml({ asn, carrier = "DT", now = new Date() }) {
   const timestamp = formatTimestamp(now);
   const handoverDate = formatDateTime(addSeconds(now, 3));
 
-  return `<XMLBundle>\n<XMLTransmission CtrlNumber="${ctrlNumber}" Receiver="E2ASOS" Sender="${carrierProfile.filePrefix}" Timestamp="${timestamp}">\n<XMLGroup CtrlNumber="${ctrlNumber}" GroupType="BP" IncludedMessages="1">\n<XMLTransaction CtrlNumber="${asn}" TransactionType="BPM-BST">\n<BpMessage MessageType="BST">\n<Mode>30</Mode>\n<Status>\n<Date DateTypeCd="HNDOVR" TimeZone="UTC">${handoverDate}</Date>\n<Location LocTypeCd="EA">\n<LocationID Qualifier="UN">TRIST</LocationID>\n</Location>\n</Status>\n<Document DocType="SHIP" Key="${asn}">\n<DocumentID>${asn}</DocumentID>\n</Document>\n</BpMessage>\n</XMLTransaction>\n</XMLGroup>\n</XMLTransmission>\n</XMLBundle>\n`;
+  return `<XMLBundle>\n<XMLTransmission CtrlNumber="${ctrlNumber}" Receiver="${carrierProfile.receiver}" Sender="${carrierProfile.sender}" Timestamp="${timestamp}">\n<XMLGroup CtrlNumber="${ctrlNumber}" GroupType="BP" IncludedMessages="1">\n<XMLTransaction CtrlNumber="${asn}" TransactionType="BPM-BST">\n<BpMessage MessageType="BST">\n<Mode>30</Mode>\n<Status>\n<Date DateTypeCd="HNDOVR" TimeZone="UTC">${handoverDate}</Date>\n<Location LocTypeCd="EA">\n<LocationID Qualifier="UN">TRIST</LocationID>\n</Location>\n</Status>\n<Document DocType="SHIP" Key="${asn}">\n<DocumentID>${asn}</DocumentID>\n</Document>\n</BpMessage>\n</XMLTransaction>\n</XMLGroup>\n</XMLTransmission>\n</XMLBundle>\n`;
 }
 
 async function writeBulkStatusFile({ asn, carrier = "DT", outputDir }) {
