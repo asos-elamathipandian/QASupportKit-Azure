@@ -92,7 +92,7 @@ async function createAdoBug({
       path: "/fields/Custom.DiscoveredInEnvironment",
       value: discoveredInEnvironment && discoveredInEnvironment.trim()
         ? discoveredInEnvironment.trim()
-        : "Integration",
+        : "UAT",
     },
   ];
 

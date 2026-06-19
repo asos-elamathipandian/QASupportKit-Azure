@@ -1394,8 +1394,8 @@ async function fullSccFlow() {
           </div>
         </div>
 
-        <!-- Severity + Discovered In -->
-        <div style="display:grid;grid-template-columns:148px 1fr 148px 1fr;border-bottom:1px solid #ede9fe;padding:8px 0;align-items:center;background:#f0ebff;">
+        <!-- Severity -->
+        <div style="display:grid;grid-template-columns:148px 1fr;border-bottom:1px solid #ede9fe;padding:8px 0;align-items:center;background:#f0ebff;">
           <span style="font-size:0.82rem;color:#6b7280;font-weight:500;">Severity</span>
           <div>
             <div id="dispSeverity" class="ubf-view" style="font-size:0.85rem;color:#374151;"></div>
@@ -1406,14 +1406,16 @@ async function fullSccFlow() {
               <option value="4 - Low">4 - Low</option>
             </select>
           </div>
-          <span style="font-size:0.82rem;color:#6b7280;font-weight:500;padding-left:16px;">Discovered In</span>
+        </div>
+
+        <!-- Discovered In Environment -->
+        <div style="display:grid;grid-template-columns:148px 1fr;border-bottom:1px solid #ede9fe;padding:8px 0;align-items:center;">
+          <span style="font-size:0.82rem;color:#6b7280;font-weight:500;">Discovered In</span>
           <div>
             <div id="dispEnvironment" class="ubf-view" style="font-size:0.85rem;color:#374151;"></div>
             <select id="bugEnvironment" class="ubf-edit" style="display:none;border:1px solid #c4b5fd;border-radius:5px;padding:4px 8px;font-size:0.84rem;width:100%;">
-              <option value="Integration" selected>Integration</option>
-              <option value="UAT">UAT</option>
+              <option value="Test" selected>Test</option>
               <option value="Production">Production</option>
-              <option value="Dev">Dev</option>
             </select>
           </div>
         </div>
