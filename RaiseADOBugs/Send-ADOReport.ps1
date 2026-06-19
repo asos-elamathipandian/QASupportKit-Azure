@@ -805,10 +805,18 @@ function Get-TodaysHighlights {
             Text = "$($todayTestUpdates.Count) test case(s) updated today - $outcomeSummary"
         }
     } else {
-        $highlights += @{
-            Icon = "#888888"
-            Category = "Test Execution (CR144)"
-            Text = "No test executions recorded today"
+        $passed144 = 0; $na144 = 0
+        foreach ($tp in $TestPoints) {
+            $o = $tp.outcome
+            if ($o -eq 'notApplicable' -or $o -eq 'NotApplicable') { $na144++ }
+            elseif ($o -eq 'passed' -or $o -eq 'Passed' -or $o -eq 'completed' -or $o -eq 'Completed') { $passed144++ }
+        }
+        $eff144 = $TestPoints.Count - $na144
+        $pct144 = if ($eff144 -gt 0) { [Math]::Round(($passed144 / $eff144) * 100, 1) } else { 0 }
+        if ($pct144 -ge 80) {
+            $highlights += @{ Icon = "#2E7D32"; Category = "Test Execution (CR144)"; Text = "Test completed" }
+        } else {
+            $highlights += @{ Icon = "#888888"; Category = "Test Execution (CR144)"; Text = "No test executions recorded today" }
         }
     }
 
@@ -841,10 +849,18 @@ function Get-TodaysHighlights {
             Text = "$($todayCr147Updates.Count) test case(s) updated today - $outcomeSummary"
         }
     } else {
-        $highlights += @{
-            Icon = "#888888"
-            Category = "Test Execution (CR147)"
-            Text = "No test executions recorded today"
+        $passed147 = 0; $na147 = 0
+        foreach ($tp in $Cr147TestPoints) {
+            $o = $tp.outcome
+            if ($o -eq 'notApplicable' -or $o -eq 'NotApplicable') { $na147++ }
+            elseif ($o -eq 'passed' -or $o -eq 'Passed' -or $o -eq 'completed' -or $o -eq 'Completed') { $passed147++ }
+        }
+        $eff147 = $Cr147TestPoints.Count - $na147
+        $pct147 = if ($eff147 -gt 0) { [Math]::Round(($passed147 / $eff147) * 100, 1) } else { 0 }
+        if ($pct147 -ge 80) {
+            $highlights += @{ Icon = "#2E7D32"; Category = "Test Execution (CR147)"; Text = "Test completed" }
+        } else {
+            $highlights += @{ Icon = "#888888"; Category = "Test Execution (CR147)"; Text = "No test executions recorded today" }
         }
     }
 
@@ -877,10 +893,18 @@ function Get-TodaysHighlights {
             Text = "$($todayCr140Updates.Count) test case(s) updated today - $outcomeSummary"
         }
     } else {
-        $highlights += @{
-            Icon = "#888888"
-            Category = "Test Execution (CR140)"
-            Text = "No test executions recorded today"
+        $passed140 = 0; $na140 = 0
+        foreach ($tp in $Cr140TestPoints) {
+            $o = $tp.outcome
+            if ($o -eq 'notApplicable' -or $o -eq 'NotApplicable') { $na140++ }
+            elseif ($o -eq 'passed' -or $o -eq 'Passed' -or $o -eq 'completed' -or $o -eq 'Completed') { $passed140++ }
+        }
+        $eff140 = $Cr140TestPoints.Count - $na140
+        $pct140 = if ($eff140 -gt 0) { [Math]::Round(($passed140 / $eff140) * 100, 1) } else { 0 }
+        if ($pct140 -ge 80) {
+            $highlights += @{ Icon = "#2E7D32"; Category = "Test Execution (CR140)"; Text = "Test completed" }
+        } else {
+            $highlights += @{ Icon = "#888888"; Category = "Test Execution (CR140)"; Text = "No test executions recorded today" }
         }
     }
 
