@@ -39,20 +39,21 @@ export class Regression_TA_LoginPage extends Regression_TA_BasePage {
 
     // Prefer direct SCC app landing; dashboard clicks are flaky on transient sessions.
     try {
-      await this.page.goto('https://asos.staging.e2open.com/asos/', { waitUntil: 'domcontentloaded' });
-      await this.page.frameLocator('iframe[name="clientframe"]').locator('body').waitFor({ timeout: 30000 });
+      await this.page.goto('https://asos.staging.e2open.com/asos/', { waitUntil: 'domcontentloaded', timeout: 60000 });
+      await this.page.frameLocator('iframe[name="clientframe"]').locator('body').waitFor({ timeout: 60000 });
       return;
     } catch {
       // Fallback to dashboard click flow — navigate back to launchpad first
       // (the failed goto above may have left us on the SCC app page where no dashboard tiles exist).
     }
 
-    await this.page.goto('https://asos.staging.e2open.com/CLPSTG_e2clp/e2clp/#/', { waitUntil: 'domcontentloaded' });
-    await this.page.locator('a').filter({ hasText: 'ASOS SCC' }).first().waitFor({ state: 'visible', timeout: 30000 });
+    await this.page.goto('https://asos.staging.e2open.com/CLPSTG_e2clp/e2clp/#/', { waitUntil: 'domcontentloaded', timeout: 60000 });
+    await this.page.waitForLoadState('networkidle').catch(() => {});
+    await this.page.locator('a').filter({ hasText: 'ASOS SCC' }).first().waitFor({ state: 'visible', timeout: 60000 });
     await this.page.locator('a').filter({ hasText: 'ASOS SCC' }).first().click();
-    await this.page.locator('#table-example-1').getByText('ASOS SCC', { exact: true }).waitFor({ state: 'visible', timeout: 15000 });
+    await this.page.locator('#table-example-1').getByText('ASOS SCC', { exact: true }).waitFor({ state: 'visible', timeout: 30000 });
     await this.page.locator('#table-example-1').getByText('ASOS SCC', { exact: true }).click();
-    await this.page.goto('https://asos.staging.e2open.com/asos/', { waitUntil: 'domcontentloaded' });
+    await this.page.goto('https://asos.staging.e2open.com/asos/', { waitUntil: 'domcontentloaded', timeout: 60000 });
 
     // await this.page.waitForURL('**/desktop/**', { timeout: 20000 }).catch(async () => {
     //   try {

@@ -86,10 +86,12 @@ test('Single ASN Booking - Create separate booking for each ASN', async ({ page 
   const loginPage = new Regression_TA_LoginPage(page);
 
   // Login once
+  console.log('[booking-step] Logging in to SCC...');
   await loginPage.goToLogin();
   await loginPage.enterEmail(loginData.email);
   await loginPage.enterCredentials(loginData.username, loginData.password);
   await dismissMaestroPopup(page);
+  console.log('[booking-step] Login complete, starting per-ASN booking loop...');
 
   const frame = page.frameLocator('iframe[name="clientframe"]');
   const scchomePage = new SCCHomepage(page);

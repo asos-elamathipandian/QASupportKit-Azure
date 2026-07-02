@@ -90,11 +90,13 @@ test('Create Draft Booking via Order Search then Edit Multiple Lines', async ({ 
   console.log(`[multi-lines-edit] Processing ASNs: ${asnFromFile}`);
 
   // --- Login ---
+  console.log('[multi-lines-edit] Logging in to SCC...');
   const loginPage = new Regression_TA_LoginPage(page);
   await loginPage.goToLogin();
   await loginPage.enterEmail(loginData.email);
   await loginPage.enterCredentials(loginData.username, loginData.password);
   await dismissMaestroPopup(page);
+  console.log('[multi-lines-edit] Login complete, navigating to Order Search...');
 
   // --- Setup page objects ---
   const frame = page.frameLocator('iframe[name="clientframe"]');

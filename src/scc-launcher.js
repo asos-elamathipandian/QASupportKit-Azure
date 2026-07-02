@@ -411,16 +411,16 @@ async function createSingleAsnBooking(asnList, options = {}) {
   writeAsnsInput(asnList);
   console.log(`[SCC] Running working single-booking spec for ASNs: ${asnList.join(',')}`);
 
-  if (onStep) onStep(`Creating single booking for ${asnList.length} ASN${asnList.length > 1 ? 's' : ''} (multi-lines edit flow)`);
+  if (onStep) onStep(`Creating single booking per ASN for ${asnList.length} ASN${asnList.length > 1 ? 's' : ''} (one booking per ASN flow)`);
   if (onStep) onStep('Launching Playwright browser\u2026');
 
   try {
-    await runWorkingSpec(paths.multiLinesEditSpec, {}, 1200000, options);
+    await runWorkingSpec(paths.singleBookingSpec, {}, 1200000, options);
 
     if (onStep) onStep('Playwright test completed, reading results\u2026');
-    const result = readJsonIfExists(paths.multiLinesEditResults) || readJsonIfExists(paths.bookingResults) || [];
+    const result = readJsonIfExists(paths.bookingResults) || [];
     const count = Array.isArray(result) ? result.length : asnList.length;
-    if (onStep) onStep(`\u2705 ${count} booking line${count !== 1 ? 's' : ''} created and submitted`);
+    if (onStep) onStep(`\u2705 ${count} booking${count !== 1 ? 's' : ''} created and submitted`);
 
     return {
       success: true,
