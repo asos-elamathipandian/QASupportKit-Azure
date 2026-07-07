@@ -13,6 +13,7 @@ function formatFileTimestamp(date) {
     pad(date.getUTCHours()),
     pad(date.getUTCMinutes()),
     pad(date.getUTCSeconds()),
+    pad(date.getUTCMilliseconds(), 3),
   ].join("");
 }
 

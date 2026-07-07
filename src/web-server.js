@@ -489,9 +489,12 @@ app.post("/api/upload/gpm", async (req, res) => {
     const outputDir = getOutputDir(process.env);
     const filePath = path.join(outputDir, fileName);
     fs.writeFileSync(filePath, xml, "utf8");
+    console.log(`[GPM UPLOAD] Starting SFTP upload: ${fileName}`);
     const remotePath = await upload(filePath);
+    console.log(`[GPM UPLOAD] Success: ${fileName} → ${remotePath}`);
     res.json({ ok: true, fileName, uploaded: true, remotePath });
   } catch (e) {
+    console.error(`[GPM UPLOAD] Failed: ${e.message}`);
     res.status(500).json({ ok: false, error: e.message });
   }
 });
