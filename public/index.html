@@ -2006,7 +2006,19 @@ async function fullSccFlow() {
       await new Promise(r => setTimeout(r, 300));
       const data = await res.json().catch(() => ({ ok: false, error: "Invalid response" }));
       // If backend returns XML for review, show modal before upload
-      if (data && data.xml && data.fileName) {
+      if (data && data.files && data.files.length > 0) {
+        // Multiple SKUs: queue files for sequential review + upload
+        const allFiles = data.files.slice();
+        const first = allFiles.shift();
+        showXmlReviewModal(first.fileName, first.xml, endpoint, label, rowId);
+        _xmlReviewContext._fileQueue = allFiles;
+        _xmlReviewContext._uploadResults = [];
+        _xmlReviewContext._totalFiles = data.files.length;
+        if (data.files.length > 1) {
+          document.getElementById('gpmReviewFileName').textContent =
+            `(1 of ${data.files.length}) ${first.fileName}`;
+        }
+      } else if (data && data.xml && data.fileName) {
         showXmlReviewModal(data.fileName, data.xml, endpoint, label, rowId);
       } else {
         updateRow(rowId, label, data);
@@ -2498,7 +2510,7 @@ function closeGpmReviewModal() {
 }
 
 function confirmAndUploadGpm() {
-  const { fileName, endpoint, label, rowId } = _xmlReviewContext;
+  const { fileName, endpoint, label, rowId, _fileQueue, _uploadResults, _totalFiles } = _xmlReviewContext;
   const xml = aceEditor ? aceEditor.getValue() : '';
   document.getElementById('gpmUploadBtn').disabled = true;
   document.getElementById('gpmUploadStatus').textContent = 'Uploading to SFTP...';
@@ -2514,9 +2526,32 @@ function confirmAndUploadGpm() {
     .then(res => res.json())
     .then(data => {
       if (data.ok) {
-        updateRow(rowId, label, data);
-        document.getElementById('gpmUploadStatus').textContent = '✅ Uploaded successfully!';
-        setTimeout(closeGpmReviewModal, 1200);
+        const accumulated = (_uploadResults || []).concat([data]);
+        if (_fileQueue && _fileQueue.length > 0) {
+          // More files in queue – advance to next
+          const [nextFile, ...remainingQueue] = _fileQueue;
+          const doneCount = accumulated.length;
+          const total = _totalFiles || (doneCount + _fileQueue.length);
+          document.getElementById('gpmUploadStatus').textContent =
+            `✅ Uploaded ${doneCount} of ${total}. Loading next file...`;
+          setTimeout(() => {
+            showXmlReviewModal(nextFile.fileName, nextFile.xml, endpoint, label, rowId);
+            _xmlReviewContext._fileQueue = remainingQueue;
+            _xmlReviewContext._uploadResults = accumulated;
+            _xmlReviewContext._totalFiles = total;
+            document.getElementById('gpmReviewFileName').textContent =
+              `(${doneCount + 1} of ${total}) ${nextFile.fileName}`;
+          }, 500);
+        } else {
+          // All files uploaded
+          if (accumulated.length > 1) {
+            updateRow(rowId, label, { ok: true, files: accumulated });
+          } else {
+            updateRow(rowId, label, data);
+          }
+          document.getElementById('gpmUploadStatus').textContent = '✅ Uploaded successfully!';
+          setTimeout(closeGpmReviewModal, 1200);
+        }
       } else {
         document.getElementById('gpmUploadStatus').textContent = '❌ ' + (data.error || 'Upload failed');
         document.getElementById('gpmUploadBtn').disabled = false;

@@ -90,13 +90,17 @@ function buildGpmXml({ sku, optionId }) {
 
 async function writeGpmFile({ sku, optionId, outputDir }) {
   const skus = sku.split(",").map(s => s.trim()).filter(Boolean);
+  const options = String(optionId).split(",").map(o => o.trim()).filter(Boolean);
   const absoluteOutputDir = path.resolve(outputDir);
   await fs.mkdir(absoluteOutputDir, { recursive: true });
 
   const results = [];
-  for (const singleSku of skus) {
+  for (let i = 0; i < skus.length; i++) {
+    const singleSku = skus[i];
+    // Pair SKU[i] with optionId[i]; fall back to the last option if fewer options than SKUs
+    const singleOptionId = options[i] || options[options.length - 1] || optionId;
     const now = new Date();
-    const xmlContent = buildGpmXml({ sku: singleSku, optionId });
+    const xmlContent = buildGpmXml({ sku: singleSku, optionId: singleOptionId });
     const fileTimestamp = formatFileTimestamp(now);
     const fileName = `ASOS_E2ASOS_GPM_1.0_${singleSku}_${fileTimestamp}.xml`;
     const filePath = path.join(absoluteOutputDir, fileName);

@@ -97,6 +97,61 @@ Environment and runtime behavior:
 
 	http://localhost:3000
 
+## SCC Carrier Booking Automation
+
+The SCC automation module uses Playwright to drive the E2Open SCC staging portal end-to-end. All flows are local-only (disabled in cloud runtime).
+
+### Available Flows
+
+| Flow | Description |
+|------|-------------|
+| **Single ASN per Booking** | Loops through each ASN and creates one booking per ASN — edit, submit, approve |
+| **All ASNs × One Booking** | Combines all ASNs into a single booking — edit, submit, approve |
+| **Full SCC Flow** | One-click flow: ASN lookup → create booking → edit → submit → approve |
+| **Cancel Booking** | Cancels an existing booking by ASN + VB reference |
+
+### Flow Summary
+
+Each booking flow follows these steps:
+
+1. **Login** — navigates to `asos.staging.e2open.com`, logs in via CLP, lands on the SCC app
+2. **Create Booking** — navigates to Order Search, searches by ASN, selects record, clicks Create Booking
+3. **Edit Booking** — navigates to Carrier Booking Detail, filters by ASN + Draft status, selects newest booking row, fills carton/weight/cargo dates/traffic mode, saves
+4. **Submit Booking** — selects the saved booking row, clicks Submit, handles confirmation dialog
+5. **Check Status** — reads the booking status directly from the carrier booking list after submit:
+   - `Submitted` → records result, done
+   - `Draft` → proceeds to approval flow
+6. **Approval Flow** *(if Draft)* — navigates to Carrier Booking Approval, searches by ASN, selects row, clicks Approve
+7. **Read Final Status** — navigates back to Carrier Booking Detail and reads the live post-approval status from SCC
+
+### Cancel Booking Flow
+
+1. Navigate to Carrier Booking Detail (Menu → DDP Tools → View List → ASOS Carrier Booking Detail)
+2. Search by ASN
+3. Find the row matching the VB reference
+4. Select the row and click Cancel Booking
+5. Wait for processing and read the actual status from the SCC grid
+
+### Key Technical Notes
+
+- **jQuery checkbox trigger** — SCC uses jQuery UI custom checkboxes that do not respond to standard DOM events. All checkbox interactions use `jQuery(el).trigger('click')` via Playwright's `evaluate()`.
+- **Single-row selection** — SCC's Edit Booking and Approve buttons only enable when exactly one row is selected. When multiple rows are present the newest (first) row is selected automatically.
+- **Tolerance exception handling** — When SCC raises a "Booking Tolerance Exception" after submit, the iframe context may become temporarily unavailable. The automation closes any error banner and proceeds to the approval flow using the live main page.
+- **Headed mode** — `SCC_HEADLESS=false` in `config/.env` runs Chrome visibly. This is loaded by `loadEnvironment()` before `scc-launcher.js` initialises its constants.
+- **Post-approval status** — After the approval step completes the automation navigates back to the carrier booking list and reads the actual SCC status (not hard-coded).
+
+### Configuration
+
+Set in `config/.env`:
+
+```
+SCC_HEADLESS=false        # Show Chrome window during automation
+```
+
+SCC credentials are read from `scc-working-copy/tests-examples/Regression_TA_loginData.json`.
+
+---
+
 ## Configuration Notes
 
 - App config files are under config and RaiseADOBugs
