@@ -124,15 +124,37 @@ class CarrierBookingEditPage {
     async saveSubmitAfterEdit() {
         await this.safeClick(this.frame.getByRole('button', this.saveAfterEdit));
         await this.waitForGridToBeReady();
-        await this.frame.locator(this.selectEditedBookingResult).check();
-        // Capture the VB reference of the booking we are about to submit
+        const selectAllCb = this.frame.locator(this.selectEditedBookingResult);
+        await selectAllCb.waitFor({ state: 'visible', timeout: 10000 });
+        await selectAllCb.evaluate(el => {
+            if (typeof jQuery !== 'undefined') jQuery(el).trigger('click');
+            else if (typeof $ !== 'undefined') $(el).trigger('click');
+            else el.click();
+        }).catch(() => {});
+        await new Promise(r => setTimeout(r, 400));
         const vbReference = await this.frame.locator('[title*="VB-000"]').first()
             .textContent({ timeout: 5000 }).then(t => t.trim()).catch(() => null);
+
         await this.safeClick(this.frame.getByRole('button', this.submitBookingAfterEdit));
-        // Wait for SCC to process the submission — overlay may appear briefly then clear
-        await this.frame.locator(this.loadingOverlay).waitFor({ state: 'visible', timeout: 5000 }).catch(() => {});
-        await this.waitForGridToBeReady();
-        return vbReference;
+
+        // Wait for SCC to process. The iframe may briefly lose its execution context
+        // (e.g. "Fail to execute" banner or Tolerance Exception) but the main page stays alive.
+        // After 3 seconds the iframe will have reloaded; read the status then.
+        await new Promise(r => setTimeout(r, 3000));
+        let bookingStatus = 'Draft';
+        try {
+            await this.frame.locator('#resultTable-select-all')
+                .waitFor({ state: 'visible', timeout: 10000 });
+            const cell = this.frame.locator('[id^="resultfield_appvbStatus"]').first();
+            const status = await cell.textContent({ timeout: 5000 }).then(t => t.trim()).catch(() => '');
+            if (status) bookingStatus = status;
+        } catch {
+            // Iframe had an error (tolerance exception, submit fail) — booking is Draft
+            // Main page is still alive; the approval flow will navigate from here.
+            console.log('[saveSubmitAfterEdit] Submit resulted in Draft/error — proceeding to approval.');
+        }
+
+        return { vbReference, bookingStatus };
     }
 }
 module.exports = { CarrierBookingEditPage }

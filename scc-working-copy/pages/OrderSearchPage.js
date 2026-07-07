@@ -36,6 +36,9 @@ class OrderSearchPage {
         await this.frame.locator(this.asnField).click();
         await this.frame.locator(this.asnField).fill(asns);
         await this.frame.locator(this.applyButton).click();
+        // Wait for the search to start and results to load before proceeding
+        await this.frame.locator(this.loadingOverlay).waitFor({ state: 'visible', timeout: 3000 }).catch(() => {});
+        await this.waitForGridToBeReady();
     }
     async selectAndCreateBooking() {
         const selectAll = this.frame.locator(this.selectAllCheck);
@@ -48,7 +51,12 @@ class OrderSearchPage {
             await this.frame.locator(this.loadingOverlay).waitFor({ state: 'hidden', timeout: 10000 }).catch(() => {});
 
             try {
-                await selectAll.check({ timeout: 3000 });
+                await selectAll.evaluate(el => {
+                    if (typeof jQuery !== 'undefined') jQuery(el).trigger('click');
+                    else if (typeof $ !== 'undefined') $(el).trigger('click');
+                    else el.click();
+                });
+                await new Promise(r => setTimeout(r, 500));
             } catch {
                 await selectAll.click({ force: true });
             }

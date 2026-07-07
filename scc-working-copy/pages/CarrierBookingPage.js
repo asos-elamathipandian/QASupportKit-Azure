@@ -49,7 +49,13 @@ class CarrierBookingPage {
         // Wait for any loading triggered by the ASN fill to settle before touching the status dropdown
         await this.frame.locator(this.loadingOverlay).waitFor({ state: 'hidden', timeout: 10000 }).catch(() => {});
         await this.frame.locator(this.statusDropDown).click();
-        await this.frame.getByLabel('Draft', { exact: true }).check();
+        // Wait for the multiselect panel to open before interacting with options
+        const draftOption = this.frame.getByLabel('Draft', { exact: true });
+        await draftOption.waitFor({ state: 'visible', timeout: 5000 }).catch(() => {});
+        await draftOption.check().catch(async () => {
+            // Fallback: find the label by text and click it
+            await this.frame.locator('label').filter({ hasText: /^Draft$/ }).first().click().catch(() => {});
+        });
         // Close dropdown by clicking ASN field (neutral — already filled, click just repositions cursor)
         // This commits the Draft selection to the filter form before Apply runs
         await this.frame.locator(this.asnField).click();
@@ -117,8 +123,11 @@ class CarrierBookingPage {
         for (let attempt = 1; attempt <= maxAttempts; attempt++) {
             status = await this._readBookingStatus(vbReference);
             if (!waitForNonDraft || status.toLowerCase() !== 'draft') break;
-            console.log(`[getBookingStatus] Status is Draft on attempt ${attempt}/${maxAttempts}, waiting 3s for SCC to process submission…`);
+            console.log(`[getBookingStatus] Status is Draft on attempt ${attempt}/${maxAttempts}, re-searching for fresh status…`);
             await new Promise(resolve => setTimeout(resolve, 3000));
+            // Re-click Apply to pull fresh data from the server — re-reading the DOM alone won't
+            // reflect a status change SCC processed in the background since the last search.
+            await this.frame.locator(this.applyButton).click().catch(() => {});
             await this.waitForGridToBeReady();
         }
         return status;
@@ -169,14 +178,24 @@ class CarrierBookingPage {
         for (let attempt = 1; attempt <= 8; attempt += 1) {
             await this.frame.locator(this.loadingOverlay).waitFor({ state: 'hidden', timeout: 10000 }).catch(() => {});
 
-            // Check current state — if already checked, don't click (would deselect)
-            // If unchecked, click to select all rows
-            const isChecked = await selectAll.isChecked().catch(() => false);
+            // When multiple rows are present select only the FIRST (newest) row.
+            // Selecting all rows with select-all leaves Edit Booking disabled in SCC.
+            const rows = this.frame.locator('#resultTable .ui-grid-body-row');
+            const rowCount = await rows.count();
+            const targetCheckbox = rowCount > 1
+                ? rows.first().locator('input[type="checkbox"]').first()
+                : selectAll;
+
+            const isChecked = await targetCheckbox.isChecked().catch(() => false);
             if (!isChecked) {
-                await selectAll.click({ force: true }).catch(async () => {
-                    await selectAll.check({ force: true }).catch(() => {});
-                });
-                await this.page.waitForTimeout(1500);
+                // Use jQuery trigger('click') via evaluate — SCC's checkboxes use jQuery event
+                // listeners that don't respond to vanilla DOM events (dispatchEvent/el.click())
+                await targetCheckbox.evaluate(el => {
+                    if (typeof jQuery !== 'undefined') jQuery(el).trigger('click');
+                    else if (typeof $ !== 'undefined') $(el).trigger('click');
+                    else el.click();
+                }).catch(() => {});
+                await new Promise(r => setTimeout(r, 500));
             }
 
             const ariaDisabled = await editButton.getAttribute('aria-disabled');
@@ -189,8 +208,8 @@ class CarrierBookingPage {
                 return;
             }
 
-            console.log(`[selectAndEditBooking] Edit button still disabled on attempt ${attempt}/8 (checked=${isChecked})`);
-            await this.page.waitForTimeout(1000);
+            console.log(`[selectAndEditBooking] Edit button still disabled on attempt ${attempt}/8 (rows=${rowCount})`);
+            await this.page.waitForTimeout(500);
         }
 
         throw new Error('Edit Booking remained disabled after selecting booking rows');

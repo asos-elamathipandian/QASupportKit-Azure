@@ -72,6 +72,42 @@ function getWorkingAutomationPaths() {
   };
 }
 
+// Extracts the single most useful error line from raw Playwright spec output.
+// Avoids dumping hundreds of lines of stack traces into the UI error message.
+function summariseSpecError(rawOutput) {
+  const lines = rawOutput.split('\n').map(l => l.trim()).filter(Boolean);
+
+  // TimeoutError — show what it was waiting for
+  const timeoutIdx = lines.findIndex(l => /TimeoutError.*Timeout\s+\d+ms exceeded/i.test(l));
+  if (timeoutIdx !== -1) {
+    const ms = lines[timeoutIdx].match(/Timeout\s+(\d+)ms/)?.[1];
+    const secs = ms ? `${Math.round(Number(ms) / 1000)}s` : '';
+    const waitLine = lines.slice(timeoutIdx).find(l => /- waiting for /i.test(l));
+    const what = waitLine ? waitLine.replace(/.*- waiting for /i, '').trim().substring(0, 80) : '';
+    return `Timed out${secs ? ` (${secs})` : ''}${what ? `: ${what}` : ''}`;
+  }
+
+  // Explicit Error line (not a stack frame)
+  const errLine = lines.find(l =>
+    /^(Error|TypeError|AssertionError|locator\.\w+): /i.test(l) && !/^\s+at /.test(l)
+  );
+  if (errLine) return errLine.substring(0, 120);
+
+  // Known failure phrases
+  const failLine = lines.find(l =>
+    /remained disabled|not found|could not|failed to|did not change|is not visible/i.test(l) &&
+    !/^\s+at /.test(l) && l.length > 10 && l.length < 200
+  );
+  if (failLine) return failLine.substring(0, 120);
+
+  // Fallback: last meaningful line
+  const meaningful = lines.filter(l =>
+    l.length > 10 && !/^\s*at\s+/i.test(l) && !/^node_modules/.test(l) &&
+    !/^\d+\s*\|/.test(l) && !/DeprecationWarning|DEP\d+/i.test(l)
+  );
+  return (meaningful[meaningful.length - 1] || 'Spec failed').substring(0, 120);
+}
+
 async function runWorkingSpec(specPath, envVars = {}, timeoutMs = 300000, options = {}) {
   // Run from scc-working-copy so specs resolve asns.txt, playwright.config.js, etc. correctly
   const specCwd = LOCAL_SCC_COPY_DIR;
@@ -122,13 +158,7 @@ async function runWorkingSpec(specPath, envVars = {}, timeoutMs = 300000, option
       _activeChild = null;
       clearTimeout(killTimer);
       if (code !== 0) {
-        // Filter Node.js deprecation warnings / stack traces — show last meaningful lines
-        const meaningful = (stdout + '\n' + stderr)
-          .split('\n')
-          .filter(l => l.trim() && !/DeprecationWarning|DEP\d+|\(Use `node|^\s+at /i.test(l))
-          .slice(-30)
-          .join('\n');
-        reject(new Error(`Spec exited with code ${code}:\n${meaningful.substring(0, 1500)}`));
+        reject(new Error(summariseSpecError(stdout + '\n' + stderr)));
       } else {
         resolve({ success: true, stdout, stderr });
       }
@@ -392,8 +422,8 @@ async function lookupAsn(asnList, options = {}) {
       message: found ? 'ASN found' : 'ASN not found',
     };
   } catch (err) {
-    if (onStep) onStep(`\u274c Error: ${err.message.substring(0, 120)}`);
-    throw new Error(`ASN lookup failed via working automation: ${err.message}`);
+    if (onStep) onStep(`\u274c ${err.message}`);
+    throw new Error(`ASN lookup failed: ${err.message}`);
   }
 }
 
@@ -430,8 +460,8 @@ async function createSingleAsnBooking(asnList, options = {}) {
       message: `Single booking flow completed via working automation project`,
     };
   } catch (err) {
-    if (onStep) onStep(`\u274c Error: ${err.message.substring(0, 120)}`);
-    throw new Error(`Single booking failed via working automation: ${err.message}`);
+    if (onStep) onStep(`\u274c ${err.message}`);
+    throw new Error(`Single booking failed: ${err.message}`);
   }
 }
 
@@ -478,8 +508,8 @@ async function createMultiAsnBooking(asnList, options = {}) {
       message: `Multi-ASN booking flow completed via working automation project`,
     };
   } catch (err) {
-    if (onStep) onStep(`\u274c Error: ${err.message.substring(0, 120)}`);
-    throw new Error(`Multi-ASN booking failed via working automation: ${err.message}`);
+    if (onStep) onStep(`\u274c ${err.message}`);
+    throw new Error(`Multi booking failed: ${err.message}`);
   }
 }
 

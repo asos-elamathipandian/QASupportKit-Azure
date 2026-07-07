@@ -13,8 +13,7 @@ class SCCHomepage {
         const isDdpVisible = await ddpTools.isVisible().catch(() => false);
         if (!isDdpVisible) {
             await toggle.click();
-            // Allow menu animation to complete before interacting with items
-            await this.page.waitForTimeout(500);
+            // navigateToViewList waits for DDP Tools to be visible anyway — no fixed delay needed
         }
     }
     async navigateToViewList() {
@@ -25,8 +24,7 @@ class SCCHomepage {
         const viewList = this.page.getByRole('link', this.viewListLink);
         await viewList.waitFor({ state: 'visible', timeout: 10000 });
         await viewList.click();
-        // Wait for the iframe to attach and start loading before caller tries to interact with it
-        await this.page.waitForLoadState('domcontentloaded').catch(() => {});
+        // iframe loading is handled by the caller (expandandClearFilter etc.) — no need to wait here
     }
 }
 module.exports = { SCCHomepage };

@@ -73,8 +73,8 @@ async function navigateToCarrierApproval(scchomePage, sccviewlistPage) {
   });
 }
 
-test('Single ASN Booking - Create separate booking for each ASN', async ({ page }) => {
-  test.setTimeout(600 * 1000 * asnList.length);
+test('Single ASN Booking - Create separate booking for each ASN', async ({ page, browser }) => {
+  test.setTimeout(600 * 1000 * asnList.length); // 10 min per ASN
   const bookingResults = [];
 
   // Accept ALL dialogs automatically — prevents unhandled dialogs from closing the edit page
@@ -91,6 +91,10 @@ test('Single ASN Booking - Create separate booking for each ASN', async ({ page 
   await loginPage.enterEmail(loginData.email);
   await loginPage.enterCredentials(loginData.username, loginData.password);
   await dismissMaestroPopup(page);
+  // Save session state immediately after login — used for fast browser recovery
+  // if the tolerance exception closes the original context
+  const SESSION_STATE_PATH = path.join(__dirname, '..', 'scc-session.json');
+  await page.context().storageState({ path: SESSION_STATE_PATH }).catch(() => {});
   console.log('[booking-step] Login complete, starting per-ASN booking loop...');
 
   const frame = page.frameLocator('iframe[name="clientframe"]');
@@ -117,9 +121,11 @@ test('Single ASN Booking - Create separate booking for each ASN', async ({ page 
       await ordersearchPage.closeResult();
     });
 
-    // Navigate to Carrier Booking and edit
+    // Navigate to Carrier Booking, edit, save and submit.
+    // saveSubmitAfterEdit() returns { vbReference, bookingStatus } read directly from
+    // the list page SCC redirects to after Submit — no separate fetch step needed.
     await navigateToCarrierBooking(scchomePage, sccviewlistPage, listenDialog);
-    let submittedVbRef = null;
+    let submitResult = null;
     await retryStep(`edit booking for ASN ${currentASN}`, async () => {
       await carrierbookingPage.expandandClearFilter();
       await carrierbookingPage.searchWithasnAndstatus(currentASN);
@@ -127,29 +133,27 @@ test('Single ASN Booking - Create separate booking for each ASN', async ({ page 
       await carrierbookingeditPage.editCarrierBookingDetails();
       await carrierbookingeditPage.editCarrierHeaderDetails();
       await acceptDialogIfPresent(listenDialog);
-      submittedVbRef = await carrierbookingeditPage.saveSubmitAfterEdit();
+      submitResult = await carrierbookingeditPage.saveSubmitAfterEdit();
       await acceptDialogIfPresent(listenDialog);
     }, 2, 2000);
 
-    // Fetch booking outcome — target the specific VBRef we just submitted
-    const { vbReference, bookingStatus } = await retryStep(`fetch outcome for ASN ${currentASN}`, async () => {
-      await carrierbookingPage.expandandClearFilter();
-      await carrierbookingPage.searchWithAsn(currentASN);
-      if (submittedVbRef) {
-        await carrierbookingPage.waitForGridToBeReady();
-        const status = await carrierbookingPage.getBookingStatus(submittedVbRef, { waitForNonDraft: true });
-        return { vbReference: submittedVbRef, bookingStatus: status };
-      }
-      return await carrierbookingPage.getActiveBookingResult({ waitForNonDraft: true });
-    }, 3, 2000);
+    const vbReference = submitResult ? submitResult.vbReference : null;
+    const bookingStatus = submitResult ? submitResult.bookingStatus : 'Draft';
 
     console.log(`VB Reference: ${vbReference}`);
     console.log(`Booking Status: ${bookingStatus}`);
     bookingResults.push({ asn: currentASN, vbReference, bookingStatus });
 
-    // Approve if status is Draft
+    // Approve if status is Draft, finish if Submitted.
+    // The main page stays alive after Submit (even with tolerance exceptions / "Fail to execute").
+    // Just close any error banner and navigate to approval using the same page objects.
     if (bookingStatus.toLowerCase() === 'draft') {
       console.log('Status is Draft. Proceeding with approval flow.');
+      // Close any error banner SCC may have shown on the carrier booking list
+      await page.frameLocator('iframe[name="clientframe"]')
+        .locator('[title="Close"], .eto-toast__close, [aria-label="Close"]').first()
+        .click({ timeout: 3000 }).catch(() => {});
+
       await retryStep(`approve booking for ASN ${currentASN}`, async () => {
         await navigateToCarrierApproval(scchomePage, sccviewlistPage);
         await ordersearchPage.clearFilter();

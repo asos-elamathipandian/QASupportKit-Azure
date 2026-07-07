@@ -16,17 +16,12 @@ export class Regression_TA_LoginPage extends Regression_TA_BasePage {
     await this.page.getByRole('textbox', { name: 'Enter your username' }).fill(username);
     await this.page.getByRole('textbox', { name: 'Enter your password' }).fill(password);
     await this.page.getByRole('button', { name: 'Login' }).click();
-    // Wait for the auth redirect to complete (navigates away from authn page).
-    // waitForNavigation is faster than networkidle but still ensures the redirect happened.
-    await this.page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 30000 }).catch(() => {});
 
-    try {
-      await this.page.goto('https://asos.staging.e2open.com/CLPSTG_e2clp/e2clp/#/');
-    } catch (error) {
-      if (!String(error.message).includes('net::ERR_ABORTED')) {
-        throw error;
-      }
-    }
+    // Wait for the auth redirect chain to land back on the CLP launchpad.
+    // waitForURL is precise — it only resolves once the URL actually matches,
+    // unlike waitForNavigation/networkidle which can silently time out mid-redirect.
+    await this.page.waitForURL('**/CLPSTG_e2clp/**', { timeout: 90000 }).catch(() => {});
+    await this.page.waitForLoadState('domcontentloaded', { timeout: 30000 }).catch(() => {});
 
     // Dismiss Maestro popup if it appears (it blocks clicks on dashboard links)
     try {
@@ -37,23 +32,11 @@ export class Regression_TA_LoginPage extends Regression_TA_BasePage {
       // Popup not present, continue
     }
 
-    // Prefer direct SCC app landing; dashboard clicks are flaky on transient sessions.
-    try {
-      await this.page.goto('https://asos.staging.e2open.com/asos/', { waitUntil: 'domcontentloaded', timeout: 60000 });
-      await this.page.frameLocator('iframe[name="clientframe"]').locator('body').waitFor({ timeout: 60000 });
-      return;
-    } catch {
-      // Fallback to dashboard click flow — navigate back to launchpad first
-      // (the failed goto above may have left us on the SCC app page where no dashboard tiles exist).
-    }
-
-    await this.page.goto('https://asos.staging.e2open.com/CLPSTG_e2clp/e2clp/#/', { waitUntil: 'domcontentloaded', timeout: 60000 });
-    await this.page.waitForLoadState('networkidle').catch(() => {});
-    await this.page.locator('a').filter({ hasText: 'ASOS SCC' }).first().waitFor({ state: 'visible', timeout: 60000 });
-    await this.page.locator('a').filter({ hasText: 'ASOS SCC' }).first().click();
-    await this.page.locator('#table-example-1').getByText('ASOS SCC', { exact: true }).waitFor({ state: 'visible', timeout: 30000 });
-    await this.page.locator('#table-example-1').getByText('ASOS SCC', { exact: true }).click();
-    await this.page.goto('https://asos.staging.e2open.com/asos/', { waitUntil: 'domcontentloaded', timeout: 60000 });
+    // Navigate directly to the SCC app. Use 'domcontentloaded' so goto returns as soon as the
+    // HTML is parsed — Menu appears well before all page resources finish loading.
+    // The waitFor on the toggle is the real gate; we proceed the moment Menu is visible.
+    await this.page.goto('https://asos.staging.e2open.com/asos/', { waitUntil: 'domcontentloaded', timeout: 90000 });
+    await this.page.locator('.eto-header__menu-toggle').first().waitFor({ state: 'visible', timeout: 120000 });
 
     // await this.page.waitForURL('**/desktop/**', { timeout: 20000 }).catch(async () => {
     //   try {

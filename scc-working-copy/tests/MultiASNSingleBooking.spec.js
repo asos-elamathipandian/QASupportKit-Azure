@@ -74,7 +74,7 @@ async function navigateToCarrierApproval(scchomePage, sccviewlistPage) {
   });
 }
 
-test('Multi ASN Booking - Create one booking with all ASNs', async ({ page }) => {
+test('Multi ASN Booking - Create one booking with all ASNs', async ({ page, browser }) => {
   // Accept ALL dialogs automatically — prevents unhandled dialogs from closing the edit page
   page.on('dialog', async dialog => {
     console.log(`[dialog] Auto-accepting: ${dialog.message()}`);
@@ -112,7 +112,7 @@ test('Multi ASN Booking - Create one booking with all ASNs', async ({ page }) =>
 
   // Edit and submit booking
   await navigateToCarrierBooking(scchomePage, sccviewlistPage, listenDialog);
-  let submittedVbRef = null;
+  let submitResult = null;
   await retryStep('edit and submit booking', async () => {
     await carrierbookingPage.expandandClearFilter();
     await carrierbookingPage.searchWithasnAndstatus(asnFromFile);
@@ -120,21 +120,12 @@ test('Multi ASN Booking - Create one booking with all ASNs', async ({ page }) =>
     await carrierbookingeditPage.editCarrierBookingDetails();
     await carrierbookingeditPage.editCarrierHeaderDetails();
     await acceptDialogIfPresent(listenDialog);
-    submittedVbRef = await carrierbookingeditPage.saveSubmitAfterEdit();
+    submitResult = await carrierbookingeditPage.saveSubmitAfterEdit();
     await acceptDialogIfPresent(listenDialog);
   }, 2, 2000);
 
-  // Fetch booking outcome — target the specific VBRef we just submitted
-  const { vbReference, bookingStatus } = await retryStep('fetch booking outcome', async () => {
-    await carrierbookingPage.expandandClearFilter();
-    await carrierbookingPage.searchWithAsn(asnFromFile);
-    if (submittedVbRef) {
-      await carrierbookingPage.waitForGridToBeReady();
-      const status = await carrierbookingPage.getBookingStatus(submittedVbRef, { waitForNonDraft: true });
-      return { vbReference: submittedVbRef, bookingStatus: status };
-    }
-    return await carrierbookingPage.getActiveBookingResult({ waitForNonDraft: true });
-  }, 3, 2000);
+  const vbReference = submitResult ? submitResult.vbReference : null;
+  const bookingStatus = submitResult ? submitResult.bookingStatus : 'Draft';
 
   console.log(`VB Reference: ${vbReference}`);
   console.log(`Booking Status: ${bookingStatus}`);
@@ -143,9 +134,13 @@ test('Multi ASN Booking - Create one booking with all ASNs', async ({ page }) =>
   const resultsToWrite = asnEntries.map(asn => ({ asn, vbReference, bookingStatus }));
   fs.writeFileSync(RESULTS_FILE, JSON.stringify(resultsToWrite, null, 2), 'utf-8');
 
-  // Approve if status is Draft
+  // Approve if status is Draft — main page stays alive after submit, just navigate to approval
   if (bookingStatus.toLowerCase() === 'draft') {
     console.log('Status is Draft. Proceeding with approval flow.');
+    // Close any error banner SCC may have shown (e.g. "Fail to execute", tolerance exception)
+    await page.frameLocator('iframe[name="clientframe"]')
+      .locator('[title="Close"], .eto-toast__close, [aria-label="Close"]').first()
+      .click({ timeout: 3000 }).catch(() => {});
     await retryStep('approve draft booking', async () => {
       await navigateToCarrierApproval(scchomePage, sccviewlistPage);
       await carrierbookingapprovalPage.fillasnAndSearch(asnFromFile);

@@ -11,8 +11,9 @@ class CarrierBookingApprovalPage {
     }
 
     async waitForGridToBeReady() {
-        // Wait briefly for overlay to appear first (navigation may take a moment to trigger it)
-        await this.frame.locator(this.loadingOverlay).waitFor({ state: 'visible', timeout: 5000 }).catch(() => {});
+        // Wait briefly (1s) for overlay to appear first — navigation may take a moment to trigger it.
+        // Reduced from 5s: most navigations settle within 1s, saving 4s per grid-ready check.
+        await this.frame.locator(this.loadingOverlay).waitFor({ state: 'visible', timeout: 1000 }).catch(() => {});
         await this.frame.locator(this.loadingOverlay).waitFor({ state: 'hidden', timeout: 60000 });
     }
 
@@ -43,9 +44,14 @@ class CarrierBookingApprovalPage {
             await this.frame.locator(this.loadingOverlay).waitFor({ state: 'hidden', timeout: 10000 }).catch(() => {});
             const isChecked = await checkbox.isChecked().catch(() => false);
             if (!isChecked) {
-                await checkbox.click({ force: true });
+                await checkbox.evaluate(el => {
+                    if (typeof jQuery !== 'undefined') jQuery(el).trigger('click');
+                    else if (typeof $ !== 'undefined') $(el).trigger('click');
+                    else el.click();
+                }).catch(() => {});
             }
-            await new Promise(r => setTimeout(r, 1000));
+            // Give SCC time to enable action buttons after selection
+            await new Promise(r => setTimeout(r, 500));
             const ariaDisabled = await approveButton.getAttribute('aria-disabled').catch(() => 'true');
             const className = (await approveButton.getAttribute('class').catch(() => '')) || '';
             const isDisabled = ariaDisabled === 'true' || className.includes('ui-state-disabled') || className.includes('ui-button-disabled');
@@ -57,7 +63,7 @@ class CarrierBookingApprovalPage {
                 return;
             }
             console.log(`[CarrierBookingApproval] Approve button still disabled on attempt ${attempt}/8, retrying...`);
-            await new Promise(r => setTimeout(r, 1500));
+            await new Promise(r => setTimeout(r, 500));
         }
         throw new Error('Approve button remained disabled after selecting rows');
     }

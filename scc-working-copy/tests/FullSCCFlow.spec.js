@@ -106,7 +106,7 @@ test('Full SCC Flow', async ({ browser }) => {
   const listenDialog = new ListenDialog(page);
   const ordersearchPage = new OrderSearchPage(page, frame);
   const carrierbookingPage = new CarrierBookingPage(page, frame);
-  const carrierbookingeditPage = new CarrierBookingEditPage(frame);
+  const carrierbookingeditPage = new CarrierBookingEditPage(frame, page);
   const carrierbookingapprovalPage = new CarrierBookingApprovalPage(frame);
 
   // ── Step 1: ASN Lookup ──
@@ -191,7 +191,11 @@ test('Full SCC Flow', async ({ browser }) => {
   // Use .click() instead of .check() — .check() fails when cancelled booking rows
   // cause the select-all checkbox state to not toggle as expected
   await frame.locator('#resultTable-select-all').waitFor();
-  await frame.locator('#resultTable-select-all').click();
+  await frame.locator('#resultTable-select-all').evaluate(el => {
+    if (typeof jQuery !== 'undefined') jQuery(el).trigger('click');
+    else if (typeof $ !== 'undefined') $(el).trigger('click');
+    else el.click();
+  });
   await frame.getByRole('button', { name: 'Create Booking' }).click();
   await ordersearchPage.closeResult();
 
@@ -219,6 +223,9 @@ test('Full SCC Flow', async ({ browser }) => {
 
   // ── Step 4: Check booking status and approve only if needed ──
   console.log('[full-flow] Step 4: Checking booking status after submission');
+  // Close any error banner from the submit (e.g. "Fail to execute", tolerance exception)
+  await frame.locator('[title="Close"], .eto-toast__close, [aria-label="Close"]').first()
+    .click({ timeout: 3000 }).catch(() => {});
 
   await scchomePage.navigateToViewList();
   await sccviewlistPage.navigateToCarrierBooking();

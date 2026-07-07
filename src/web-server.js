@@ -27,6 +27,12 @@ const {
   getStateDir,
   loadEnvironment,
 } = require("./app-config");
+
+// Must be called BEFORE requiring scc-launcher, because scc-launcher reads
+// process.env.SCC_HEADLESS at module-load time (const SCC_HEADLESS = ...).
+// Calling it after means the .env values are never seen by that constant.
+loadEnvironment();
+
 const {
   getSccAvailability,
   getSccSessionStatus,
@@ -39,8 +45,6 @@ const {
   cancelActiveSpec,
 } = require("./scc-launcher");
 const { runTaCheck, cancelTaCheck, SCREENSHOT_DIR, TA_RESULTS_FILE } = require("./ta-checker");
-
-loadEnvironment();
 
 // Ensure required directories exist (they are gitignored so won't be present on Azure)
 [getOutputDir(process.env), getStateDir(process.env)].forEach((dir) => {
