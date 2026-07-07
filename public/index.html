@@ -1224,6 +1224,45 @@ async function bookingCreateMulti() {
   }
 }
 
+// --- Cancel Booking in SCC ---
+async function cancelBooking() {
+  const asn   = document.getElementById('cancelAsnInput').value.trim();
+  const vbRef = document.getElementById('cancelVbInput').value.trim();
+  if (!asn)   return alert('Please enter an ASN');
+  if (!vbRef) return alert('Please enter a VB Reference');
+  const btn = document.getElementById('btnCancelVb');
+  const resultDiv = document.getElementById('cancelBookingResult');
+  btn.disabled = true;
+  startProgressPolling('liveLogCancelBooking');
+  resultDiv.innerHTML = '';
+  try {
+    const res = await fetch('/api/scc/booking/cancel', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ asn, vbRef, sessionId: clientId })
+    });
+    const data = await res.json();
+    if (data.ok) {
+      const r = data.result || {};
+      const status = r.bookingStatus || 'Unknown';
+      const color = /cancel/i.test(status) ? '#15803d' : '#92400e';
+      resultDiv.innerHTML = `<div style='padding:10px 14px;background:#f0fdf4;border-left:4px solid #22c55e;border-radius:6px;'>
+        <div style='font-weight:700;color:#15803d;'>&#10003; Cancel operation completed</div>
+        <div style='margin-top:6px;font-size:0.85rem;'>
+          <span style='color:#6b7280;'>VB Reference:</span> <strong style='font-family:monospace;color:#1e40af;'>${escapeHtml(vbRef)}</strong> &nbsp;
+          <span style='color:#6b7280;'>Status:</span> <strong style='color:${color};'>${escapeHtml(status)}</strong>
+        </div></div>`;
+    } else {
+      resultDiv.innerHTML = errHtml(data.error || 'Cancel booking failed');
+    }
+  } catch (e) {
+    resultDiv.innerHTML = errHtml(e.message);
+  } finally {
+    btn.disabled = false;
+    await stopProgressPollingAndFlush();
+  }
+}
+
 // --- Full SCC Flow ---
 async function fullSccFlow() {
   const asn = document.getElementById('fullSccAsnInput').value.trim();
@@ -1592,6 +1631,27 @@ async function fullSccFlow() {
     <button class="btn-cancel-booking" id="btnCancelBooking" onclick="forceCancelBooking()">&#9646;&#9646; Force Cancel</button>
     <div class="live-log" id="liveLogBooking"></div>
     <div id="bookingResult" style="margin-top:14px;"></div>
+
+    <!-- Cancel Booking -->
+    <div style="margin-top:20px;padding-top:16px;border-top:1px solid #e5e7eb;">
+      <div style="font-size:0.82rem;font-weight:700;color:#dc2626;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px;">&#9888; Cancel Booking</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="cancelAsnInput">ASN</label>
+          <input id="cancelAsnInput" type="text" placeholder="e.g. 49870000001275" />
+        </div>
+        <div class="form-group">
+          <label for="cancelVbInput">VB Reference</label>
+          <input id="cancelVbInput" type="text" placeholder="e.g. VB-0000002247" />
+        </div>
+      </div>
+      <button onclick="cancelBooking()" id="btnCancelVb"
+        style="width:100%;padding:12px;background:#dc2626;color:white;border:none;border-radius:10px;font-size:0.93rem;font-weight:700;cursor:pointer;margin-top:4px;">
+        &#10060;&nbsp; Cancel Booking in SCC
+      </button>
+      <div class="live-log" id="liveLogCancelBooking"></div>
+      <div id="cancelBookingResult" style="margin-top:14px;"></div>
+    </div>
     </div><!-- /local-card-body -->
   </div>
 

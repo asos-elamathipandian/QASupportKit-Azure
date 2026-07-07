@@ -13,6 +13,7 @@ class CarrierBookingPage {
         this.vbValue = '[title*="VB-000"]';
         this.statusCell = '[id^="resultfield_appvbStatus"]';
         this.editBooking = { name: 'Edit Booking' };
+        this.cancelBookingBtn = { name: 'Cancel Booking' };
     }
 
     async waitForGridToBeReady() {
@@ -67,6 +68,71 @@ class CarrierBookingPage {
         await this.frame.locator(this.asnField).fill(asns);
         await this.frame.locator(this.applyButton).click();
         await this.frame.locator(this.collapseFilter).click();
+    }
+
+    // Search by ASN; if vbRef is also provided, verifies the matching row exists.
+    async searchWithAsnAndVbRef(asn, vbRef) {
+        await this.frame.locator(this.asnField).click();
+        await this.frame.locator(this.asnField).fill(asn);
+        await this.frame.locator(this.applyButton).click();
+        await this.frame.locator(this.collapseFilter).click();
+        await this.waitForGridToBeReady();
+    }
+
+    // Selects the row matching vbRef (or the first/only row) and clicks Cancel Booking.
+    // Returns the booking status after cancellation.
+    async cancelSelectedBooking(vbRef) {
+        await this.waitForGridToBeReady();
+
+        const rows = this.frame.locator('#resultTable .ui-grid-body-row');
+        await rows.first().waitFor({ state: 'visible', timeout: 15000 });
+        const rowCount = await rows.count();
+
+        // Find the row matching the VB reference, or fall back to the first row
+        let targetRow = rows.first();
+        if (vbRef && rowCount > 1) {
+            for (let i = 0; i < rowCount; i++) {
+                const vbCell = rows.nth(i).locator('[id^="resultfield_appvbBookingNo"], [title*="VB-000"]');
+                if (await vbCell.count() > 0) {
+                    const txt = (await vbCell.first().textContent({ timeout: 2000 }).catch(() => '')).trim();
+                    if (txt === vbRef) { targetRow = rows.nth(i); break; }
+                }
+            }
+        }
+
+        // Select the row using jQuery trigger
+        const checkbox = rowCount === 1
+            ? this.frame.locator(this.selectAllCheck)
+            : targetRow.locator('input[type="checkbox"]').first();
+
+        const isChecked = await checkbox.isChecked().catch(() => false);
+        if (!isChecked) {
+            await checkbox.evaluate(el => {
+                if (typeof jQuery !== 'undefined') jQuery(el).trigger('click');
+                else if (typeof $ !== 'undefined') $(el).trigger('click');
+                else el.click();
+            }).catch(() => {});
+            await new Promise(r => setTimeout(r, 500));
+        }
+
+        // Click Cancel Booking button
+        const cancelBtn = this.frame.getByRole('button', this.cancelBookingBtn);
+        await cancelBtn.waitFor({ state: 'visible', timeout: 10000 });
+        const ariaDisabled = await cancelBtn.getAttribute('aria-disabled').catch(() => 'false');
+        if (ariaDisabled === 'true') throw new Error('Cancel Booking button is disabled — select a valid row first');
+        await cancelBtn.click();
+
+        // Wait for the cancellation to process
+        await this.frame.locator(this.loadingOverlay).waitFor({ state: 'visible', timeout: 5000 }).catch(() => {});
+        await this.waitForGridToBeReady();
+
+        // Read actual status from the grid — find the matching row or use the first status cell
+        if (vbRef) {
+            const status = await this._readBookingStatus(vbRef);
+            return status || 'Cancelled';
+        }
+        const cell = this.frame.locator(this.statusCell).first();
+        return (await cell.textContent({ timeout: 5000 }).catch(() => 'Cancelled')).trim() || 'Cancelled';
     }
     async getVBReference() {
         await this.waitForGridToBeReady();

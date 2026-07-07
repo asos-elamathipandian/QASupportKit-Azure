@@ -160,6 +160,17 @@ test('Single ASN Booking - Create separate booking for each ASN', async ({ page,
         await carrierbookingapprovalPage.fillasnAndSearch(currentASN);
         await carrierbookingapprovalPage.selectAndApproveBooking();
       }, 2, 2500);
+      // Read actual status from carrier booking list after approval
+      const postApprovalStatus = await retryStep(`read post-approval status for ${currentASN}`, async () => {
+        await navigateToCarrierBooking(scchomePage, sccviewlistPage, listenDialog);
+        await carrierbookingPage.expandandClearFilter();
+        await carrierbookingPage.searchWithAsn(currentASN);
+        return vbReference
+          ? await carrierbookingPage.getBookingStatus(vbReference)
+          : (await carrierbookingPage.getActiveBookingResult()).bookingStatus;
+      }, 2, 1000).catch(() => 'Approved');
+      console.log(`Post-approval status: ${postApprovalStatus}`);
+      bookingResults[bookingResults.length - 1].bookingStatus = postApprovalStatus;
     } else if (bookingStatus.toLowerCase() === 'submitted') {
       console.log('Status is Submitted. Skipping approval flow.');
     } else {

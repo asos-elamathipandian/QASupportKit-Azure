@@ -69,6 +69,8 @@ function getWorkingAutomationPaths() {
     bookingResults: path.join(LOCAL_SCC_COPY_DIR, 'booking-results.json'),
     multiLinesEditResults: path.join(LOCAL_SCC_COPY_DIR, 'multi-lines-edit-results.json'),
     fullFlowResults: path.join(LOCAL_SCC_COPY_DIR, 'full-scc-flow-results.json'),
+    cancelBookingSpec: path.join(LOCAL_SCC_COPY_DIR, 'tests', 'CancelBooking.spec.js'),
+    cancelBookingResults: path.join(LOCAL_SCC_COPY_DIR, 'cancel-booking-results.json'),
   };
 }
 
@@ -516,6 +518,29 @@ async function createMultiAsnBooking(asnList, options = {}) {
 /**
  * Full SCC flow (lookup + booking + submit/approve) via working spec
  */
+async function cancelSccBooking(asn, vbRef, options = {}) {
+  const onStep = options.onStep || null;
+  const paths = getWorkingAutomationPaths();
+  console.log(`[SCC] Running cancel booking spec for ASN: ${asn}, VB: ${vbRef}`);
+  if (onStep) onStep(`Cancelling booking ${vbRef} for ASN ${asn}…`);
+  if (onStep) onStep('Launching Playwright browser…');
+  try {
+    await runWorkingSpec(paths.cancelBookingSpec, {
+      CANCEL_ASN_VALUE: asn,
+      CANCEL_VB_VALUE: vbRef,
+    }, 180000, options);
+    if (onStep) onStep('Reading cancel results…');
+    const results = readJsonIfExists(paths.cancelBookingResults) || [];
+    const row = Array.isArray(results) ? results[0] : results;
+    const finalStatus = (row && row.bookingStatus) || 'Unknown';
+    if (onStep) onStep(`✅ Booking ${vbRef} status: ${finalStatus}`);
+    return { success: true, asn, vbReference: vbRef, bookingStatus: finalStatus, results };
+  } catch (err) {
+    if (onStep) onStep(`❌ ${err.message}`);
+    throw new Error(`Cancel booking failed: ${err.message}`);
+  }
+}
+
 async function createFullSccFlow(asnList, options = {}) {
   if (!Array.isArray(asnList)) {
     asnList = [asnList];
@@ -564,5 +589,6 @@ module.exports = {
   createSingleAsnBooking,
   createMultiAsnBooking,
   createFullSccFlow,
+  cancelSccBooking,
   cancelActiveSpec,
 };

@@ -42,6 +42,7 @@ const {
   createSingleAsnBooking,
   createMultiAsnBooking,
   createFullSccFlow,
+  cancelSccBooking,
   cancelActiveSpec,
 } = require("./scc-launcher");
 const { runTaCheck, cancelTaCheck, SCREENSHOT_DIR, TA_RESULTS_FILE } = require("./ta-checker");
@@ -1118,6 +1119,23 @@ app.post("/api/full-scc-flow", async (req, res) => {
     res.json({ ok: true, result });
   } catch (err) {
     console.error('[API] Full SCC Flow error:', err.message);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+app.post("/api/scc/booking/cancel", async (req, res) => {
+  const { asn, vbRef, sessionId: sid } = req.body || {};
+  const sessionId = String(sid || 'default');
+  if (!asn || !vbRef) return res.status(400).json({ ok: false, error: 'asn and vbRef are required' });
+  clearProgress(sessionId);
+  try {
+    const result = await cancelSccBooking(asn, vbRef, {
+      onProgress: (d) => parseStdoutForProgress(d, sessionId),
+      onStep: (m) => addProgress(m, sessionId),
+    });
+    res.json({ ok: true, result });
+  } catch (err) {
+    console.error('[API] Cancel booking error:', err.message);
     res.status(500).json({ ok: false, error: err.message });
   }
 });

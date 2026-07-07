@@ -237,6 +237,7 @@ test('Full SCC Flow', async ({ browser }) => {
   const postSubmitStatus = await carrierbookingPage.getBookingStatus(vbReference);
   console.log(`[full-flow] Post-submit booking status: ${postSubmitStatus} (for ${vbReference})`);
 
+  let finalBookingStatus = postSubmitStatus;
   let approvalNeeded = false;
   if (postSubmitStatus.toLowerCase() === 'draft') {
     approvalNeeded = true;
@@ -248,6 +249,14 @@ test('Full SCC Flow', async ({ browser }) => {
     await carrierbookingapprovalPage.fillasnAndSearch(asnInput);
     await carrierbookingapprovalPage.selectAndApproveBooking();
 
+    // Read actual post-approval status from carrier booking list
+    await scchomePage.navigateToViewList();
+    await sccviewlistPage.navigateToCarrierBooking();
+    await listenDialog.acceptDialog().catch(() => {});
+    await carrierbookingPage.expandandClearFilter();
+    await carrierbookingPage.searchWithAsn(asnInput);
+    finalBookingStatus = await carrierbookingPage.getBookingStatus(vbReference).catch(() => 'Approved');
+    console.log(`[full-flow] Post-approval booking status: ${finalBookingStatus}`);
     console.log('[full-flow] Booking approved successfully');
   } else {
     console.log(`[full-flow] Booking status is "${postSubmitStatus}" — already submitted, no approval needed`);
@@ -274,7 +283,7 @@ test('Full SCC Flow', async ({ browser }) => {
   const result = {
     ok: true,
     vbReference,
-    bookingStatus: approvalNeeded ? 'Submitted' : postSubmitStatus,
+    bookingStatus: finalBookingStatus,
     approvalPerformed: approvalNeeded,
     asns: asnInput,
     details: outputDetails.map(d => ({

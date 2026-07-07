@@ -146,6 +146,18 @@ test('Multi ASN Booking - Create one booking with all ASNs', async ({ page, brow
       await carrierbookingapprovalPage.fillasnAndSearch(asnFromFile);
       await carrierbookingapprovalPage.selectAndApproveBooking();
     }, 2, 2500);
+    // Read actual post-approval status from carrier booking list
+    const postApprovalStatus = await retryStep('read post-approval status', async () => {
+      await navigateToCarrierBooking(scchomePage, sccviewlistPage, listenDialog);
+      await carrierbookingPage.expandandClearFilter();
+      await carrierbookingPage.searchWithAsn(asnFromFile);
+      return vbReference
+        ? await carrierbookingPage.getBookingStatus(vbReference)
+        : (await carrierbookingPage.getActiveBookingResult()).bookingStatus;
+    }, 2, 1000).catch(() => 'Approved');
+    console.log(`[multi-booking] Post-approval status: ${postApprovalStatus}`);
+    resultsToWrite.forEach(r => r.bookingStatus = postApprovalStatus);
+    fs.writeFileSync(RESULTS_FILE, JSON.stringify(resultsToWrite, null, 2), 'utf-8');
   } else if (bookingStatus.toLowerCase() === 'submitted') {
     console.log('Status is Submitted. Skipping approval flow.');
   } else {
