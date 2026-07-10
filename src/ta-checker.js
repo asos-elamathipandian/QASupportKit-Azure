@@ -35,10 +35,9 @@ function cancelTaCheck() {
 function runTaCheck({ sku, poId, asnId, onProgress } = {}) {
   return new Promise((resolve, reject) => {
     const playwrightBin = getPlaywrightBin();
-    const cmd = `"${playwrightBin}" test "${SPEC_PATH}" --reporter=line --workers=1 --timeout=180000`;
+    const cmd = `"${playwrightBin}" test "${SPEC_PATH}" --headed --reporter=line --workers=1 --timeout=180000`;
 
     const env = Object.assign({}, process.env, {
-      CI: 'true',
       TA_CHECK_SKU: sku || '',
       TA_CHECK_PO: poId || '',
       TA_CHECK_ASN: asnId || '',

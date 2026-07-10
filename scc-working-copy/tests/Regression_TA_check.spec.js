@@ -192,14 +192,10 @@ test('E2open TA | Check SKU, PO and ASN availability', async ({ page }) => {
     const asnDetailFile = `asn-${asnId}-detail-${ts}.png`;
     const asnLineFile   = `asn-${asnId}-lineitems-${ts}.png`;
     const asnEventsFile = `asn-${asnId}-events-${ts}.png`;
-    // On first ASN navigate via menu; subsequent ASNs reuse the already-loaded search page
-    // (clickBack() returns to the search form — no need to re-open the menu)
-    if (asnIdx === 0) {
-      await menuPage.openLogistics('Shipment Search Search Power');
-      console.log('[TA] Logistics menu opened (ASN search)');
-    } else {
-      console.log('[TA] Reusing ASN search page for next lookup');
-    }
+    // Always navigate via the Logistics menu for each ASN —
+    // clickBack() does not return to the shipment search form in mainFrame
+    await menuPage.openLogistics('Shipment Search Search Power');
+    console.log('[TA] Logistics menu opened (ASN search)');
     const asnFound = await asnPage.searchASN(asnId);
     if (asnFound) {
       console.log(`[TA] ASN ${asnId}: FOUND ✓`);
