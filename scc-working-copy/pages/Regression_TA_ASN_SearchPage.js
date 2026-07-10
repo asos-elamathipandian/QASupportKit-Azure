@@ -35,10 +35,8 @@ export class Regression_TA_ASNSearchPage extends Regression_TA_BasePage {
   async clickResultLink(asnId) {
     const resultLink = this.mainFrame.getByRole('link', { name: asnId, exact: true }).first();
     await resultLink.click();
-    // Detail loads into detailFrame (separate iframe from mainFrame search grid)
-    // Wait for 'Line Items' tab to appear in detailFrame as the ready signal
+    // Detail loads into detailFrame — wait for 'Line Items' tab as the ready signal
     await this.detailFrame.getByText('Line Items', { exact: true }).waitFor({ state: 'visible', timeout: 60000 });
-    await this.page.waitForTimeout(500);
   }
 
   async clickTab(tabName) {
@@ -46,7 +44,7 @@ export class Regression_TA_ASNSearchPage extends Regression_TA_BasePage {
     const tab = this.detailFrame.getByText(tabName, { exact: true }).first();
     await tab.waitFor({ state: 'visible', timeout: 15000 });
     await tab.click({ timeout: 10000 });
-    await this.page.waitForTimeout(2000);
+    await this.page.waitForTimeout(1000); // reduced from 2000ms — tab content typically loads in <1s
   }
 
   async verifyResults() {

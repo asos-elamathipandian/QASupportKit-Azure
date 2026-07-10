@@ -10,9 +10,12 @@ import { Regression_TA_ASNSearchPage } from '../pages/Regression_TA_ASN_SearchPa
 
 // Values passed from ta-checker.js via env vars.
 // Use !== undefined so an empty string means "skip this search" (not fall back to loginData).
-const sku   = process.env.TA_CHECK_SKU  !== undefined ? process.env.TA_CHECK_SKU  : loginData.sku;
-const poId  = process.env.TA_CHECK_PO   !== undefined ? process.env.TA_CHECK_PO   : loginData.poId;
-const asnId = process.env.TA_CHECK_ASN  !== undefined ? process.env.TA_CHECK_ASN  : loginData.asnId;
+const sku    = process.env.TA_CHECK_SKU  !== undefined ? process.env.TA_CHECK_SKU  : loginData.sku;
+const poId   = process.env.TA_CHECK_PO   !== undefined ? process.env.TA_CHECK_PO   : loginData.poId;
+const asnRaw = process.env.TA_CHECK_ASN  !== undefined ? process.env.TA_CHECK_ASN  : (loginData.asnId || '');
+// Support comma-separated ASN IDs — the TA shipment field accepts only one at a time,
+// so we iterate through each one individually in a single browser session.
+const asnIds = asnRaw ? asnRaw.split(',').map(s => s.trim()).filter(Boolean) : [];
 
 const resultsFile   = process.env.TA_RESULTS_FILE   || path.resolve('test-results', 'ta-check-results.json');
 const screenshotDir = process.env.TA_SCREENSHOT_DIR || path.resolve('test-results', 'screenshots');
@@ -42,20 +45,20 @@ async function shotIframe(page, iframeName, filename) {
 async function expandIframe(page, frameName) {
   const frame = page.frames().find(f => f.name() === frameName);
   if (frame) {
-    // 1. Inside the frame, remove fixed-height overflow containers AND collapse over-tall empty ones
-    await frame.evaluate(() => {
+    // Single evaluate: expand overflow containers, collapse empty ones, then measure height.
+    // Merged from two separate round-trips into one to reduce IPC overhead.
+    const contentHeight = await frame.evaluate(() => {
       function expand(el) {
         const s = window.getComputedStyle(el);
         if (s.display === 'none' || s.visibility === 'hidden') return;
         if (['auto', 'scroll', 'hidden'].includes(s.overflow) || ['auto', 'scroll', 'hidden'].includes(s.overflowY)) {
           if (el.scrollHeight > el.clientHeight) {
             el.style.height    = el.scrollHeight + 'px';
-            el.style.maxHeight = 'none';      // remove max-height constraint
+            el.style.maxHeight = 'none';
             el.style.overflow  = 'visible';
             el.style.overflowY = 'visible';
           }
         }
-        // Also clear max-height even on non-overflow containers (tables, grid wrappers)
         if (s.maxHeight && s.maxHeight !== 'none' && s.maxHeight !== '0px') {
           el.style.maxHeight = 'none';
         }
@@ -63,8 +66,6 @@ async function expandIframe(page, frameName) {
       }
       expand(document.body);
 
-      // Second pass: collapse containers that are over-tall relative to their actual content
-      // (e.g. empty table sections with large min-height set by the app layout)
       function collapse(el) {
         const s = window.getComputedStyle(el);
         if (s.display === 'none' || s.visibility === 'hidden') return;
@@ -75,16 +76,12 @@ async function expandIframe(page, frameName) {
         for (const c of el.children) collapse(c);
       }
       collapse(document.body);
-    });
-    // 2. Measure the actual rendered content height after expansion
-    // Use the bottom of the lowest visible, non-empty element (not scrollHeight,
-    // which includes empty containers that inflate the height).
-    const contentHeight = await frame.evaluate(() => {
+
+      // Measure: use the bottom of the lowest visible, non-empty element.
       let maxY = 0;
       function walk(el) {
         const s = window.getComputedStyle(el);
         if (s.display === 'none' || s.visibility === 'hidden') return;
-        // Skip fixed/sticky/absolute footer bars — they don't reflect content height
         if (s.position === 'fixed' || s.position === 'sticky') return;
         const rect = el.getBoundingClientRect();
         if (rect.width > 0 && rect.height > 0) {
@@ -98,10 +95,9 @@ async function expandIframe(page, frameName) {
         for (const c of el.children) walk(c);
       }
       walk(document.body);
-      // Fall back to scrollHeight if no content found
       return maxY > 50 ? maxY : Math.max(document.body.scrollHeight, document.documentElement.scrollHeight);
     });
-    // 3. Set the iframe to exactly that height (not a fixed 6000px) — avoids blank space
+
     await page.evaluate(({ name, h }) => {
       const el = document.querySelector(`iframe[name="${name}"]`);
       if (el) el.style.height = (h + 20) + 'px';
@@ -144,7 +140,7 @@ test('E2open TA | Check SKU, PO and ASN availability', async ({ page }) => {
   const poPage      = new Regression_TA_POSearchPage(page);
   const asnPage     = new Regression_TA_ASNSearchPage(page);
 
-  const results = { sku: null, po: null, asn: null, timestamp: new Date().toISOString() };
+  const results = { sku: null, po: null, asns: [], timestamp: new Date().toISOString() };
 
   await loginPage.goToLogin();
   console.log('[TA] Navigating to E2open TA login page...');
@@ -162,7 +158,6 @@ test('E2open TA | Check SKU, PO and ASN availability', async ({ page }) => {
     const skuFound = await productPage.searchProduct(sku);
     if (skuFound) {
       console.log(`[TA] SKU ${sku}: FOUND ✓`);
-      await page.waitForTimeout(2000); // let results grid settle
       await shot(page, skuFile);
     } else {
       console.log(`[TA] SKU ${sku}: NOT FOUND`);
@@ -180,7 +175,6 @@ test('E2open TA | Check SKU, PO and ASN availability', async ({ page }) => {
     const poFound = await poPage.searchPO(poId, { timeout: 8000, openResult: false });
     if (poFound) {
       console.log(`[TA] PO ${poId}: FOUND ✓`);
-      await page.waitForTimeout(2000);
       await shot(page, poFile);
     } else {
       console.log(`[TA] PO ${poId}: NOT FOUND`);
@@ -189,20 +183,26 @@ test('E2open TA | Check SKU, PO and ASN availability', async ({ page }) => {
     results.po = { id: poId, found: poFound, screenshot: poFile };
   }
 
-  // ── ASN ──────────────────────────────────────────────────────────────────
-  if (asnId) {
-    console.log(`[TA] Searching ASN: ${asnId}`);
+  // ── ASN(s) ───────────────────────────────────────────────────────────────
+  for (let asnIdx = 0; asnIdx < asnIds.length; asnIdx++) {
+    const asnId = asnIds[asnIdx];
+    console.log(`[TA] Searching ASN: ${asnId} (${asnIdx + 1}/${asnIds.length})`);
     const ts = Date.now();
     const asnFile       = `asn-${asnId}-${ts}.png`;
     const asnDetailFile = `asn-${asnId}-detail-${ts}.png`;
     const asnLineFile   = `asn-${asnId}-lineitems-${ts}.png`;
     const asnEventsFile = `asn-${asnId}-events-${ts}.png`;
-    await menuPage.openLogistics('Shipment Search Search Power');
-    console.log('[TA] Logistics menu opened (ASN search)');
+    // On first ASN navigate via menu; subsequent ASNs reuse the already-loaded search page
+    // (clickBack() returns to the search form — no need to re-open the menu)
+    if (asnIdx === 0) {
+      await menuPage.openLogistics('Shipment Search Search Power');
+      console.log('[TA] Logistics menu opened (ASN search)');
+    } else {
+      console.log('[TA] Reusing ASN search page for next lookup');
+    }
     const asnFound = await asnPage.searchASN(asnId);
     if (asnFound) {
       console.log(`[TA] ASN ${asnId}: FOUND ✓`);
-      await page.waitForTimeout(2000);
       await shot(page, asnFile);
       // Drill into detail page
       console.log(`[TA] ASN ${asnId}: opening detail...`);
@@ -221,7 +221,7 @@ test('E2open TA | Check SKU, PO and ASN availability', async ({ page }) => {
       // (equivalent to pressing Ctrl+- in the browser — same effect user confirmed works)
       const detailFr = page.frames().find(f => f.name() === 'detailFrame');
       if (detailFr) await detailFr.evaluate(() => { document.body.style.zoom = '0.7'; });
-      await page.waitForTimeout(1000);
+      await page.waitForTimeout(200); // reduced from 1000ms — zoom is a synchronous CSS change
       await expandIframe(page, 'detailFrame');
       await shotIframe(page, 'detailFrame', asnEventsFile);
       // Back to search results
@@ -230,13 +230,13 @@ test('E2open TA | Check SKU, PO and ASN availability', async ({ page }) => {
       console.log(`[TA] ASN ${asnId}: NOT FOUND`);
       await shot(page, asnFile);
     }
-    results.asn = {
+    results.asns.push({
       id: asnId, found: asnFound,
       screenshot: asnFile,
       screenshots: asnFound
         ? { results: asnFile, detail: asnDetailFile, lineItems: asnLineFile, events: asnEventsFile }
         : { results: asnFile }
-    };
+    });
   }
 
   // ── Write results JSON ────────────────────────────────────────────────────

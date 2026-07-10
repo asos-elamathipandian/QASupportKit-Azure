@@ -4,7 +4,8 @@ export class Regression_TA_MenuPage extends Regression_TA_BasePage {
 
   async openMainMenu() {
     await this.page.getByRole('button', { name: 'menu Menu' }).click({ timeout: 30000 });
-    await this.page.waitForTimeout(800); // let the dropdown animate open
+    // Wait for the menu to actually open (replaces fixed 800ms animation sleep)
+    await this.page.getByRole('button', { name: 'Logistics' }).waitFor({ state: 'visible', timeout: 5000 }).catch(() => {});
   }
 
   async openProducts() {

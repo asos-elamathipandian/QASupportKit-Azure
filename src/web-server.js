@@ -1355,8 +1355,9 @@ app.get("/api/ta/screenshots/download-all", (req, res) => {
     const add = (f) => { if (f && fs.existsSync(path.join(SCREENSHOT_DIR, f))) files.push(f); };
     if (r.sku)  add(r.sku.screenshot);
     if (r.po)   add(r.po.screenshot);
-    if (r.asn) {
-      const ss = r.asn.screenshots || {};
+    const asnList = r.asns || (r.asn ? [r.asn] : []);
+    for (const a of asnList) {
+      const ss = a.screenshots || {};
       [ss.results, ss.detail, ss.lineItems, ss.events].forEach(add);
     }
   }

@@ -48,28 +48,89 @@
     }
     .btn-reset-all:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.6); }
 
+    /* ── Guide button in header ── */
+    .btn-guide {
+      background: rgba(255,255,255,0.1);
+      border: 1.5px solid rgba(255,255,255,0.3);
+      color: white;
+      border-radius: 8px;
+      padding: 6px 12px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background 0.2s, border-color 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .btn-guide:hover { background: rgba(255,255,255,0.2); border-color: rgba(255,255,255,0.7); }
+    .btn-guide span.guide-label { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.04em; }
+
+    /* ── Guide modal ── */
+    #guide-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(15,23,42,0.55);
+      z-index: 10000;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 40px 16px;
+      overflow-y: auto;
+    }
+    #guide-modal.open { display: flex; }
+    .guide-modal-box {
+      background: white;
+      border-radius: 14px;
+      width: 100%;
+      max-width: 860px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+      overflow: hidden;
+    }
+    .guide-modal-header {
+      background: #1a1a2e;
+      color: white;
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .guide-modal-header h2 { font-size: 1rem; font-weight: 700; margin: 0; }
+    .guide-modal-close {
+      background: rgba(255,255,255,0.15);
+      border: none;
+      color: white;
+      border-radius: 6px;
+      padding: 5px 12px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .guide-modal-close:hover { background: rgba(255,255,255,0.3); }
+    .guide-modal-body { padding: 22px 24px; }
+
     /* ── Per-card hide toggle pill ── */
     .local-card-body.local-hidden { display: none !important; }
     .btn-hide-toggle {
       display: inline-flex;
       align-items: center;
-      gap: 4px;
+      gap: 5px;
       margin-left: 10px;
-      padding: 2px 10px;
-      font-size: 0.68rem;
-      font-weight: 700;
-      letter-spacing: 0.05em;
+      padding: 3px 11px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
       border-radius: 20px;
-      border: 1.5px solid #e0e0e0;
+      border: 1.5px solid #cbd5e1;
       background: #f1f5f9;
-      color: #64748b;
+      color: #475569;
       cursor: pointer;
       vertical-align: middle;
       transition: background 0.15s, border-color 0.15s, color 0.15s;
-      text-transform: uppercase;
     }
-    .btn-hide-toggle:hover { background: #e2e8f0; border-color: #94a3b8; color: #334155; }
-    .btn-hide-toggle.visible { background: #dcfce7; border-color: #86efac; color: #15803d; }
+    .btn-hide-toggle:hover { background: #e2e8f0; border-color: #94a3b8; color: #1e293b; }
+    .btn-hide-toggle.visible { background: #eff6ff; border-color: #93c5fd; color: #1d4ed8; }
     header .badge {
       background: #e94560;
       color: white;
@@ -98,6 +159,16 @@
       box-shadow: 0 1px 4px rgba(0,0,0,0.08);
       margin-bottom: 20px;
     }
+
+    /* ── Per-card colour accents ── */
+    #ta-check-card      { border-left: 4px solid #0891b2; }  /* teal       — E2open TA Check */
+    #carrier-wms-card   { border-left: 4px solid #f97316; }  /* orange     — Carrier & WMS Events */
+    #results            { border-left: 4px solid #10b981; }  /* emerald    — Results */
+    #blob-search-card   { border-left: 4px solid #06b6d4; }  /* sky        — Blob Search */
+    #asn-lookup-card    { border-left: 4px solid #6366f1; }  /* indigo     — ASN Lookup SCC */
+    #raise-ado-bug-card { border-left: 4px solid #7c3aed; }  /* purple     — Raise ADO Bug */
+    #scc-booking-card   { border-left: 4px solid #d97706; }  /* amber      — Carrier Booking */
+    #full-scc-card      { border-left: 4px solid #0ea5e9; }  /* light-blue — Full SCC Flow */
     .card-title {
       font-size: 0.85rem;
       font-weight: 700;
@@ -606,6 +677,9 @@
 <body>
 
 <header>
+  <button class="btn-guide" onclick="document.getElementById('guide-modal').classList.add('open')" title="Quick Reference Guide">
+    &#128218; <span class="guide-label">Guide</span>
+  </button>
   <h1>Smart Data Assistant-Inbound</h1>
   <button class="btn-reset-all" onclick="resetAll()" title="Reset all inputs, results and logs">&#8635; Reset</button>
 </header>
@@ -628,11 +702,12 @@
   <!-- ══════════════════════════════════════════════════════════════════════
        E2OPEN TA CHECK — SKU / PO / ASN availability + screenshots
        ══════════════════════════════════════════════════════════════════════ -->
-  <div class="card local-only-section" id="ta-check-card" style="border-left:4px solid #0891b2;">
-    <div class="card-title" style="color:#0891b2;">&#128247; E2open TA Check<button class="btn-hide-toggle" id="toggle-ta-check-card" title="Toggle section visibility">Hide: ON</button></div>
+  <div class="card local-only-section" id="ta-check-card">
+    <div class="card-title" style="color:#0891b2;">&#128247; E2open TA Check<button class="btn-hide-toggle" id="toggle-ta-check-card" title="Toggle section visibility">▶ Expand</button></div>
     <div class="local-card-body" id="body-ta-check-card" style="display:none">
     <div style="background:#ecfeff;border:1px solid #a5f3fc;border-radius:6px;padding:11px 16px;margin-bottom:18px;font-size:0.83rem;color:#0e7490;line-height:1.7;">
       Enter the SKU, PO and/or ASN you want to verify in E2open TA, then click <strong>Run Check</strong>. Playwright will open E2open TA, search each record and return a screenshot showing whether it was found.
+      Multiple ASNs can be entered as a <strong>comma-separated list</strong> &mdash; each will be searched one by one in the same session.
     </div>
 
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px;">
@@ -646,7 +721,8 @@
       </div>
       <div>
         <label style="font-size:0.82rem;color:#6b7280;font-weight:500;display:block;margin-bottom:4px;">ASN ID</label>
-        <input id="taCheckAsn" type="text" placeholder="e.g. 49870000001276" style="width:100%;box-sizing:border-box;border:1px solid #a5f3fc;border-radius:5px;padding:7px 10px;font-size:0.85rem;" />
+        <input id="taCheckAsn" type="text" placeholder="e.g. 49870000001276 or 49870000001276,49870000001277" style="width:100%;box-sizing:border-box;border:1px solid #a5f3fc;border-radius:5px;padding:7px 10px;font-size:0.85rem;" />
+        <span style="font-size:0.72rem;color:#6b7280;margin-top:3px;display:block;">Multiple ASNs: comma-separated, e.g. <strong>ASN1,ASN2</strong></span>
       </div>
     </div>
 
@@ -677,9 +753,9 @@
   </div>
 
   <!-- ── Carrier & WMS Events ── -->
-  <div class="card">
-    <div class="card-title">Carrier &amp; WMS Events</div>
-    
+  <div class="card" id="carrier-wms-card">
+    <div class="card-title">Carrier &amp; WMS Events<button class="btn-hide-toggle" id="toggle-carrier-wms-card" title="Toggle section visibility">▶ Expand</button></div>
+    <div class="local-card-body" id="body-carrier-wms-card" style="display:none">
     <!-- Input Fields -->
     <div class="form-grid">
       <div class="form-group">
@@ -765,6 +841,7 @@
       &#9654;&nbsp; Happy Path Carrier &amp; WMS Milestones
       <span class="btn-label-sub">Requires: ASN, PO, SKU, SKU Qty, ACE</span>
     </button>
+    </div><!-- /local-card-body -->
   </div>
 
   <!-- ── Results ── -->
@@ -777,8 +854,9 @@
   </div>
 
   <!-- ── E2Open Outbound Message Search ── -->
-  <div class="card" style="display:none;">
-    <div class="card-title">&#9729; Blob search- E2open 856 outbound</div>
+  <div class="card" id="blob-search-card">
+    <div class="card-title">&#9729; Blob search- E2open 856 outbound<button class="btn-hide-toggle" id="toggle-blob-search-card" title="Toggle section visibility">▶ Expand</button></div>
+    <div class="local-card-body" id="body-blob-search-card" style="display:none">
     <div style="background:#fefce8;border:1px solid #fde68a;border-radius:7px;padding:10px 15px;margin-bottom:16px;font-size:0.82rem;color:#92400e;line-height:1.6;">
       &#9200; <strong>Default search window: last 7 days.</strong> If your ASN is older, set a <strong>Date from</strong> below. Searches beyond 7 days scan more files and will take longer.
     </div>
@@ -803,11 +881,12 @@
       &#9729;&nbsp; Search Outbound Messages
     </button>
     <div id="blobResult" style="margin-top:14px;"></div>
+    </div><!-- /local-card-body -->
   </div>
 
   <!-- ── ASN Lookup in SCC (LOCAL ONLY) ── -->
   <div class="card local-only-section" id="asn-lookup-card">
-    <div class="card-title">ASN Lookup in E2Open SCC<button class="btn-hide-toggle" id="toggle-asn-lookup-card" title="Toggle section visibility">Hide: ON</button></div>
+    <div class="card-title">ASN Lookup in E2Open SCC<button class="btn-hide-toggle" id="toggle-asn-lookup-card" title="Toggle section visibility">▶ Expand</button></div>
     <div class="local-card-body" id="body-asn-lookup-card" style="display:none">
     <div style="display:none; gap:10px; flex-wrap:wrap; margin-bottom:12px;">
       <button class="btn-lookup" id="btnSccBootstrap" onclick="bootstrapSccSession()" style="width:auto; padding:10px 14px; background:#0f766e;">
@@ -846,7 +925,7 @@ if (!clientId) {
 
 // ── Per-card hide toggle (TA Check, ASN Lookup, Booking, Full SCC Flow) ──────
 // Default: hidden (Hide: ON). Persisted per card in localStorage.
-const LOCAL_CARD_IDS = ['ta-check-card', 'asn-lookup-card', 'scc-booking-card', 'full-scc-card'];
+const LOCAL_CARD_IDS = ['ta-check-card', 'asn-lookup-card', 'carrier-wms-card', 'blob-search-card', 'raise-ado-bug-card', 'scc-booking-card', 'full-scc-card'];
 
 function isCardVisible(cardId) {
   const stored = localStorage.getItem('sdaCardVisible_' + cardId);
@@ -859,7 +938,7 @@ function applyCardVisibility(cardId, visible) {
   const btn  = document.getElementById('toggle-' + cardId);
   if (body) body.style.display = visible ? '' : 'none';
   if (btn) {
-    btn.textContent = visible ? 'Hide: OFF' : 'Hide: ON';
+    btn.textContent = visible ? '▼ Collapse' : '▶ Expand';
     btn.classList.toggle('visible', visible);
   }
 }
@@ -871,6 +950,14 @@ function toggleLocalCard(cardId) {
 }
 
 function initLocalCards() {
+  // Close guide modal when clicking backdrop
+  const guideModal = document.getElementById('guide-modal');
+  if (guideModal) {
+    guideModal.addEventListener('click', function(e) {
+      if (e.target === guideModal) guideModal.classList.remove('open');
+    });
+  }
+
   LOCAL_CARD_IDS.forEach(id => {
     applyCardVisibility(id, isCardVisible(id));
     // Attach click listener programmatically — more reliable than inline onclick
@@ -1298,8 +1385,9 @@ async function fullSccFlow() {
   <!-- ══════════════════════════════════════════════════════════════════════
        RAISE ADO BUG — fully isolated from all existing flows
        ══════════════════════════════════════════════════════════════════════ -->
-  <div class="card" id="raise-ado-bug-card" style="border-left:4px solid #7c3aed;">
-    <div class="card-title" style="color:#7c3aed;">&#128027; Raise ADO Bug</div>
+  <div class="card" id="raise-ado-bug-card">
+    <div class="card-title" style="color:#7c3aed;">&#128027; Raise ADO Bug<button class="btn-hide-toggle" id="toggle-raise-ado-bug-card" title="Toggle section visibility">▶ Expand</button></div>
+    <div class="local-card-body" id="body-raise-ado-bug-card">
 
     <!-- ① Instructions -->
     <div style="background:#f5f3ff;border:1px solid #c4b5fd;border-radius:6px;padding:11px 16px;margin-bottom:18px;font-size:0.83rem;color:#5b21b6;line-height:1.7;">
@@ -1495,61 +1583,7 @@ async function fullSccFlow() {
 
     <!-- Result after submit -->
     <div id="bugSubmitResult" style="margin-top:12px;"></div>
-  </div>
-
-  <div class="card" style="background:#e3f2fd; border-left:4px solid #0078D4;">
-    <div class="card-title" style="color:#0078D4;">&#128231; ADO Test Status Email</div>
-    <p style="font-size:0.82rem; color:#555; margin:6px 0 12px 0;">
-      Preview &amp; send the latest AIM Test Execution Progress &amp; Bug Report email (queries ADO shared queries, test plans/suites).
-    </p>
-    <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-      <button id="btnPreviewEmail" onclick="previewStatusEmail()"
-              style="background:#0078D4; color:white; font-weight:600; padding:8px 20px; border:none; border-radius:4px; cursor:pointer;">
-        &#128065; Preview Report
-      </button>
-      <button id="btnSendEmail" onclick="sendStatusEmail()"
-              style="background:#2e7d32; color:white; font-weight:600; padding:8px 20px; border:none; border-radius:4px; cursor:pointer;">
-        &#9993; Send Email
-      </button>
-      <div style="display:flex; align-items:center; gap:6px; background:#f0f4f8; border:1px solid #cdd8e3; border-radius:4px; padding:4px 10px;">
-        <label style="font-size:0.78rem; color:#444; font-weight:600; white-space:nowrap;">Send to:</label>
-        <label style="font-size:0.78rem; color:#333; display:flex; align-items:center; gap:3px; cursor:pointer;">
-          <input type="radio" name="emailSendMode" value="self" checked onchange="onSendModeChange()" style="cursor:pointer;"> Self
-        </label>
-        <label style="font-size:0.78rem; color:#333; display:flex; align-items:center; gap:3px; cursor:pointer;">
-          <input type="radio" name="emailSendMode" value="team" onchange="onSendModeChange()" style="cursor:pointer;"> Team
-        </label>
-      </div>
-      <div id="teamRecipientsNote" style="display:none; margin-top:6px; width:100%; padding:8px 12px; background:#fffbeb; border:1px solid #f59e0b; border-radius:4px; font-size:0.78rem; color:#78350f;">
-        <strong>&#128101; Email will be sent to:</strong> <span id="teamRecipientsList" style="font-family:monospace;"></span>
-      </div>
-      <span id="emailStatus" style="font-size:0.82rem;"></span>
-    </div>
-  </div>
-
-  <!-- ── Preview Modal ── -->
-  <div id="previewModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:9999; justify-content:center; align-items:center;">
-    <div style="background:white; width:90%; max-width:1000px; height:85vh; border-radius:8px; display:flex; flex-direction:column; box-shadow:0 8px 32px rgba(0,0,0,0.3);">
-      <div style="display:flex; justify-content:space-between; align-items:center; padding:12px 20px; border-bottom:1px solid #e0e0e0; background:#f5f5f5; border-radius:8px 8px 0 0;">
-        <span style="font-weight:700; font-size:0.95rem; color:#0078D4;">&#128065; Email Preview</span>
-        <div style="display:flex; gap:10px; align-items:center;">
-          <button id="btnToggleEdit" onclick="toggleEditMode()"
-                  style="background:#FF8F00; color:white; font-weight:600; padding:6px 16px; border:none; border-radius:4px; cursor:pointer; font-size:0.82rem;">
-            &#9998; Edit
-          </button>
-          <span id="editIndicator" style="font-size:0.75rem; color:#FF8F00; font-weight:600; display:none;">Editing</span>
-          <button onclick="sendFromPreview()"
-                  style="background:#2e7d32; color:white; font-weight:600; padding:6px 16px; border:none; border-radius:4px; cursor:pointer; font-size:0.82rem;">
-            &#9993; Send Email Now
-          </button>
-          <button onclick="closePreview()"
-                  style="background:#666; color:white; font-weight:600; padding:6px 16px; border:none; border-radius:4px; cursor:pointer; font-size:0.82rem;">
-            &#10005; Close
-          </button>
-        </div>
-      </div>
-      <iframe id="previewFrame" style="flex:1; border:none; border-radius:0 0 8px 8px;"></iframe>
-    </div>
+    </div><!-- /local-card-body -->
   </div>
 
 <!-- ── WORK IN PROGRESS FEATURES ── -->
@@ -1608,8 +1642,8 @@ async function fullSccFlow() {
   </div>
 
   <!-- ── Booking Creation (LOCAL ONLY) ── -->
-  <div class="card local-only-section" id="scc-booking-card" style="opacity:0.6; border:2px dashed #ffc107;">
-    <div class="card-title">Carrier Booking Creation<button class="btn-hide-toggle" id="toggle-scc-booking-card" title="Toggle section visibility">Hide: ON</button></div>
+  <div class="card local-only-section" id="scc-booking-card" style="opacity:0.6;">
+    <div class="card-title">Carrier Booking Creation<button class="btn-hide-toggle" id="toggle-scc-booking-card" title="Toggle section visibility">▶ Expand</button></div>
     <div class="local-card-body" id="body-scc-booking-card" style="display:none">
     <div class="form-grid">
       <div class="form-group" style="grid-column: 1 / -1;">
@@ -1656,8 +1690,8 @@ async function fullSccFlow() {
   </div>
 
   <!-- ── Full SCC Flow (LOCAL ONLY) ── -->
-  <div class="card local-only-section" id="full-scc-card" style="opacity:0.6; border:2px dashed #ffc107;">
-    <div class="card-title">Full SCC Flow &mdash; One-Click Booking<button class="btn-hide-toggle" id="toggle-full-scc-card" title="Toggle section visibility">Hide: ON</button></div>
+  <div class="card local-only-section" id="full-scc-card" style="opacity:0.6;">
+    <div class="card-title">Full SCC Flow &mdash; One-Click Booking<button class="btn-hide-toggle" id="toggle-full-scc-card" title="Toggle section visibility">▶ Expand</button></div>
     <div class="local-card-body" id="body-full-scc-card" style="display:none">
     <div class="form-grid">
       <div class="form-group" style="grid-column: 1 / -1;">
@@ -1737,7 +1771,7 @@ async function fullSccFlow() {
     // Remove disabled visual treatment from WIP cards now that features are migrated.
     document.querySelectorAll('.card[style*="opacity:0.6"]').forEach((card) => {
       card.style.opacity = '1';
-      card.style.border = '1px solid #e5e7eb';
+      card.style.removeProperty('border'); // let CSS border-left rules apply
     });
 
     // Remove local-only lock styling so status email is active in unified local flow.
@@ -2898,11 +2932,14 @@ function prodSafeId(name) {
     const files = [];
     if (r.sku?.screenshot)  files.push(r.sku.screenshot);
     if (r.po?.screenshot)   files.push(r.po.screenshot);
-    if (r.asn?.screenshots) {
-      const ss = r.asn.screenshots;
-      [ss.results, ss.detail, ss.lineItems, ss.events].filter(Boolean).forEach(f => files.push(f));
-    } else if (r.asn?.screenshot) {
-      files.push(r.asn.screenshot);
+    const asnList = r.asns || (r.asn ? [r.asn] : []);
+    for (const a of asnList) {
+      if (a.screenshots) {
+        const ss = a.screenshots;
+        [ss.results, ss.detail, ss.lineItems, ss.events].filter(Boolean).forEach(f => files.push(f));
+      } else if (a.screenshot) {
+        files.push(a.screenshot);
+      }
     }
     files.forEach((f, i) => {
       setTimeout(() => {
@@ -2959,10 +2996,11 @@ function prodSafeId(name) {
       if (!resp.ok || !data.ok) throw new Error(data.error || 'TA check failed');
 
       const r = data.results;
+      const asnList = r.asns || (r.asn ? [r.asn] : []);
       const items = [
-        { label: 'SKU',  info: r.sku  },
-        { label: 'PO',   info: r.po   },
-        { label: 'ASN',  info: r.asn  },
+        { label: 'SKU', info: r.sku, type: 'sku' },
+        { label: 'PO',  info: r.po,  type: 'po'  },
+        ...asnList.map((a, i) => ({ label: asnList.length > 1 ? `ASN ${i + 1}` : 'ASN', info: a, type: 'asn' })),
       ].filter(x => x.info);
 
       const cardsEl = document.getElementById('taCheckCards');
@@ -2977,16 +3015,16 @@ function prodSafeId(name) {
       }
 
       // For items that only span 1 column (SKU, PO), set col-span 1.
-      // ASN gets its own full-width row when it has extra screenshots.
-      const asnHasDetail = r.asn && r.asn.screenshots && r.asn.screenshots.detail;
+      // ASN cards get their own full-width row when they have extra screenshots.
+      const asnHasDetail = asnList.some(a => a.screenshots && a.screenshots.detail);
 
-      cardsEl.innerHTML = items.map(({ label, info }) => {
+      cardsEl.innerHTML = items.map(({ label, info, type }) => {
         const badge = info.found
           ? `<span style="background:#d1fae5;color:#065f46;border-radius:999px;padding:2px 10px;font-size:0.78rem;font-weight:700;">&#10003; Found</span>`
           : `<span style="background:#fee2e2;color:#991b1b;border-radius:999px;padding:2px 10px;font-size:0.78rem;font-weight:700;">&#10007; Not Found</span>`;
 
         let imgBlock = '';
-        if (label === 'ASN' && info.screenshots) {
+        if (type === 'asn' && info.screenshots) {
           const ss = info.screenshots;
           // Results grid thumbnail
           imgBlock += taScreenshotThumb(ss.results, 'Search Results');
@@ -3002,7 +3040,7 @@ function prodSafeId(name) {
           imgBlock = taScreenshotThumb(info.screenshot, `${label} screenshot`);
         }
 
-        const colSpan = (label === 'ASN' && asnHasDetail) ? 'grid-column:1/-1;' : '';
+        const colSpan = (type === 'asn' && asnHasDetail) ? 'grid-column:1/-1;' : '';
         return `<div style="border:1px solid #e0f2fe;border-radius:8px;padding:12px;background:#f0f9ff;${colSpan}">
           <div style="font-size:0.78rem;color:#6b7280;font-weight:600;text-transform:uppercase;letter-spacing:.05em;">${label}</div>
           <div style="font-size:0.9rem;font-weight:600;color:#1e293b;margin:4px 0;">${info.id || '—'}</div>
@@ -3366,6 +3404,61 @@ function prodSafeId(name) {
   }
 </script>
 
+  <div class="card" style="background:#e3f2fd; border-left:4px solid #0078D4;">
+    <div class="card-title" style="color:#0078D4;">&#128231; ADO Test Status Email</div>
+    <p style="font-size:0.82rem; color:#555; margin:6px 0 12px 0;">
+      Preview &amp; send the latest AIM Test Execution Progress &amp; Bug Report email (queries ADO shared queries, test plans/suites).
+    </p>
+    <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+      <button id="btnPreviewEmail" onclick="previewStatusEmail()"
+              style="background:#0078D4; color:white; font-weight:600; padding:8px 20px; border:none; border-radius:4px; cursor:pointer;">
+        &#128065; Preview Report
+      </button>
+      <button id="btnSendEmail" onclick="sendStatusEmail()"
+              style="background:#2e7d32; color:white; font-weight:600; padding:8px 20px; border:none; border-radius:4px; cursor:pointer;">
+        &#9993; Send Email
+      </button>
+      <div style="display:flex; align-items:center; gap:6px; background:#f0f4f8; border:1px solid #cdd8e3; border-radius:4px; padding:4px 10px;">
+        <label style="font-size:0.78rem; color:#444; font-weight:600; white-space:nowrap;">Send to:</label>
+        <label style="font-size:0.78rem; color:#333; display:flex; align-items:center; gap:3px; cursor:pointer;">
+          <input type="radio" name="emailSendMode" value="self" checked onchange="onSendModeChange()" style="cursor:pointer;"> Self
+        </label>
+        <label style="font-size:0.78rem; color:#333; display:flex; align-items:center; gap:3px; cursor:pointer;">
+          <input type="radio" name="emailSendMode" value="team" onchange="onSendModeChange()" style="cursor:pointer;"> Team
+        </label>
+      </div>
+      <div id="teamRecipientsNote" style="display:none; margin-top:6px; width:100%; padding:8px 12px; background:#fffbeb; border:1px solid #f59e0b; border-radius:4px; font-size:0.78rem; color:#78350f;">
+        <strong>&#128101; Email will be sent to:</strong> <span id="teamRecipientsList" style="font-family:monospace;"></span>
+      </div>
+      <span id="emailStatus" style="font-size:0.82rem;"></span>
+    </div>
+  </div>
+
+  <!-- ── Preview Modal ── -->
+  <div id="previewModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:9999; justify-content:center; align-items:center;">
+    <div style="background:white; width:90%; max-width:1000px; height:85vh; border-radius:8px; display:flex; flex-direction:column; box-shadow:0 8px 32px rgba(0,0,0,0.3);">
+      <div style="display:flex; justify-content:space-between; align-items:center; padding:12px 20px; border-bottom:1px solid #e0e0e0; background:#f5f5f5; border-radius:8px 8px 0 0;">
+        <span style="font-weight:700; font-size:0.95rem; color:#0078D4;">&#128065; Email Preview</span>
+        <div style="display:flex; gap:10px; align-items:center;">
+          <button id="btnToggleEdit" onclick="toggleEditMode()"
+                  style="background:#FF8F00; color:white; font-weight:600; padding:6px 16px; border:none; border-radius:4px; cursor:pointer; font-size:0.82rem;">
+            &#9998; Edit
+          </button>
+          <span id="editIndicator" style="font-size:0.75rem; color:#FF8F00; font-weight:600; display:none;">Editing</span>
+          <button onclick="sendFromPreview()"
+                  style="background:#2e7d32; color:white; font-weight:600; padding:6px 16px; border:none; border-radius:4px; cursor:pointer; font-size:0.82rem;">
+            &#9993; Send Email Now
+          </button>
+          <button onclick="closePreview()"
+                  style="background:#666; color:white; font-weight:600; padding:6px 16px; border:none; border-radius:4px; cursor:pointer; font-size:0.82rem;">
+            &#10005; Close
+          </button>
+        </div>
+      </div>
+      <iframe id="previewFrame" style="flex:1; border:none; border-radius:0 0 8px 8px;"></iframe>
+    </div>
+  </div>
+
 <!-- ═══════════════════════════════════════════════════════════════════════════
      PROD SFTP DIRECT UPLOAD — fully isolated from all existing upload features
      ═══════════════════════════════════════════════════════════════════════════ -->
@@ -3432,6 +3525,81 @@ function prodSafeId(name) {
       </button>
     </div>
     <div id="prodModalStatus" style="margin-top:10px;font-size:0.88rem;"></div>
+  </div>
+</div>
+
+<!-- ── Quick Reference Guide Modal ───────────────────────────────────────── -->
+<div id="guide-modal">
+  <div class="guide-modal-box">
+    <div class="guide-modal-header">
+      <h2>&#128218;&nbsp; Quick Reference Guide</h2>
+      <button class="guide-modal-close" onclick="document.getElementById('guide-modal').classList.remove('open')">&#10005; Close</button>
+    </div>
+    <div class="guide-modal-body">
+      <p style="font-size:0.8rem;color:#64748b;margin:0 0 14px 0;line-height:1.6;">
+        All features run against <strong>Staging</strong> unless explicitly marked <span style="background:#fef2f2;color:#dc2626;font-weight:700;padding:1px 7px;border-radius:4px;font-size:0.75rem;">PROD</span>.
+        Sections marked <span style="background:#fef9c3;color:#92400e;font-weight:700;padding:1px 7px;border-radius:4px;font-size:0.75rem;">Local only</span> require the app to run on your laptop (Playwright / SCC credentials).
+      </p>
+      <table style="width:100%;border-collapse:collapse;font-size:0.8rem;">
+        <thead>
+          <tr style="background:#f1f5f9;">
+            <th style="padding:7px 10px;text-align:left;font-weight:700;color:#475569;border-bottom:2px solid #e2e8f0;white-space:nowrap;">Section</th>
+            <th style="padding:7px 10px;text-align:left;font-weight:700;color:#475569;border-bottom:2px solid #e2e8f0;">What it does</th>
+            <th style="padding:7px 10px;text-align:left;font-weight:700;color:#475569;border-bottom:2px solid #e2e8f0;white-space:nowrap;">Environment</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr style="border-bottom:1px solid #f1f5f9;">
+            <td style="padding:8px 10px;white-space:nowrap;"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#0891b2;margin-right:6px;"></span><strong>E2open TA Check</strong></td>
+            <td style="padding:8px 10px;color:#374151;">Launches Playwright, logs into E2open TA and searches for a SKU / PO / ASN. Returns screenshots. Comma-separated ASNs searched one by one in a single session.</td>
+            <td style="padding:8px 10px;"><span style="background:#eff6ff;color:#1d4ed8;font-size:0.72rem;font-weight:700;padding:2px 8px;border-radius:4px;">Staging TA</span><br><span style="font-size:0.7rem;color:#94a3b8;">asos.staging.e2open.com</span> <span style="background:#fef9c3;color:#92400e;font-size:0.7rem;font-weight:700;padding:2px 6px;border-radius:4px;">Local only</span></td>
+          </tr>
+          <tr style="border-bottom:1px solid #f1f5f9;background:#fafafa;">
+            <td style="padding:8px 10px;white-space:nowrap;"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#f97316;margin-right:6px;"></span><strong>Carrier &amp; WMS Events</strong></td>
+            <td style="padding:8px 10px;color:#374151;">Generates &amp; uploads XML messages to the AIM SCC SFTP. Use <em>Happy Path</em> to fire all milestones in one click. Milestone order: <strong>1</strong> VBKCON → <strong>2</strong> BST → <strong>3</strong> Carrier Shipment → <strong>4</strong> ASN FCBKC → <strong>5</strong> ASN RCV → <strong>6</strong> ASN PADEX. ASN Feed, SKU Re-trigger (GPM) and PO Feed are available as individual triggers only.</td>
+            <td style="padding:8px 10px;"><span style="background:#eff6ff;color:#1d4ed8;font-size:0.72rem;font-weight:700;padding:2px 8px;border-radius:4px;">Staging</span><br><span style="font-size:0.7rem;color:#94a3b8;">Azure SFTP drop-zone</span></td>
+          </tr>
+          <tr style="border-bottom:1px solid #f1f5f9;">
+            <td style="padding:8px 10px;white-space:nowrap;"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#06b6d4;margin-right:6px;"></span><strong>Blob Search</strong></td>
+            <td style="padding:8px 10px;color:#374151;">Searches Azure Blob storage for outbound 856 XML files containing a given ASN. Default window: last 7 days; extend with a custom date range.</td>
+            <td style="padding:8px 10px;"><span style="background:#eff6ff;color:#1d4ed8;font-size:0.72rem;font-weight:700;padding:2px 8px;border-radius:4px;">Staging</span><br><span style="font-size:0.7rem;color:#94a3b8;">Azure Blob storage</span></td>
+          </tr>
+          <tr style="border-bottom:1px solid #f1f5f9;background:#fafafa;">
+            <td style="padding:8px 10px;white-space:nowrap;"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#6366f1;margin-right:6px;"></span><strong>ASN Lookup in SCC</strong></td>
+            <td style="padding:8px 10px;color:#374151;">Playwright automation into SCC to look up an ASN and screenshot its status. Requires local app with valid SCC credentials.</td>
+            <td style="padding:8px 10px;"><span style="background:#eff6ff;color:#1d4ed8;font-size:0.72rem;font-weight:700;padding:2px 8px;border-radius:4px;">Staging SCC</span> <span style="background:#fef9c3;color:#92400e;font-size:0.7rem;font-weight:700;padding:2px 6px;border-radius:4px;">Local only</span></td>
+          </tr>
+          <tr style="border-bottom:1px solid #f1f5f9;">
+            <td style="padding:8px 10px;white-space:nowrap;"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#7c3aed;margin-right:6px;"></span><strong>Raise ADO Bug</strong></td>
+            <td style="padding:8px 10px;color:#374151;">AI-assisted bug creation — auto-fills title, priority, severity, assignee &amp; repro steps. Review and edit before submitting to ADO.</td>
+            <td style="padding:8px 10px;"><span style="background:#f3f4f6;color:#374151;font-size:0.72rem;font-weight:700;padding:2px 8px;border-radius:4px;">Azure DevOps</span></td>
+          </tr>
+          <tr style="border-bottom:1px solid #f1f5f9;background:#fafafa;">
+            <td style="padding:8px 10px;white-space:nowrap;"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#0078D4;margin-right:6px;"></span><strong>ADO Test Status Email</strong></td>
+            <td style="padding:8px 10px;color:#374151;">Queries ADO test plans &amp; shared queries to generate an AIM Test Execution &amp; Bug Report. Preview before sending to yourself or the whole team.</td>
+            <td style="padding:8px 10px;"><span style="background:#f3f4f6;color:#374151;font-size:0.72rem;font-weight:700;padding:2px 8px;border-radius:4px;">Azure DevOps</span></td>
+          </tr>
+          <tr style="border-bottom:1px solid #f1f5f9;">
+            <td style="padding:8px 10px;white-space:nowrap;"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#d97706;margin-right:6px;"></span><strong>Carrier Booking Creation</strong></td>
+            <td style="padding:8px 10px;color:#374151;">Playwright logs into SCC and creates a carrier booking for one or more ASNs — one per ASN or all in a single booking.</td>
+            <td style="padding:8px 10px;"><span style="background:#eff6ff;color:#1d4ed8;font-size:0.72rem;font-weight:700;padding:2px 8px;border-radius:4px;">Staging SCC</span> <span style="background:#fef9c3;color:#92400e;font-size:0.7rem;font-weight:700;padding:2px 6px;border-radius:4px;">Local only</span></td>
+          </tr>
+          <tr style="border-bottom:1px solid #f1f5f9;background:#fafafa;">
+            <td style="padding:8px 10px;white-space:nowrap;"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#0ea5e9;margin-right:6px;"></span><strong>Full SCC Flow</strong></td>
+            <td style="padding:8px 10px;color:#374151;">Looks up ASNs in SCC and raises a carrier booking — combining the ASN Lookup and Carrier Booking Creation steps into a single automated flow.</td>
+            <td style="padding:8px 10px;"><span style="background:#eff6ff;color:#1d4ed8;font-size:0.72rem;font-weight:700;padding:2px 8px;border-radius:4px;">Staging SCC</span> <span style="background:#fef9c3;color:#92400e;font-size:0.7rem;font-weight:700;padding:2px 6px;border-radius:4px;">Local only</span></td>
+          </tr>
+          <tr>
+            <td style="padding:8px 10px;white-space:nowrap;"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#dc2626;margin-right:6px;"></span><strong>PROD SFTP Upload</strong></td>
+            <td style="padding:8px 10px;color:#374151;">Drop pre-modified XML files directly onto E2open <strong>production</strong> SFTP. Requires a second confirmation step before sending.</td>
+            <td style="padding:8px 10px;"><span style="background:#fef2f2;color:#dc2626;font-size:0.72rem;font-weight:700;padding:2px 8px;border-radius:4px;">&#9888; PRODUCTION</span></td>
+          </tr>
+        </tbody>
+      </table>
+      <div style="margin-top:12px;padding:9px 14px;background:#fefce8;border:1px solid #fde68a;border-radius:6px;font-size:0.78rem;color:#92400e;line-height:1.6;">
+        <strong>&#9432; Before you start:</strong> If the ASN doesn’t exist yet, create it via <strong>Self-Service Job #21384</strong> and wait ~1 hr for it to appear in AIM SCC before using the tools below.
+      </div>
+    </div>
   </div>
 </div>
 
