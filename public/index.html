@@ -2936,7 +2936,8 @@ function prodSafeId(name) {
     for (const a of asnList) {
       if (a.screenshots) {
         const ss = a.screenshots;
-        [ss.results, ss.detail, ss.lineItems, ss.events].filter(Boolean).forEach(f => files.push(f));
+        [ss.results, ss.detail, ss.lineItems].filter(Boolean).forEach(f => files.push(f));
+        (Array.isArray(ss.events) ? ss.events : (ss.events ? [ss.events] : [])).forEach(f => files.push(f));
       } else if (a.screenshot) {
         files.push(a.screenshot);
       }
@@ -3033,7 +3034,11 @@ function prodSafeId(name) {
             imgBlock += `<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">`;
             imgBlock += taScreenshotThumb(ss.detail,    'Main');
             imgBlock += taScreenshotThumb(ss.lineItems, 'Line Items');
-            imgBlock += taScreenshotThumb(ss.events,    'Events');
+            // events is an array (one entry per page) or a legacy single string
+            const evtFiles = Array.isArray(ss.events) ? ss.events : (ss.events ? [ss.events] : []);
+            evtFiles.forEach((f, i) => {
+              imgBlock += taScreenshotThumb(f, evtFiles.length > 1 ? `Events (pg ${i + 1})` : 'Events');
+            });
             imgBlock += `</div>`;
           }
         } else if (info.screenshot) {

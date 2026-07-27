@@ -120,7 +120,8 @@ async function expandTablePagination(page, frameName) {
     const numerics = opts
       .map(o => ({ ...o, n: parseInt(o.v) || parseInt(o.t) }))
       .filter(o => !isNaN(o.n) && o.n > 0);
-    if (numerics.some(o => o.n === 10) && numerics.some(o => o.n > 10)) {
+    // Accept any select with 2+ numeric options — not just ones that include exactly 10
+    if (numerics.length >= 2) {
       const largest = numerics.reduce((a, b) => a.n > b.n ? a : b);
       if (!largest.selected) {
         await sel.selectOption(largest.v, { force: true });  // force skips visibility check on hidden native select
@@ -191,7 +192,6 @@ test('E2open TA | Check SKU, PO and ASN availability', async ({ page }) => {
     const asnFile       = `asn-${asnId}-${ts}.png`;
     const asnDetailFile = `asn-${asnId}-detail-${ts}.png`;
     const asnLineFile   = `asn-${asnId}-lineitems-${ts}.png`;
-    const asnEventsFile = `asn-${asnId}-events-${ts}.png`;
     // Always navigate via the Logistics menu for each ASN —
     // clickBack() does not return to the shipment search form in mainFrame
     await menuPage.openLogistics('Shipment Search Search Power');
@@ -210,16 +210,61 @@ test('E2open TA | Check SKU, PO and ASN availability', async ({ page }) => {
       await asnPage.clickTab('Line Items');
       await expandIframe(page, 'detailFrame');
       await shotIframe(page, 'detailFrame', asnLineFile);
-      // Events tab
+      // Events tab — iterate through ALL pages so every milestone is captured
       console.log(`[TA] ASN ${asnId}: capturing Events tab...`);
       await asnPage.clickTab('Events');
-      // Zoom out the detailFrame so the grid renders all rows without pagination clipping
-      // (equivalent to pressing Ctrl+- in the browser — same effect user confirmed works)
-      const detailFr = page.frames().find(f => f.name() === 'detailFrame');
-      if (detailFr) await detailFr.evaluate(() => { document.body.style.zoom = '0.7'; });
-      await page.waitForTimeout(200); // reduced from 1000ms — zoom is a synchronous CSS change
-      await expandIframe(page, 'detailFrame');
-      await shotIframe(page, 'detailFrame', asnEventsFile);
+      await page.waitForTimeout(3000); // Events load via XHR — wait for first page
+      await expandTablePagination(page, 'detailFrame');
+
+      const asnEventsFiles = [];
+      let evtPage = 1;
+      const MAX_EVT_PAGES = 15;
+
+      while (evtPage <= MAX_EVT_PAGES) {
+        const evtFile = evtPage === 1
+          ? `asn-${asnId}-events-${ts}.png`
+          : `asn-${asnId}-events-p${evtPage}-${ts}.png`;
+
+        // Apply zoom and expand before each screenshot
+        const fr = page.frames().find(f => f.name() === 'detailFrame');
+        if (fr) await fr.evaluate(() => { document.body.style.zoom = '0.7'; });
+        await expandIframe(page, 'detailFrame');
+        await shotIframe(page, 'detailFrame', evtFile);
+        asnEventsFiles.push(evtFile);
+        console.log(`[TA] ASN ${asnId}: events page ${evtPage} captured (${evtFile})`);
+
+        // Look for an enabled "next page" control inside detailFrame
+        const fr2 = page.frames().find(f => f.name() === 'detailFrame');
+        if (!fr2) break;
+        const nextClicked = await fr2.evaluate(() => {
+          const candidates = Array.from(document.querySelectorAll(
+            'a, button, input[type="button"], input[type="submit"], [role="button"], td, span, div'
+          ));
+          for (const el of candidates) {
+            const cs = window.getComputedStyle(el);
+            if (cs.display === 'none' || cs.visibility === 'hidden') continue;
+            if (el.hasAttribute('disabled')) continue;
+            const text  = (el.textContent || '').trim();
+            const title = (el.getAttribute('title') || '').toLowerCase();
+            const aria  = (el.getAttribute('aria-label') || '').toLowerCase();
+            const cls   = (el.className || '').toLowerCase();
+            if (
+              text === '>' || text === '>>' ||
+              text.toLowerCase() === 'next' ||
+              title === 'next page' || aria === 'next page' ||
+              (cls.includes('next') && !cls.includes('disabled') && !cls.includes('nxt-dis'))
+            ) {
+              el.click();
+              return true;
+            }
+          }
+          return false;
+        });
+        if (!nextClicked) break;
+        await page.waitForTimeout(2500); // wait for next page to render
+        evtPage++;
+      }
+
       // Back to search results
       await asnPage.clickBack();
     } else {
@@ -230,7 +275,7 @@ test('E2open TA | Check SKU, PO and ASN availability', async ({ page }) => {
       id: asnId, found: asnFound,
       screenshot: asnFile,
       screenshots: asnFound
-        ? { results: asnFile, detail: asnDetailFile, lineItems: asnLineFile, events: asnEventsFile }
+        ? { results: asnFile, detail: asnDetailFile, lineItems: asnLineFile, events: asnEventsFiles }
         : { results: asnFile }
     });
   }
