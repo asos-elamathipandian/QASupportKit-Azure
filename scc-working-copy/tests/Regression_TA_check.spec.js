@@ -105,6 +105,91 @@ async function expandIframe(page, frameName) {
   }
 }
 
+// Purpose-built frame expansion for the Events tab — avoids the collapse() step
+// in the generic expandIframe() which incorrectly shrinks parent containers when
+// their heights exceed their content height at full zoom.
+// Three passes handle nested clipping hierarchies: after children are expanded in
+// pass N their parent sees the updated scrollHeight in pass N+1.
+async function expandFrameFull(page, frameName) {
+  const frame = page.frames().find(f => f.name() === frameName);
+  if (!frame) return;
+  // Three passes — each pass lets parent containers see their children's expanded
+  // dimensions and expand themselves in the next pass.
+  // Both vertical (height) AND horizontal (width) overflow are expanded so no
+  // columns are clipped on the right side of the screenshot.
+  for (let pass = 0; pass < 3; pass++) {
+    await frame.evaluate(() => {
+      document.querySelectorAll('*').forEach(el => {
+        const s = window.getComputedStyle(el);
+        // ── vertical ──
+        const clippedV = ['auto', 'scroll', 'hidden'].includes(s.overflow) ||
+                         ['auto', 'scroll', 'hidden'].includes(s.overflowY);
+        if (clippedV && el.scrollHeight > el.clientHeight) {
+          el.style.height    = el.scrollHeight + 'px';
+          el.style.maxHeight = 'none';
+          el.style.overflow  = 'visible';
+          el.style.overflowY = 'visible';
+        }
+        if (s.maxHeight && s.maxHeight !== 'none' && s.maxHeight !== '0px') {
+          el.style.maxHeight = 'none';
+        }
+        // ── horizontal ──
+        const clippedH = ['auto', 'scroll', 'hidden'].includes(s.overflow) ||
+                         ['auto', 'scroll', 'hidden'].includes(s.overflowX);
+        if (clippedH && el.scrollWidth > el.clientWidth) {
+          el.style.width    = el.scrollWidth + 'px';
+          el.style.maxWidth = 'none';
+          el.style.overflowX = 'visible';
+        }
+        if (s.maxWidth && s.maxWidth !== 'none' && s.maxWidth !== '0px') {
+          el.style.maxWidth = 'none';
+        }
+      });
+    });
+  }
+  // Measure full content dimensions inside the frame
+  const { h, w } = await frame.evaluate(() => ({
+    h: Math.max(document.body.scrollHeight, document.documentElement.scrollHeight),
+    w: Math.max(document.body.scrollWidth,  document.documentElement.scrollWidth),
+  }));
+  // Set iframe element size in the outer page
+  await page.evaluate(({ name, h, w }) => {
+    const el = document.querySelector(`iframe[name="${name}"]`);
+    if (el) {
+      el.style.height = (h + 30) + 'px';
+      el.style.width  = (w + 30) + 'px';
+    }
+  }, { name: frameName, h, w });
+  // Wait for the browser to reflow before reading outer container scrollHeights
+  await page.waitForTimeout(300);
+  // Expand outer-page containers (both axes) so they don't clip the larger iframe
+  await page.evaluate(() => {
+    for (let pass = 0; pass < 2; pass++) {
+      document.querySelectorAll('*').forEach(el => {
+        const s = window.getComputedStyle(el);
+        if (['auto', 'scroll', 'hidden'].includes(s.overflow) ||
+            ['auto', 'scroll', 'hidden'].includes(s.overflowY)) {
+          if (el.scrollHeight > el.clientHeight) {
+            el.style.height    = el.scrollHeight + 'px';
+            el.style.maxHeight = 'none';
+            el.style.overflow  = 'visible';
+            el.style.overflowY = 'visible';
+          }
+        }
+        if (['auto', 'scroll', 'hidden'].includes(s.overflow) ||
+            ['auto', 'scroll', 'hidden'].includes(s.overflowX)) {
+          if (el.scrollWidth > el.clientWidth) {
+            el.style.width    = el.scrollWidth + 'px';
+            el.style.maxWidth = 'none';
+            el.style.overflowX = 'visible';
+          }
+        }
+      });
+    }
+  });
+  await page.waitForTimeout(200); // let outer re-layout settle before screenshot
+}
+
 // Find pagination <select> controls inside the frame (those offering page-size options
 // like 10 / 25 / 50 / 100) and switch them to the largest available value so that
 // all rows are rendered before the screenshot.
@@ -192,6 +277,7 @@ test('E2open TA | Check SKU, PO and ASN availability', async ({ page }) => {
     const asnFile       = `asn-${asnId}-${ts}.png`;
     const asnDetailFile = `asn-${asnId}-detail-${ts}.png`;
     const asnLineFile   = `asn-${asnId}-lineitems-${ts}.png`;
+    let asnEventsFiles  = [];
     // Always navigate via the Logistics menu for each ASN —
     // clickBack() does not return to the shipment search form in mainFrame
     await menuPage.openLogistics('Shipment Search Search Power');
@@ -199,70 +285,139 @@ test('E2open TA | Check SKU, PO and ASN availability', async ({ page }) => {
     const asnFound = await asnPage.searchASN(asnId);
     if (asnFound) {
       console.log(`[TA] ASN ${asnId}: FOUND ✓`);
-      await shot(page, asnFile);
+      // Expand mainFrame so all search-result rows and columns are visible
+      await expandFrameFull(page, 'mainFrame');
+      await shotIframe(page, 'mainFrame', asnFile);
       // Drill into detail page
       console.log(`[TA] ASN ${asnId}: opening detail...`);
       await asnPage.clickResultLink(asnId);
-      await expandIframe(page, 'detailFrame');
+      await expandFrameFull(page, 'detailFrame');
       await shotIframe(page, 'detailFrame', asnDetailFile);
       // Line Items tab
       console.log(`[TA] ASN ${asnId}: capturing Line Items tab...`);
       await asnPage.clickTab('Line Items');
-      await expandIframe(page, 'detailFrame');
+      await expandFrameFull(page, 'detailFrame');
       await shotIframe(page, 'detailFrame', asnLineFile);
-      // Events tab — iterate through ALL pages so every milestone is captured
+      // Events tab — extract ALL rows via DOM clone so the fixed-height scroll container
+      // cannot hide any events from the screenshot.
       console.log(`[TA] ASN ${asnId}: capturing Events tab...`);
       await asnPage.clickTab('Events');
       await page.waitForTimeout(3000); // Events load via XHR — wait for first page
+
+      // Maximise page size so all rows are present in the DOM before we clone.
+      await expandTablePagination(page, 'detailFrame');
       await expandTablePagination(page, 'detailFrame');
 
-      const asnEventsFiles = [];
-      let evtPage = 1;
-      const MAX_EVT_PAGES = 15;
+      const frEvents = page.frames().find(f => f.name() === 'detailFrame');
+      let domExtractionDone = false;
 
-      while (evtPage <= MAX_EVT_PAGES) {
-        const evtFile = evtPage === 1
-          ? `asn-${asnId}-events-${ts}.png`
-          : `asn-${asnId}-events-p${evtPage}-${ts}.png`;
+      if (frEvents) {
+        // Clone the events table HTML — cloneNode includes ALL rows regardless of scroll
+        const { eventsHtml, pageLabel } = await frEvents.evaluate(() => {
+          // Pick the table/grid with the most data rows (events table heuristic)
+          let best = null, bestRows = 0;
+          document.querySelectorAll('table, [role="grid"], [role="table"]').forEach(el => {
+            const n = el.querySelectorAll('tr, [role="row"]').length;
+            if (n > bestRows) { best = el; bestRows = n; }
+          });
+          // Also capture the pagination label ("1 to 15 of 15") for context
+          const paginationEl = document.querySelector(
+            '[class*="pagination"], [class*="pager"], .pageinfo, #pageinfo'
+          );
+          const pageLabel = paginationEl ? paginationEl.textContent.trim() : '';
+          return { eventsHtml: best ? best.cloneNode(true).outerHTML : null, pageLabel };
+        });
 
-        // Apply zoom and expand before each screenshot
-        const fr = page.frames().find(f => f.name() === 'detailFrame');
-        if (fr) await fr.evaluate(() => { document.body.style.zoom = '0.7'; });
-        await expandIframe(page, 'detailFrame');
+        if (eventsHtml) {
+          const evtFile = `asn-${asnId}-events-${ts}.png`;
+          const evtPath = path.resolve(screenshotDir, evtFile);
+          await fs.mkdir(screenshotDir, { recursive: true });
+
+          // Render the cloned table in a clean minimal page — no height constraints
+          const cleanPage = await page.context().newPage();
+          await cleanPage.setContent(
+            `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
+             body{font-family:Arial,sans-serif;font-size:12px;padding:10px;margin:0;background:#fff}
+             h4{margin:0 0 6px;font-size:12px;color:#444}
+             table{border-collapse:collapse;width:100%}
+             th,td{border:1px solid #ccc;padding:4px 8px;text-align:left;white-space:nowrap;font-size:11px}
+             th{background:#e8e8e8;font-weight:bold}
+             tr:nth-child(even) td{background:#f7f7f7}
+             </style></head><body>
+             <h4>ASN ${asnId} — Events${pageLabel ? ' (' + pageLabel + ')' : ''}</h4>
+             ${eventsHtml}
+             </body></html>`
+          );
+          await cleanPage.screenshot({ path: evtPath, fullPage: true });
+          await cleanPage.close();
+          asnEventsFiles.push(evtFile);
+          console.log(`[TA] ASN ${asnId}: events captured via DOM extraction — all rows visible (${evtFile})`);
+          domExtractionDone = true;
+
+          // Also paginate and capture remaining pages if the table has a "next page"
+          let evtPg = 2;
+          const MAX_EVT_PAGES = 15;
+          while (evtPg <= MAX_EVT_PAGES) {
+            const fr2 = page.frames().find(f => f.name() === 'detailFrame');
+            if (!fr2) break;
+            let nextClicked = false;
+            for (const loc of [
+              fr2.locator('a').filter({ hasText: /^>$/ }).first(),
+              fr2.locator('button').filter({ hasText: /^>$/ }).first(),
+              fr2.locator('[title="Next Page"]').first(),
+              fr2.locator('[aria-label="Next Page"]').first(),
+            ]) {
+              try {
+                if (await loc.isVisible({ timeout: 600 })) {
+                  await loc.click({ timeout: 3000 });
+                  nextClicked = true;
+                  break;
+                }
+              } catch (_) {}
+            }
+            if (!nextClicked) break;
+            await page.waitForTimeout(2500);
+            const { eventsHtml: nextHtml, pageLabel: nextLabel } = await fr2.evaluate(() => {
+              let best = null, bestRows = 0;
+              document.querySelectorAll('table, [role="grid"]').forEach(el => {
+                const n = el.querySelectorAll('tr, [role="row"]').length;
+                if (n > bestRows) { best = el; bestRows = n; }
+              });
+              const p = document.querySelector('[class*="pagination"],[class*="pager"],.pageinfo,#pageinfo');
+              return { eventsHtml: best ? best.cloneNode(true).outerHTML : null, pageLabel: p ? p.textContent.trim() : '' };
+            });
+            if (!nextHtml) break;
+            const pgFile = `asn-${asnId}-events-p${evtPg}-${ts}.png`;
+            const pgPath = path.resolve(screenshotDir, pgFile);
+            const pgPage = await page.context().newPage();
+            await pgPage.setContent(
+              `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
+               body{font-family:Arial,sans-serif;font-size:12px;padding:10px;margin:0;background:#fff}
+               h4{margin:0 0 6px;font-size:12px;color:#444}
+               table{border-collapse:collapse;width:100%}
+               th,td{border:1px solid #ccc;padding:4px 8px;text-align:left;white-space:nowrap;font-size:11px}
+               th{background:#e8e8e8;font-weight:bold}
+               tr:nth-child(even) td{background:#f7f7f7}
+               </style></head><body>
+               <h4>ASN ${asnId} — Events page ${evtPg}${nextLabel ? ' (' + nextLabel + ')' : ''}</h4>
+               ${nextHtml}</body></html>`
+            );
+            await pgPage.screenshot({ path: pgPath, fullPage: true });
+            await pgPage.close();
+            asnEventsFiles.push(pgFile);
+            console.log(`[TA] ASN ${asnId}: events page ${evtPg} captured (${pgFile})`);
+            evtPg++;
+          }
+        }
+      }
+
+      // Fallback: iframe screenshot if DOM extraction yielded nothing
+      if (!domExtractionDone) {
+        const evtFile = `asn-${asnId}-events-${ts}.png`;
+        await expandFrameFull(page, 'detailFrame');
         await shotIframe(page, 'detailFrame', evtFile);
         asnEventsFiles.push(evtFile);
-        console.log(`[TA] ASN ${asnId}: events page ${evtPage} captured (${evtFile})`);
-
-        // Look for an enabled "next page" control inside detailFrame
-        const fr2 = page.frames().find(f => f.name() === 'detailFrame');
-        if (!fr2) break;
-        const nextClicked = await fr2.evaluate(() => {
-          const candidates = Array.from(document.querySelectorAll(
-            'a, button, input[type="button"], input[type="submit"], [role="button"], td, span, div'
-          ));
-          for (const el of candidates) {
-            const cs = window.getComputedStyle(el);
-            if (cs.display === 'none' || cs.visibility === 'hidden') continue;
-            if (el.hasAttribute('disabled')) continue;
-            const text  = (el.textContent || '').trim();
-            const title = (el.getAttribute('title') || '').toLowerCase();
-            const aria  = (el.getAttribute('aria-label') || '').toLowerCase();
-            const cls   = (el.className || '').toLowerCase();
-            if (
-              text === '>' || text === '>>' ||
-              text.toLowerCase() === 'next' ||
-              title === 'next page' || aria === 'next page' ||
-              (cls.includes('next') && !cls.includes('disabled') && !cls.includes('nxt-dis'))
-            ) {
-              el.click();
-              return true;
-            }
-          }
-          return false;
-        });
-        if (!nextClicked) break;
-        await page.waitForTimeout(2500); // wait for next page to render
-        evtPage++;
+        console.log(`[TA] ASN ${asnId}: events page 1 captured (fallback) (${evtFile})`);
       }
 
       // Back to search results

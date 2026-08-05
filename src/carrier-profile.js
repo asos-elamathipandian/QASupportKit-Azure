@@ -59,8 +59,21 @@ function getCarrierProfile(carrierInput = "DT") {
     };
   }
 
+  if (["evcargo", "allport", "evcargo/allport"].includes(normalized)) {
+    return {
+      input: "EVCargo",
+      vbkconCaId: "2",
+      vbkconCaIdQualifier: "2",
+      shipmentCaName: "EVCargo/AllPort",
+      shipmentCaId: "2",
+      filePrefix: "EVCARGOQA",
+      receiver: "E2ASOS",
+      sender: "EVCARGOQA",
+    };
+  }
+
   throw new Error(
-    `Invalid carrier: ${carrierInput}. Allowed values: DT, Maersk, Advanced, CHR`
+    `Invalid carrier: ${carrierInput}. Allowed values: DT, Maersk, Advanced, CHR, EVCargo`
   );
 }
 

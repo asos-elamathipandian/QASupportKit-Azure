@@ -109,17 +109,27 @@ class CarrierBookingEditPage {
     }
 
     async editCarrierHeaderDetails() {
+        await this.waitForGridToBeReady();
+
         await this.safeClick(this.frame.locator(this.cargoReadyDate).first());
         await this.safeClick(this.frame.locator(this.fillCargoReadyDate).first());
         await this.selectDatepickerDay();
         await this.safeClick(this.frame.locator(this.applyAllButton));
+        await this.waitForGridToBeReady();
+
         await this.safeClick(this.frame.locator(this.cargoDeliveryDate).first());
         await this.safeClick(this.frame.locator(this.fillcargoDeliveryDate).first());
         await this.selectDatepickerDay();
         await this.safeClick(this.frame.locator(this.applyAllButton));
+        await this.waitForGridToBeReady();
+
+        // Click the content cell first, wait for the inline select to activate, then choose CFS
         await this.safeClick(this.frame.locator(this.trafficModeOrigin).first());
+        await this.frame.locator(this.filltrafficModeOrigin).first()
+            .waitFor({ state: 'visible', timeout: 8000 });
         await this.frame.locator(this.filltrafficModeOrigin).first().selectOption('CFS');
         await this.safeClick(this.frame.locator(this.applyAllButton));
+        await this.waitForGridToBeReady();
     }
     async saveSubmitAfterEdit() {
         await this.safeClick(this.frame.getByRole('button', this.saveAfterEdit));
