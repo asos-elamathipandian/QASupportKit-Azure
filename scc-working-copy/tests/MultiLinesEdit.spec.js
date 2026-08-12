@@ -159,7 +159,8 @@ test('Create Draft Booking via Order Search then Edit Multiple Lines', async ({ 
     await acceptDialogIfPresent(listenDialog);
 
     console.log('[multi-lines-edit] Step 2h: saving and submitting...');
-    submittedVbRef = await carrierbookingeditPage.saveSubmitAfterEdit();
+    const saveResult = await carrierbookingeditPage.saveSubmitAfterEdit();
+    submittedVbRef = saveResult?.vbReference ?? saveResult;
     console.log(`[multi-lines-edit] Step 2i: submitted VB ref = ${submittedVbRef}`);
     await acceptDialogIfPresent(listenDialog);
   }, 2, 2000);

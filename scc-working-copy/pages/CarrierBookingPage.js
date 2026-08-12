@@ -276,24 +276,22 @@ class CarrierBookingPage {
         for (let attempt = 1; attempt <= 8; attempt += 1) {
             await this.frame.locator(this.loadingOverlay).waitFor({ state: 'hidden', timeout: 10000 }).catch(() => {});
 
-            // When multiple rows are present select only the FIRST (newest) row.
-            // Selecting all rows with select-all leaves Edit Booking disabled in SCC.
             const rows = this.frame.locator('#resultTable .ui-grid-body-row');
             const rowCount = await rows.count();
-            const targetCheckbox = rowCount > 1
-                ? rows.first().locator('input[type="checkbox"]').first()
-                : selectAll;
+            console.log(`[selectAndEditBooking] Found ${rowCount} row(s), selecting individually...`);
 
-            const isChecked = await targetCheckbox.isChecked().catch(() => false);
-            if (!isChecked) {
-                // Use jQuery trigger('click') via evaluate — SCC's checkboxes use jQuery event
-                // listeners that don't respond to vanilla DOM events (dispatchEvent/el.click())
-                await targetCheckbox.evaluate(el => {
-                    if (typeof jQuery !== 'undefined') jQuery(el).trigger('click');
-                    else if (typeof $ !== 'undefined') $(el).trigger('click');
-                    else el.click();
-                }).catch(() => {});
-                await new Promise(r => setTimeout(r, 500));
+            // Select each row individually — select-all leaves Edit Booking disabled in SCC
+            for (let r = 0; r < rowCount; r++) {
+                const cb = rows.nth(r).locator('input[type="checkbox"]').first();
+                const isChecked = await cb.isChecked().catch(() => false);
+                if (!isChecked) {
+                    await cb.evaluate(el => {
+                        if (typeof jQuery !== 'undefined') jQuery(el).trigger('click');
+                        else if (typeof $ !== 'undefined') $(el).trigger('click');
+                        else el.click();
+                    }).catch(() => {});
+                    await new Promise(r => setTimeout(r, 300));
+                }
             }
 
             const ariaDisabled = await editButton.getAttribute('aria-disabled');

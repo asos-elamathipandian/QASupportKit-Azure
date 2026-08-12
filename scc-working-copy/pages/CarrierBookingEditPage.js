@@ -35,95 +35,41 @@ class CarrierBookingEditPage {
     }
 
     async editCarrierBookingDetails() {
-        if (this.page) await this.page.waitForLoadState('domcontentloaded').catch(() => {});
+        const recordCount = await this.frame.locator(this.editrecordRows).count();
+        console.log(`[edit] Found ${recordCount} carton row(s)`);
+
+        // Fill cartons — resultfield_ elements may be the inputs themselves or wrappers
+        for (let i = 0; i < recordCount; i++) {
+            const cartonCell = this.frame.locator(this.numOfCartons).nth(i);
+            await this.safeClick(cartonCell);
+            await new Promise(r => setTimeout(r, 400));
+            // Try filling the element directly first (handles case where resultfield_ IS the input)
+            const directFilled = await cartonCell.fill('1', { timeout: 3000 }).then(() => true).catch(() => false);
+            if (!directFilled) {
+                await cartonCell.locator('input').first().fill('1', { timeout: 5000 }).catch(async () => {
+                    await this.frame.getByPlaceholder('#,##0').first().fill('1', { timeout: 5000 }).catch(() => {});
+                });
+            }
+            console.log(`[edit] Carton row ${i} filled: ${directFilled ? 'direct' : 'fallback'}`);
+        }
+
+        // Fill weights
+        for (let i = 0; i < recordCount; i++) {
+            await this.safeClick(this.frame.locator(this.weightField).nth(i));
+            const weightInput = this.frame.locator(this.fillweightField).nth(i);
+            await this.safeClick(weightInput);
+            const directFilled = await weightInput.fill('0.01', { timeout: 3000 }).then(() => true).catch(() => false);
+            if (!directFilled) {
+                await weightInput.locator('input').first().fill('0.01', { timeout: 5000 }).catch(async () => {
+                    await this.frame.getByPlaceholder('#,##0.##').first().fill('0.01', { timeout: 5000 }).catch(() => {});
+                });
+            }
+            console.log(`[edit] Weight row ${i} filled: ${directFilled ? 'direct' : 'fallback'}`);
+        }
+
+        // Single Apply All at the end to confirm all entered values
+        await this.safeClick(this.frame.locator(this.applyAllButton));
         await this.waitForGridToBeReady();
-
-        // Diagnose: dump all element IDs in the edit grid so we can verify selectors
-        const allIds = await this.frame.evaluate(() =>
-            Array.from(document.querySelectorAll('[id]'))
-                .map(el => el.id)
-                .filter(id => id && (id.includes('NoOfCarton') || id.includes('UDF_Number_4') || id.includes('content-cell')))
-                .slice(0, 40)
-        ).catch(() => []);
-        console.log('[DIAG] Edit grid IDs:', JSON.stringify(allIds));
-
-        // Try the specific selector; if not found, fall back to any cell matching carton-like IDs
-        const cartonSelector = allIds.some(id => id.includes('content-cell'))
-            ? '[id*="appvbitemNoOfCarton"][id*="content-cell"]'
-            : '[id*="NoOfCarton"]';
-        const weightSelector = allIds.some(id => id.includes('UDF_Number_4'))
-            ? '[id*="UDF_Number_4"][id*="content-cell"]'
-            : '[id*="UDF_Number_4"]';
-        console.log(`[DIAG] Using cartonSelector="${cartonSelector}" weightSelector="${weightSelector}"`);
-
-        // Wait for first carton cell
-        await this.frame.locator(cartonSelector)
-            .first().waitFor({ state: 'visible', timeout: 30000 });
-
-        // ── Cartons: fill every row that still shows 0 ──
-        // Repeat until no unfilled rows remain (avoids needing an accurate row count)
-        for (let pass = 0; pass < 20; pass++) {
-            await this.waitForGridToBeReady();
-            // Find the first carton content-cell whose displayed value is 0 or empty
-            const allCartonCells = this.frame.locator(cartonSelector);
-            const cellCount = await allCartonCells.count();
-            let filledAny = false;
-            for (let i = 0; i < cellCount; i++) {
-                const cell = allCartonCells.nth(i);
-                const val = (await cell.textContent({ timeout: 2000 }).catch(() => '')).trim().replace(/,/g, '');
-                if (val === '' || val === '0' || val === '0.00' || parseFloat(val) === 0) {
-                    await this.safeClick(cell);
-                    await new Promise(r => setTimeout(r, 500));
-                    if (this.page) {
-                        await this.page.keyboard.press('Control+a');
-                        await this.page.keyboard.type('1');
-                        await new Promise(r => setTimeout(r, 400));
-                    } else {
-                        await this.frame.locator(this.numOfCartons).first().fill('1').catch(async () => {
-                            await this.frame.getByPlaceholder('#,##0').first().fill('1');
-                        });
-                    }
-                    await this.safeClick(this.frame.locator(this.applyAllButton));
-                    await this.waitForGridToBeReady();
-                    filledAny = true;
-                    break; // re-query after each Apply All so indexes stay fresh
-                }
-            }
-            if (!filledAny) break; // all carton cells are filled
-        }
-
-        // ── Weights: fill every row that still shows 0 ──
-        await this.frame.locator(weightSelector)
-            .first().waitFor({ state: 'visible', timeout: 30000 }).catch(() => {});
-
-        for (let pass = 0; pass < 20; pass++) {
-            await this.waitForGridToBeReady();
-            const allWeightCells = this.frame.locator(weightSelector);
-            const cellCount = await allWeightCells.count();
-            let filledAny = false;
-            for (let i = 0; i < cellCount; i++) {
-                const cell = allWeightCells.nth(i);
-                const val = (await cell.textContent({ timeout: 2000 }).catch(() => '')).trim().replace(/,/g, '');
-                if (val === '' || val === '0' || val === '0.00' || parseFloat(val) === 0) {
-                    await this.safeClick(cell);
-                    await new Promise(r => setTimeout(r, 500));
-                    if (this.page) {
-                        await this.page.keyboard.press('Control+a');
-                        await this.page.keyboard.type('0.01');
-                        await new Promise(r => setTimeout(r, 400));
-                    } else {
-                        await this.frame.locator(this.fillweightField).first().fill('0.01').catch(async () => {
-                            await this.frame.getByPlaceholder('#,##0.##').first().fill('0.01');
-                        });
-                    }
-                    await this.safeClick(this.frame.locator(this.applyAllButton));
-                    await this.waitForGridToBeReady();
-                    filledAny = true;
-                    break;
-                }
-            }
-            if (!filledAny) break;
-        }
     }
     async selectDatepickerDay() {
         const dayNum = String(new Date().getDate());
