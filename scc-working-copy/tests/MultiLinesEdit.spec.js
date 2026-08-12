@@ -132,6 +132,17 @@ test('Create Draft Booking via Order Search then Edit Multiple Lines', async ({ 
     const rowCount = await frame.locator('#resultTable .ui-grid-body-row').count();
     console.log(`[multi-lines-edit] Step 2d: rowCount=${rowCount}`);
     if (rowCount === 0) {
+      // Booking may already be Submitted from a previous attempt — check before failing
+      await carrierbookingPage.expandandClearFilter();
+      await carrierbookingPage.searchWithAsn(asnFromFile);
+      await carrierbookingPage.waitForGridToBeReady();
+      const existing = await carrierbookingPage.getActiveBookingResult().catch(() => null);
+      if (existing && existing.bookingStatus &&
+          existing.bookingStatus.toLowerCase() === 'submitted') {
+        console.log(`[multi-lines-edit] Booking already Submitted — skipping edit`);
+        submittedVbRef = existing.vbReference || submittedVbRef;
+        return;
+      }
       throw new Error(`No Draft booking rows found for ASNs: ${asnFromFile} after booking creation.`);
     }
     console.log(`[multi-lines-edit] Found ${rowCount} booking line(s) to edit.`);

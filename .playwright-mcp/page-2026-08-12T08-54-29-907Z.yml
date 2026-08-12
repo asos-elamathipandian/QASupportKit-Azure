@@ -1,0 +1,23 @@
+- generic [active] [ref=e1]:
+  - banner [ref=e2]:
+    - generic [ref=e4]:
+      - img "About e2open" [ref=e5]
+      - link "About e2open" [ref=e6] [cursor=pointer]:
+        - /url: https://www.e2open.com/company/
+  - generic [ref=e7]:
+    - generic [ref=e10]:
+      - heading "Cookie Notice" [level=2] [ref=e11]
+      - heading "We value your privacy" [level=3] [ref=e12]
+      - generic [ref=e13]:
+        - text: This web application uses cookies. Necessary cookies are always on. To accept all cookies click “Agree and proceed”. To manage your cookie preferences click the “Manage choices” button. Please review our
+        - link "Privacy Policy" [ref=e14] [cursor=pointer]:
+          - /url: https://www.e2open.com/privacy-policy/
+        - text: for details about how your personal data is handled, including by cookies.
+      - generic [ref=e15]:
+        - button "Agree and proceed" [ref=e16] [cursor=pointer]
+        - button "Manage choices" [ref=e17]
+    - contentinfo [ref=e18]:
+      - generic [ref=e19]:
+        - text: Copyright © 2026
+        - link "Privacy Policy" [ref=e20] [cursor=pointer]:
+          - /url: https://www.e2open.com/company/privacy-policy

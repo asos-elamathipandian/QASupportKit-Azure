@@ -3,6 +3,8 @@ class CarrierBookingEditPage {
         this.frame = frame;
         this.page = page;
         this.loadingOverlay = '#loading.ui-loading-overlay';
+        // content-cell is always in DOM; resultfield_ input only exists when that cell is active
+        this.cartonContentCell = '[id$="appvbitemNoOfCarton-content-cell"]';
         this.editrecordRows = '[id^="resultfield_appvbitemNoOfCarton_APP_PO--"]';
         this.numOfCartons = '[id^="resultfield_appvbitemNoOfCarton_APP_PO--"]';
         this.applyAllButton = '#applyAllButtonPanel';
@@ -33,72 +35,95 @@ class CarrierBookingEditPage {
     }
 
     async editCarrierBookingDetails() {
-        // Ensure the outer page has finished any navigation before touching iframe content.
-        // This prevents 'Target page, context or browser has been closed' on locator.fill.
         if (this.page) await this.page.waitForLoadState('domcontentloaded').catch(() => {});
-        // Ensure the edit form has fully loaded before interacting with inline editors
         await this.waitForGridToBeReady();
-        // Wait for the first editable row to be present and visible
-        await this.frame.locator(this.editrecordRows).first().waitFor({ state: 'visible', timeout: 30000 });
-        const recordCount = await this.frame.locator(this.editrecordRows).count();
 
-        // Fill cartons for all rows.
-        // SCC's inline editor input is NOT a DOM child of the resultfield_ cell — it appears
-        // as a sibling/overlay. Wait for the active input to be ready before typing.
-        for (let i = 0; i < recordCount; i++) {
-            const cartonCell = this.frame.locator(this.numOfCartons).nth(i);
-            await this.safeClick(cartonCell);
-            // Wait for an input field to become focused/visible in the frame after clicking
-            await this.frame.locator('input[type="text"]:focus, input[type="number"]:focus, input.ui-spinner-input:focus')
-                .waitFor({ state: 'attached', timeout: 5000 }).catch(() => {});
-            await new Promise(r => setTimeout(r, 300));
-            if (this.page) {
-                await this.page.keyboard.press('Control+a');
-                await this.page.keyboard.type('1');
-                // Short pause then verify — if still empty, click again and retype
-                await new Promise(r => setTimeout(r, 300));
-                const cellText = await cartonCell.textContent({ timeout: 1000 }).catch(() => '');
-                if (!cellText.trim() || cellText.trim() === '0') {
-                    await this.safeClick(cartonCell);
-                    await new Promise(r => setTimeout(r, 400));
-                    await this.page.keyboard.press('Control+a');
-                    await this.page.keyboard.type('1');
+        // Diagnose: dump all element IDs in the edit grid so we can verify selectors
+        const allIds = await this.frame.evaluate(() =>
+            Array.from(document.querySelectorAll('[id]'))
+                .map(el => el.id)
+                .filter(id => id && (id.includes('NoOfCarton') || id.includes('UDF_Number_4') || id.includes('content-cell')))
+                .slice(0, 40)
+        ).catch(() => []);
+        console.log('[DIAG] Edit grid IDs:', JSON.stringify(allIds));
+
+        // Try the specific selector; if not found, fall back to any cell matching carton-like IDs
+        const cartonSelector = allIds.some(id => id.includes('content-cell'))
+            ? '[id*="appvbitemNoOfCarton"][id*="content-cell"]'
+            : '[id*="NoOfCarton"]';
+        const weightSelector = allIds.some(id => id.includes('UDF_Number_4'))
+            ? '[id*="UDF_Number_4"][id*="content-cell"]'
+            : '[id*="UDF_Number_4"]';
+        console.log(`[DIAG] Using cartonSelector="${cartonSelector}" weightSelector="${weightSelector}"`);
+
+        // Wait for first carton cell
+        await this.frame.locator(cartonSelector)
+            .first().waitFor({ state: 'visible', timeout: 30000 });
+
+        // ── Cartons: fill every row that still shows 0 ──
+        // Repeat until no unfilled rows remain (avoids needing an accurate row count)
+        for (let pass = 0; pass < 20; pass++) {
+            await this.waitForGridToBeReady();
+            // Find the first carton content-cell whose displayed value is 0 or empty
+            const allCartonCells = this.frame.locator(cartonSelector);
+            const cellCount = await allCartonCells.count();
+            let filledAny = false;
+            for (let i = 0; i < cellCount; i++) {
+                const cell = allCartonCells.nth(i);
+                const val = (await cell.textContent({ timeout: 2000 }).catch(() => '')).trim().replace(/,/g, '');
+                if (val === '' || val === '0' || val === '0.00' || parseFloat(val) === 0) {
+                    await this.safeClick(cell);
+                    await new Promise(r => setTimeout(r, 500));
+                    if (this.page) {
+                        await this.page.keyboard.press('Control+a');
+                        await this.page.keyboard.type('1');
+                        await new Promise(r => setTimeout(r, 400));
+                    } else {
+                        await this.frame.locator(this.numOfCartons).first().fill('1').catch(async () => {
+                            await this.frame.getByPlaceholder('#,##0').first().fill('1');
+                        });
+                    }
+                    await this.safeClick(this.frame.locator(this.applyAllButton));
+                    await this.waitForGridToBeReady();
+                    filledAny = true;
+                    break; // re-query after each Apply All so indexes stay fresh
                 }
-            } else {
-                // Fallback when page not available: fill directly on the resultfield_ element
-                await cartonCell.fill('1').catch(async () => {
-                    await this.frame.getByPlaceholder('#,##0').first().fill('1');
-                });
             }
+            if (!filledAny) break; // all carton cells are filled
         }
 
-        // Apply All after cartons — commits the last open inline editor and reloads the grid
-        // Without this the last row's confirm button overlaps the Unit Weight cell
-        await this.safeClick(this.frame.locator(this.applyAllButton));
-        await this.waitForGridToBeReady();
-        await this.frame.locator(this.editrecordRows).first().waitFor({ state: 'visible', timeout: 30000 });
+        // ── Weights: fill every row that still shows 0 ──
+        await this.frame.locator(weightSelector)
+            .first().waitFor({ state: 'visible', timeout: 30000 }).catch(() => {});
 
-        // Fill weights for all rows — two-click activation: content-cell first, then result-field input
-        const weightRecordCount = await this.frame.locator(this.fillweightField).count();
-        for (let i = 0; i < weightRecordCount; i++) {
-            await this.frame.locator(this.loadingOverlay).waitFor({ state: 'hidden', timeout: 10000 }).catch(() => {});
-            await this.safeClick(this.frame.locator(this.weightField).nth(i));
-            await new Promise(r => setTimeout(r, 300));
-            await this.safeClick(this.frame.locator(this.fillweightField).nth(i));
-            await new Promise(r => setTimeout(r, 500));
-            if (this.page) {
-                await this.page.keyboard.press('Control+a');
-                await this.page.keyboard.type('0.01');
-            } else {
-                await this.frame.locator(this.fillweightField).nth(i).fill('0.01').catch(async () => {
-                    await this.frame.getByPlaceholder('#,##0.##').first().fill('0.01');
-                });
+        for (let pass = 0; pass < 20; pass++) {
+            await this.waitForGridToBeReady();
+            const allWeightCells = this.frame.locator(weightSelector);
+            const cellCount = await allWeightCells.count();
+            let filledAny = false;
+            for (let i = 0; i < cellCount; i++) {
+                const cell = allWeightCells.nth(i);
+                const val = (await cell.textContent({ timeout: 2000 }).catch(() => '')).trim().replace(/,/g, '');
+                if (val === '' || val === '0' || val === '0.00' || parseFloat(val) === 0) {
+                    await this.safeClick(cell);
+                    await new Promise(r => setTimeout(r, 500));
+                    if (this.page) {
+                        await this.page.keyboard.press('Control+a');
+                        await this.page.keyboard.type('0.01');
+                        await new Promise(r => setTimeout(r, 400));
+                    } else {
+                        await this.frame.locator(this.fillweightField).first().fill('0.01').catch(async () => {
+                            await this.frame.getByPlaceholder('#,##0.##').first().fill('0.01');
+                        });
+                    }
+                    await this.safeClick(this.frame.locator(this.applyAllButton));
+                    await this.waitForGridToBeReady();
+                    filledAny = true;
+                    break;
+                }
             }
+            if (!filledAny) break;
         }
-
-        // Single Apply All at the end to confirm all entered values
-        await this.safeClick(this.frame.locator(this.applyAllButton));
-        await this.waitForGridToBeReady();
     }
     async selectDatepickerDay() {
         const dayNum = String(new Date().getDate());

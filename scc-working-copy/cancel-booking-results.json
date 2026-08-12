@@ -1,7 +1,12 @@
 [
   {
-    "asn": "42152200440004",
-    "vbReference": "VB-0000002250",
-    "bookingStatus": "Cancelled"
+    "asn": "49870000004299",
+    "vbReference": "VB-0000002267",
+    "bookingStatus": "Draft"
+  },
+  {
+    "asn": "49870000004303",
+    "vbReference": "VB-0000002267",
+    "bookingStatus": "Draft"
   }
 ]

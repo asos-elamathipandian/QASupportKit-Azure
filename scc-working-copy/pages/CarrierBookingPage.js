@@ -21,28 +21,42 @@ class CarrierBookingPage {
     }
 
     async expandandClearFilter() {
-        // Wait for the page to finish navigating before interacting with the iframe
         await this.page.waitForLoadState('domcontentloaded');
         await this.frame.locator('body').waitFor({ state: 'attached', timeout: 15000 });
-        // Wait for any loading overlay to clear before touching filter buttons
         await this.frame.locator(this.loadingOverlay).waitFor({ state: 'hidden', timeout: 60000 }).catch(() => {});
+
         const clearFilterButton = this.frame.getByRole('button', this.clearButton);
-        try {
-            if (await clearFilterButton.isVisible({ timeout: 5000 })) {
-                await clearFilterButton.click();
+
+        // Try up to 3 strategies to get the Clear All Filters button visible and clickable
+        for (let attempt = 1; attempt <= 3; attempt++) {
+            try {
+                if (await clearFilterButton.isVisible({ timeout: 5000 })) {
+                    await clearFilterButton.click();
+                    return;
+                }
+                // Filter panel is collapsed — click the expand icon
+                const expandIcon = this.frame.locator(this.expandFilter);
+                if (await expandIcon.isVisible({ timeout: 8000 }).catch(() => false)) {
+                    await expandIcon.click();
+                    await clearFilterButton.waitFor({ state: 'visible', timeout: 10000 });
+                    await clearFilterButton.click();
+                    return;
+                }
+                // Collapse icon is shown — panel already open but Clear button not visible yet
+                const collapseIcon = this.frame.locator(this.collapseFilter);
+                if (await collapseIcon.isVisible({ timeout: 3000 }).catch(() => false)) {
+                    await clearFilterButton.waitFor({ state: 'visible', timeout: 10000 });
+                    await clearFilterButton.click();
+                    return;
+                }
+            } catch (e) {
+                console.log(`[expandandClearFilter] attempt ${attempt} failed: ${e.message}`);
+                await this.frame.locator(this.loadingOverlay).waitFor({ state: 'hidden', timeout: 20000 }).catch(() => {});
+                await new Promise(r => setTimeout(r, 1500 * attempt));
             }
-            else {
-                await this.frame.locator(this.expandFilter).waitFor({ timeout: 5000 });
-                await this.frame.locator(this.expandFilter).click();
-                await clearFilterButton.click({ timeout: 10000 });
-            }
-        } catch (e) {
-            // Frame may have reloaded; try expanding filter as fallback
-            await this.frame.locator(this.loadingOverlay).waitFor({ state: 'hidden', timeout: 30000 }).catch(() => {});
-            await this.frame.locator(this.expandFilter).waitFor({ timeout: 10000 });
-            await this.frame.locator(this.expandFilter).click();
-            await clearFilterButton.click({ timeout: 10000 });
         }
+        // Last resort: force-click Clear if it exists anywhere on the page
+        await clearFilterButton.click({ force: true, timeout: 10000 }).catch(() => {});
     }
     async searchWithasnAndstatus(asns) {
         await this.frame.locator(this.asnField).click();
@@ -79,40 +93,54 @@ class CarrierBookingPage {
         await this.waitForGridToBeReady();
     }
 
-    // Selects the row matching vbRef (or the first/only row) and clicks Cancel Booking.
-    // Returns the booking status after cancellation.
-    async cancelSelectedBooking(vbRef) {
+    // Search by VB reference only (no ASN required)
+    async searchWithVbRef(vbRef) {
+        // Explicitly blank the ASN field in case SCC re-populated it from session state
+        await this.frame.locator(this.asnField).click();
+        await this.frame.locator(this.asnField).fill('');
+        await new Promise(r => setTimeout(r, 200));
+        // VB booking number filter field — try the standard SCC searchparam pattern first
+        const vbField = this.frame.locator(
+            '#searchparam_appvbBookingNo_input, [id$="appvbBookingNo_input"], [id$="appvbBookingNo-filter"], [id*="BookingNo"][id*="input"]'
+        ).first();
+        await vbField.waitFor({ state: 'visible', timeout: 10000 });
+        await vbField.click();
+        await vbField.fill(vbRef);
+        await this.frame.locator(this.applyButton).click();
+        await this.frame.locator(this.collapseFilter).click();
+        await this.waitForGridToBeReady();
+    }
+
+    // Selects ALL rows in the result and clicks Cancel Booking — handles multi-row results.
+    async cancelAllMatchingRows(vbRef) {
         await this.waitForGridToBeReady();
 
         const rows = this.frame.locator('#resultTable .ui-grid-body-row');
         await rows.first().waitFor({ state: 'visible', timeout: 15000 });
         const rowCount = await rows.count();
 
-        // Find the row matching the VB reference, or fall back to the first row
-        let targetRow = rows.first();
-        if (vbRef && rowCount > 1) {
+        // Select ALL rows using the select-all checkbox
+        const selectAll = this.frame.locator(this.selectAllCheck);
+        await selectAll.evaluate(el => {
+            if (typeof jQuery !== 'undefined') jQuery(el).trigger('click');
+            else el.click();
+        }).catch(() => {});
+        await new Promise(r => setTimeout(r, 600));
+
+        // Verify at least one row is checked; fall back to checking each row individually
+        const anyChecked = await rows.first().locator('input[type="checkbox"]:checked').count().catch(() => 0);
+        if (!anyChecked) {
             for (let i = 0; i < rowCount; i++) {
-                const vbCell = rows.nth(i).locator('[id^="resultfield_appvbBookingNo"], [title*="VB-000"]');
-                if (await vbCell.count() > 0) {
-                    const txt = (await vbCell.first().textContent({ timeout: 2000 }).catch(() => '')).trim();
-                    if (txt === vbRef) { targetRow = rows.nth(i); break; }
+                const cb = rows.nth(i).locator('input[type="checkbox"]').first();
+                const checked = await cb.isChecked().catch(() => false);
+                if (!checked) {
+                    await cb.evaluate(el => {
+                        if (typeof jQuery !== 'undefined') jQuery(el).trigger('click');
+                        else el.click();
+                    }).catch(() => {});
+                    await new Promise(r => setTimeout(r, 300));
                 }
             }
-        }
-
-        // Select the row using jQuery trigger
-        const checkbox = rowCount === 1
-            ? this.frame.locator(this.selectAllCheck)
-            : targetRow.locator('input[type="checkbox"]').first();
-
-        const isChecked = await checkbox.isChecked().catch(() => false);
-        if (!isChecked) {
-            await checkbox.evaluate(el => {
-                if (typeof jQuery !== 'undefined') jQuery(el).trigger('click');
-                else if (typeof $ !== 'undefined') $(el).trigger('click');
-                else el.click();
-            }).catch(() => {});
-            await new Promise(r => setTimeout(r, 500));
         }
 
         // Click Cancel Booking button
@@ -134,6 +162,10 @@ class CarrierBookingPage {
         const cell = this.frame.locator(this.statusCell).first();
         return (await cell.textContent({ timeout: 5000 }).catch(() => 'Cancelled')).trim() || 'Cancelled';
     }
+
+    // Alias kept for backward compatibility
+    async cancelSelectedBooking(vbRef) { return this.cancelAllMatchingRows(vbRef); }
+
     async getVBReference() {
         await this.waitForGridToBeReady();
         await this.frame.locator(this.vbValue).first().waitFor({ timeout: 10000 });

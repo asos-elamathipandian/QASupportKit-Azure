@@ -116,6 +116,14 @@ test('Multi ASN Booking - Create one booking with all ASNs', async ({ page, brow
   await retryStep('edit and submit booking', async () => {
     await carrierbookingPage.expandandClearFilter();
     await carrierbookingPage.searchWithasnAndstatus(asnFromFile);
+    // If booking is already Submitted on the list page, skip edit entirely
+    const existingStatus = await carrierbookingPage.getActiveBookingResult().catch(() => null);
+    if (existingStatus && existingStatus.bookingStatus &&
+        existingStatus.bookingStatus.toLowerCase() === 'submitted') {
+      console.log(`[multi-booking] Booking already Submitted — skipping edit`);
+      submitResult = existingStatus;
+      return;
+    }
     await carrierbookingPage.selectAndEditBooking();
     await carrierbookingeditPage.editCarrierBookingDetails();
     await carrierbookingeditPage.editCarrierHeaderDetails();

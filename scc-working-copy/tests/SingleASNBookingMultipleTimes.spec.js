@@ -129,6 +129,14 @@ test('Single ASN Booking - Create separate booking for each ASN', async ({ page,
     await retryStep(`edit booking for ASN ${currentASN}`, async () => {
       await carrierbookingPage.expandandClearFilter();
       await carrierbookingPage.searchWithasnAndstatus(currentASN);
+      // If booking is already Submitted on the list page, skip edit entirely
+      const existingStatus = await carrierbookingPage.getActiveBookingResult().catch(() => null);
+      if (existingStatus && existingStatus.bookingStatus &&
+          existingStatus.bookingStatus.toLowerCase() === 'submitted') {
+        console.log(`[booking-step] Booking for ASN ${currentASN} already Submitted — skipping edit`);
+        submitResult = existingStatus;
+        return;
+      }
       await carrierbookingPage.selectAndEditBooking();
       await carrierbookingeditPage.editCarrierBookingDetails();
       await carrierbookingeditPage.editCarrierHeaderDetails();

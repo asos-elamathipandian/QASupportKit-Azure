@@ -679,6 +679,59 @@ app.post("/api/prod-upload", async (req, res) => {
 
 // ── Blob Search & Download ────────────────────────────────────────────────────
 
+function extractTagValues(xml, dateTypes, refTypes, measureTypes) {
+  const result = { dates: [], refs: [], measures: [] };
+  for (const m of xml.matchAll(/<Date[^>]+DateTypeCd="([^"]+)"[^>]*>([^<]*)<\/Date>/g)) {
+    if (dateTypes.includes(m[1])) result.dates.push({ code: m[1], value: m[2].trim() });
+  }
+  for (const m of xml.matchAll(/<Reference[^>]+RefTypeCd="([^"]+)"[^>]*>([^<]*)<\/Reference>/g)) {
+    if (refTypes.includes(m[1])) result.refs.push({ code: m[1], value: m[2].trim() });
+  }
+  for (const m of xml.matchAll(/<Measure[^>]+Qualifier="([^"]+)"[^>]*>([^<]*)<\/Measure>/g)) {
+    if (measureTypes.includes(m[1])) result.measures.push({ code: m[1], value: m[2].trim() });
+  }
+  return result;
+}
+
+async function streamToStringLocal(readableStream) {
+  const chunks = [];
+  for await (const chunk of readableStream) chunks.push(typeof chunk === "string" ? Buffer.from(chunk) : chunk);
+  return Buffer.concat(chunks).toString("utf8");
+}
+
+app.post("/api/blob-validate", async (req, res) => {
+  const { asn, hoursBack = 168, maxBlobs = 1000, startDate, endDate, dateTypes = [], refTypes = [], measureTypes = [] } = req.body;
+  if (!asn || !asn.trim()) return res.status(400).json({ ok: false, error: "asn is required" });
+
+  const connectionString = process.env.AZURE_BLOB_CONNECTION_STRING;
+  if (!connectionString) return res.status(500).json({ ok: false, error: "AZURE_BLOB_CONNECTION_STRING not configured" });
+
+  try {
+    const containerName = process.env.AZURE_BLOB_CONTAINER || "sftp-inbound";
+    const result = await searchBlobsByAsn({ asn: asn.trim(), connectionString, containerName, hoursBack, maxBlobs, startDate, endDate });
+
+    const hasTags = dateTypes.length > 0 || refTypes.length > 0 || measureTypes.length > 0;
+    if (!hasTags || result.matches.length === 0) {
+      return res.json({ ok: true, ...result, tagValues: null, latestFile: null });
+    }
+
+    const sorted = [...result.matches].sort((a, b) => new Date(b.lastModified) - new Date(a.lastModified));
+    const latestFile = sorted[0];
+
+    const { BlobServiceClient } = require("@azure/storage-blob");
+    const blobClient = BlobServiceClient.fromConnectionString(connectionString)
+      .getContainerClient(containerName)
+      .getBlobClient(latestFile.name);
+    const download = await blobClient.download(0);
+    const xmlContent = await streamToStringLocal(download.readableStreamBody);
+    const tagValues = extractTagValues(xmlContent, dateTypes, refTypes, measureTypes);
+
+    res.json({ ok: true, ...result, tagValues, latestFile });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
 app.post("/api/blob-search", async (req, res) => {
   const { asn, hoursBack = 168, maxBlobs = 1000, startDate, endDate } = req.body;
   if (!asn || !asn.trim()) return res.status(400).json({ ok: false, error: "asn is required" });
@@ -1129,10 +1182,10 @@ app.post("/api/full-scc-flow", async (req, res) => {
 app.post("/api/scc/booking/cancel", async (req, res) => {
   const { asn, vbRef, sessionId: sid } = req.body || {};
   const sessionId = String(sid || 'default');
-  if (!asn || !vbRef) return res.status(400).json({ ok: false, error: 'asn and vbRef are required' });
+  if (!vbRef) return res.status(400).json({ ok: false, error: 'vbRef is required' });
   clearProgress(sessionId);
   try {
-    const result = await cancelSccBooking(asn, vbRef, {
+    const result = await cancelSccBooking(asn || '', vbRef, {
       onProgress: (d) => parseStdoutForProgress(d, sessionId),
       onStep: (m) => addProgress(m, sessionId),
     });

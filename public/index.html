@@ -527,6 +527,84 @@
     .blob-results-table input[type="checkbox"] { cursor: pointer; }
     .blob-select-all { cursor: pointer; }
 
+    /* ── Tag Validation Panel ── */
+    .tag-validation-panel {
+      border: 1px solid #e0e7ff;
+      border-radius: 10px;
+      padding: 14px 16px;
+      margin-top: 16px;
+      background: #fafbff;
+    }
+    .tag-validation-panel .tvp-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      user-select: none;
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: #4338ca;
+    }
+    .tag-validation-panel .tvp-header .tvp-toggle { font-size: 0.75rem; color: #6b7280; }
+    .tvp-body { margin-top: 12px; display: none; }
+    .tvp-body.open { display: block; }
+    .tvp-group { margin-bottom: 14px; }
+    .tvp-group-label {
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: #1e293b;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .tvp-group-label .tvp-ctrl {
+      font-size: 0.72rem;
+      font-weight: 500;
+      color: #7c3aed;
+      cursor: pointer;
+      text-decoration: underline;
+      margin-left: auto;
+    }
+    .tvp-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .tvp-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: white;
+      border: 1.5px solid #c7d2fe;
+      border-radius: 20px;
+      padding: 3px 10px 3px 8px;
+      font-size: 0.76rem;
+      color: #374151;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .tvp-chip:hover { background: #eef2ff; border-color: #818cf8; }
+    .tvp-chip input[type="checkbox"] { cursor: pointer; accent-color: #7c3aed; }
+    .tvp-chip.selected { background: #ede9fe; border-color: #7c3aed; font-weight: 600; color: #4c1d95; }
+    .tag-values-box {
+      background: #f0fdf4;
+      border: 1px solid #86efac;
+      border-radius: 10px;
+      padding: 14px 16px;
+      margin-top: 12px;
+    }
+    .tag-values-box h4 { font-size: 0.87rem; font-weight: 700; color: #14532d; margin-bottom: 10px; }
+    .tag-values-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.83rem;
+    }
+    .tag-values-table th { text-align: left; padding: 6px 10px; background: #dcfce7; font-weight: 600; border-bottom: 2px solid #86efac; }
+    .tag-values-table td { padding: 5px 10px; border-bottom: 1px solid #d1fae5; }
+    .tag-values-table tr:hover { background: #f0fdf4; }
+    .tag-values-table .tag-group-hdr td { background: #e0f2fe; font-weight: 700; font-size: 0.78rem; color: #0369a1; }
+
     /* ── Live Commentary Log ── */
     .live-log {
       display: none;
@@ -878,6 +956,41 @@
         <span class="field-hint">Leave blank for today.</span>
       </div>
     </div>
+
+    <!-- ── Tag Validation Panel ── -->
+    <div class="tag-validation-panel">
+      <div class="tvp-header" onclick="toggleTvp()">
+        <span>&#128269; Validate XML Tags <span style="font-size:0.78rem;font-weight:400;color:#6b7280;">(optional — select tags to extract values from the latest matching message)</span></span>
+        <span class="tvp-toggle" id="tvpToggleLabel">&#9654; Expand</span>
+      </div>
+      <div class="tvp-body" id="tvpBody">
+        <div class="tvp-group">
+          <div class="tvp-group-label">
+            &#128197; Date Types <span style="font-weight:400;color:#6b7280;font-size:0.72rem;">(DateTypeCd)</span>
+            <span class="tvp-ctrl" onclick="selectAllTvp('date')">All</span>
+            <span class="tvp-ctrl" style="margin-left:4px;" onclick="clearAllTvp('date')">Clear</span>
+          </div>
+          <div class="tvp-chips" id="tvpDateChips"></div>
+        </div>
+        <div class="tvp-group">
+          <div class="tvp-group-label">
+            &#128278; Reference Types <span style="font-weight:400;color:#6b7280;font-size:0.72rem;">(RefTypeCd)</span>
+            <span class="tvp-ctrl" onclick="selectAllTvp('ref')">All</span>
+            <span class="tvp-ctrl" style="margin-left:4px;" onclick="clearAllTvp('ref')">Clear</span>
+          </div>
+          <div class="tvp-chips" id="tvpRefChips"></div>
+        </div>
+        <div class="tvp-group" style="margin-bottom:0">
+          <div class="tvp-group-label">
+            &#128208; Measure Types <span style="font-weight:400;color:#6b7280;font-size:0.72rem;">(Qualifier)</span>
+            <span class="tvp-ctrl" onclick="selectAllTvp('measure')">All</span>
+            <span class="tvp-ctrl" style="margin-left:4px;" onclick="clearAllTvp('measure')">Clear</span>
+          </div>
+          <div class="tvp-chips" id="tvpMeasureChips"></div>
+        </div>
+      </div>
+    </div>
+
     <button class="btn-blob-search" id="btnBlobSearch" onclick="searchBlobs()" style="margin-top:14px;">
       &#9729;&nbsp; Search Outbound Messages
     </button>
@@ -1316,7 +1429,6 @@ async function bookingCreateMulti() {
 async function cancelBooking() {
   const asn   = document.getElementById('cancelAsnInput').value.trim();
   const vbRef = document.getElementById('cancelVbInput').value.trim();
-  if (!asn)   return alert('Please enter an ASN');
   if (!vbRef) return alert('Please enter a VB Reference');
   const btn = document.getElementById('btnCancelVb');
   const resultDiv = document.getElementById('cancelBookingResult');
@@ -1672,11 +1784,12 @@ async function fullSccFlow() {
       <div style="font-size:0.82rem;font-weight:700;color:#dc2626;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px;">&#9888; Cancel Booking</div>
       <div class="form-grid">
         <div class="form-group">
-          <label for="cancelAsnInput">ASN</label>
-          <input id="cancelAsnInput" type="text" placeholder="e.g. 49870000001275" />
+          <label for="cancelAsnInput">ASNs <span style="font-weight:400;color:#64748b;">(optional, comma-separated)</span></label>
+          <input id="cancelAsnInput" type="text" placeholder="e.g. 49870000001275, 49870000001276" />
+          <span class="field-hint">Leave blank to search by VB Reference only.</span>
         </div>
         <div class="form-group">
-          <label for="cancelVbInput">VB Reference</label>
+          <label for="cancelVbInput">VB Reference <span style="font-weight:400;color:#64748b;">(required)</span></label>
           <input id="cancelVbInput" type="text" placeholder="e.g. VB-0000002247" />
         </div>
       </div>
@@ -1846,6 +1959,7 @@ async function fullSccFlow() {
     document.addEventListener('DOMContentLoaded', () => {
       enableUnifiedFeaturesAndOrder();
       initLocalCards();
+      initTvp();
       initSccStatus();
       refreshSccSessionStatus();
       // Pre-select assignee based on OS username (e.g. elamathi.pandian → "Elamathi Pandian")
@@ -1861,6 +1975,7 @@ async function fullSccFlow() {
   } else {
     enableUnifiedFeaturesAndOrder();
     initLocalCards();
+    initTvp();
     initSccStatus();
     refreshSccSessionStatus();
   }
@@ -2104,9 +2219,153 @@ async function fullSccFlow() {
 
   // ── E2Open Outbound Message Search ─────────────────────────────────────────
 
+  // Tag definitions: code → friendly label (from ASOS_Outbound_Shipment_XML_Spec)
+  const TVP_DATE_TYPES = [
+    { code:"ADVBKC",     label:"ADVBKC — Advanced Booking Date"                         },
+    { code:"ARADV",      label:"ARADV — Arrived at Advanced Date"                       },
+    { code:"A",          label:"A — ASN Arrived at Port Date"                           },
+    { code:"CQUERY",     label:"CQUERY — ASN Carrier Query"                             },
+    { code:"CQUERYEND",  label:"CQUERYEND — ASN Carrier Query Complete"                 },
+    { code:"BSN03",      label:"BSN03 — ASN Create Date"                                },
+    { code:"RLSC",       label:"RLSC — ASN Customs Cleared Date"                        },
+    { code:"AG_FNL",     label:"AG_FNL — ASN Delivery Date - Final Dest"               },
+    { code:"AG_FRST",    label:"AG_FRST — ASN Delivery Date - First Dest"              },
+    { code:"DESPATCH",   label:"DESPATCH — ASN Despatched Advanced Date"                },
+    { code:"A_ES",       label:"A_ES — ASN Estimated Arrived at Port Date"             },
+    { code:"DO_EST",     label:"DO_EST — ASN Estimated Shipment Date"                   },
+    { code:"QARD",       label:"QARD — ASN FC Arrived Date"                             },
+    { code:"FCBKC_ES",   label:"FCBKC_ES — ASN FC Booking Date (Estimated)"            },
+    { code:"FCBKC",      label:"FCBKC — ASN FC Booking Date"                            },
+    { code:"HNDOVR",     label:"HNDOVR — ASN Handover Date"                             },
+    { code:"238",        label:"238 — ASN Handover Date"                                },
+    { code:"MAN",        label:"MAN — ASN Manifest Date"                                },
+    { code:"PDX_RCVD",   label:"PDX_RCVD — ASN Padex Received Date"                    },
+    { code:"QUERY",      label:"QUERY — ASN Handover Query Start"                       },
+    { code:"QUERY_END",  label:"QUERY_END — ASN Handover Query End"                     },
+    { code:"RCV_FRSTD",  label:"RCV_FRSTD — ASN Received - First Destination"          },
+    { code:"RCV_FNLD",   label:"RCV_FNLD — ASN Received Final Destination"             },
+    { code:"ARTN_ES",    label:"ARTN_ES — ASN TransShip Arrived Date (Estimated)"      },
+    { code:"ARTN",       label:"ARTN — ASN TransShip Arrived Date"                      },
+    { code:"DPTRN_ES",   label:"DPTRN_ES — ASN TransShip Departure Date (Estimated)"   },
+    { code:"DPTRN",      label:"DPTRN — ASN TransShip Departure Date"                   },
+    { code:"018",        label:"018 — Cargo Ready Date"                                 },
+    { code:"598",        label:"598 — Carrier Booking Rejected"                         },
+    { code:"740",        label:"740 — Closed"                                           },
+    { code:"IWT_DCMP",   label:"IWT_DCMP — Confirm data required to ship load"          },
+    { code:"IWT_CDOCC",  label:"IWT_CDOCC — Customs Documents Created"                 },
+    { code:"579",        label:"579 — Expected Handover Date"                           },
+    { code:"274",        label:"274 — Expected Shipment Date"                           },
+    { code:"FCBRQ",      label:"FCBRQ — FC Booking Request Date"                        },
+    { code:"309",        label:"309 — Grey Calculated Cutoff Date"                      },
+    { code:"INV",        label:"INV — Invoice Date"                                      },
+    { code:"IWT_ADSP",   label:"IWT_ADSP — IWT Arrival Date"                            },
+    { code:"IWT_AGFD",   label:"IWT_AGFD — IWT Delivery Date - Final Destination"      },
+    { code:"IWT_DOCCLR", label:"IWT_DOCCLR — IWT Documents Export Cleared"             },
+    { code:"IWT_PUPRT",  label:"IWT_PUPRT — IWT Picked Up by Carrier at Port"          },
+    { code:"IWT_REQ",    label:"IWT_REQ — IWT Requested"                                },
+    { code:"LPSD",       label:"LPSD — Latest Planned Shipment Date"                    },
+    { code:"OSBK",       label:"OSBK — Original Supplier Booking Creation Date"         },
+    { code:"OSBT",       label:"OSBT — Original Supplier Booking Transmission Date"     },
+    { code:"QCCEND",     label:"QCCEND — QCC Complete Date"                             },
+    { code:"QCCST",      label:"QCCST — QCC Start Date"                                 },
+    { code:"311",        label:"311 — Red Calculated Cutoff Date"                       },
+    { code:"REPROEND",   label:"REPROEND — Reprocessing Completed Date"                 },
+    { code:"REPROST",    label:"REPROST — Reprocessing Start Date"                      },
+    { code:"DO",         label:"DO — Shipment Date"                                      },
+    { code:"IWT_SDISP",  label:"IWT_SDISP — Stock Dispatched"                           },
+    { code:"IWT_DSPL",   label:"IWT_DSPL — Stock in Despatch Lane"                     },
+    { code:"IWT_SPCK",   label:"IWT_SPCK — Stock Picked"                                },
+    { code:"SBK",        label:"SBK — Supplier Booking Creation Date"                   },
+    { code:"VBKR",       label:"VBKR — Supplier Booking Transmission Date"              },
+    { code:"081",        label:"081 — Carrier Booking Request Date"                     },
+    { code:"080",        label:"080 — Carrier Booking Date"                             },
+    { code:"VBKCNCL",    label:"VBKCNCL — Carrier Booking Cancelled"                    },
+    { code:"VBKC",       label:"VBKC — Date Carrier Booking Confirmed"                  },
+  ];
+  const TVP_REF_TYPES = [
+    { code:"4B",   label:"4B — Country of Manufacture"          },
+    { code:"ACE",  label:"ACE — Carrier Booking Request Number" },
+    { code:"CMIN", label:"CMIN — Commercial Invoice Number"     },
+    { code:"CSI",  label:"CSI — Carrier Shipment ID"            },
+    { code:"PK",   label:"PK — Packing List ID"                 },
+  ];
+  const TVP_MEASURE_TYPES = [
+    { code:"WGT",  label:"WGT — Gross Weight for Carrier Shipment"   },
+    { code:"NW",   label:"NW — Net Weight for Carrier Shipment"      },
+    { code:"PLC",  label:"PLC — Packing List Total Cartons"          },
+    { code:"QUR",  label:"QUR — Total Cartons for ASN/IWT"           },
+    { code:"PLG",  label:"PLG — Packing List Gross Weight"           },
+    { code:"G",    label:"G — Gross Weight for ASN/IWT"              },
+    { code:"PLV",  label:"PLV — Packing List Total Cubic Metric"     },
+    { code:"VOL",  label:"VOL — Total Cubic Meters for ASN/IWT"      },
+    { code:"PLN",  label:"PLN — Packing List Net Weight"             },
+    { code:"PLQ",  label:"PLQ — Packing List Quantity"               },
+    { code:"N",    label:"N — Net Weight"                            },
+    { code:"BKQ",  label:"BKQ — Booked Quantity"                     },
+    { code:"SQ",   label:"SQ — Total Shipped Quantity"               },
+    { code:"RCV",  label:"RCV — Received Quantity"                   },
+    { code:"SN102",label:"SN102 — Expected ASN/IWT SKU Quantity"     },
+    { code:"FBK",  label:"FBK — FC Booked Quantity"                  },
+  ];
+
+  function initTvp() {
+    function renderChips(containerId, items, group) {
+      const container = document.getElementById(containerId);
+      if (!container) return;
+      container.innerHTML = '';
+      items.forEach(({ code, label }) => {
+        const chip = document.createElement('label');
+        chip.className = 'tvp-chip';
+        chip.dataset.group = group;
+        chip.dataset.code = code;
+        const cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.value = code;
+        cb.dataset.group = group;
+        cb.addEventListener('change', () => chip.classList.toggle('selected', cb.checked));
+        chip.appendChild(cb);
+        chip.appendChild(document.createTextNode(label));
+        container.appendChild(chip);
+      });
+    }
+    renderChips('tvpDateChips',    TVP_DATE_TYPES,    'date');
+    renderChips('tvpRefChips',     TVP_REF_TYPES,     'ref');
+    renderChips('tvpMeasureChips', TVP_MEASURE_TYPES, 'measure');
+  }
+
+  function toggleTvp() {
+    const body = document.getElementById('tvpBody');
+    const label = document.getElementById('tvpToggleLabel');
+    const open = body.classList.toggle('open');
+    label.textContent = open ? '▼ Collapse' : '▶ Expand';
+  }
+
+  function selectAllTvp(group) {
+    document.querySelectorAll(`.tvp-chip input[data-group="${group}"]`).forEach(cb => {
+      cb.checked = true;
+      cb.closest('.tvp-chip').classList.add('selected');
+    });
+  }
+
+  function clearAllTvp(group) {
+    document.querySelectorAll(`.tvp-chip input[data-group="${group}"]`).forEach(cb => {
+      cb.checked = false;
+      cb.closest('.tvp-chip').classList.remove('selected');
+    });
+  }
+
+  function getSelectedTvp(group) {
+    return Array.from(document.querySelectorAll(`.tvp-chip input[data-group="${group}"]:checked`)).map(cb => cb.value);
+  }
+
   async function searchBlobs() {
     const asn = document.getElementById("blobAsn").value.trim();
     if (!asn) return alert("Please enter an ASN");
+
+    const dateTypes    = getSelectedTvp('date');
+    const refTypes     = getSelectedTvp('ref');
+    const measureTypes = getSelectedTvp('measure');
+    const hasTags      = dateTypes.length > 0 || refTypes.length > 0 || measureTypes.length > 0;
 
     const btn = document.getElementById("btnBlobSearch");
     const resultDiv = document.getElementById("blobResult");
@@ -2117,10 +2376,10 @@ async function fullSccFlow() {
     try {
       const startDate = document.getElementById("blobDateFrom").value || undefined;
       const endDate   = document.getElementById("blobDateTo").value   || undefined;
-      const res = await fetch("/api/blob-search", {
+      const res = await fetch("/api/blob-validate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ asn, startDate, endDate }),
+        body: JSON.stringify({ asn, startDate, endDate, dateTypes, refTypes, measureTypes }),
       });
       const data = await res.json();
       if (!data.ok) {
@@ -2133,21 +2392,59 @@ async function fullSccFlow() {
         return;
       }
 
-      let html = `<div style="padding:14px;background:#f0fdf4;border-radius:8px;border-left:4px solid #22c55e;">`;
-      html += `<div style="margin-bottom:8px;"><b>${data.matches.length}</b> outbound message(s) found containing ASN <b>${escapeHtml(asn)}</b> <span style="color:#64748b;">(scanned ${data.scanned}, skipped ${data.skipped})</span></div>`;
+      let html = '';
+
+      // ── Tag Values from latest file ──
+      if (hasTags && data.tagValues && data.latestFile) {
+        const lfName = data.latestFile.name.split('/').pop();
+        const lfMod  = new Date(data.latestFile.lastModified).toLocaleString();
+        html += `<div class="tag-values-box">`;
+        html += `<h4>&#128202; Tag Values from latest file: <span style="font-weight:400;font-family:monospace;">${escapeHtml(lfName)}</span> <span style="font-size:0.77rem;color:#4b5563;">(${lfMod})</span></h4>`;
+        const tv = data.tagValues;
+
+        // helper: render a group — shows found rows plus "not found" for any selected but missing codes
+        function renderTagGroup(headerHtml, found, selectedCodes, metaList) {
+          if (selectedCodes.length === 0) return '';
+          let g = `<tr class="tag-group-hdr"><td colspan="3">${headerHtml}</td></tr>`;
+          const foundCodes = new Set(found.map(x => x.code));
+          selectedCodes.forEach(code => {
+            const meta = metaList.find(x => x.code === code);
+            const label = meta ? meta.label : code;
+            if (foundCodes.has(code)) {
+              const val = found.find(x => x.code === code);
+              g += `<tr><td>${escapeHtml(label)}</td><td style="font-family:monospace;">${escapeHtml(code)}</td><td style="font-weight:600;">${escapeHtml(val.value)}</td></tr>`;
+            } else {
+              g += `<tr style="opacity:0.5;"><td>${escapeHtml(label)}</td><td style="font-family:monospace;">${escapeHtml(code)}</td><td style="color:#9ca3af;font-style:italic;">Not found in this file</td></tr>`;
+            }
+          });
+          return g;
+        }
+
+        html += `<table class="tag-values-table"><thead><tr><th>Tag Type</th><th>Code</th><th>Value</th></tr></thead><tbody>`;
+        html += renderTagGroup('&#128197; Date Types',    tv.dates,    dateTypes,    TVP_DATE_TYPES);
+        html += renderTagGroup('&#128278; Reference Types', tv.refs,  refTypes,     TVP_REF_TYPES);
+        html += renderTagGroup('&#128208; Measure Types', tv.measures, measureTypes, TVP_MEASURE_TYPES);
+        html += `</tbody></table>`;
+        html += `</div>`;
+      }
+
+      // ── Matching Files List ──
+      html += `<div style="padding:14px;background:#f0fdf4;border-radius:8px;border-left:4px solid #22c55e;margin-top:${hasTags ? '12' : '0'}px;">`;
+      html += `<div style="margin-bottom:8px;"><b>${data.matches.length}</b> outbound message(s) found for ASN <b>${escapeHtml(asn)}</b> <span style="color:#64748b;">(scanned ${data.scanned}, skipped ${data.skipped})</span></div>`;
       html += `<table class="blob-results-table"><thead><tr>`;
       html += `<th><input type="checkbox" class="blob-select-all" checked onchange="toggleAllBlobs(this)"></th>`;
       html += `<th>#</th><th>File Name</th><th>Size</th><th>Modified</th><th></th>`;
       html += `</tr></thead><tbody>`;
       data.matches.forEach((m, i) => {
+        const isLatest = data.latestFile && m.name === data.latestFile.name;
         const fileName = m.name.split("/").pop();
         const sizeKB = (m.size / 1024).toFixed(1);
         const modified = new Date(m.lastModified).toLocaleString();
         const downloadUrl = `/api/blob-file?name=${encodeURIComponent(m.name)}`;
-        html += `<tr>`;
+        html += `<tr${isLatest ? ' style="background:#fffbeb;"' : ''}>`;
         html += `<td><input type="checkbox" class="blob-checkbox" value="${escapeHtml(m.name)}" checked></td>`;
         html += `<td>${i + 1}</td>`;
-        html += `<td style="font-family:monospace;font-size:0.82rem;"><a href="${downloadUrl}" title="Download this file" style="color:#7c3aed;text-decoration:none;">${escapeHtml(fileName)}</a></td>`;
+        html += `<td style="font-family:monospace;font-size:0.82rem;"><a href="${downloadUrl}" title="Download" style="color:#7c3aed;text-decoration:none;">${escapeHtml(fileName)}</a>${isLatest ? ' <span style="font-size:0.7rem;background:#fde68a;border-radius:4px;padding:1px 5px;color:#92400e;font-weight:700;">latest</span>' : ''}</td>`;
         html += `<td>${sizeKB} KB</td>`;
         html += `<td>${modified}</td>`;
         html += `<td><a href="${downloadUrl}" title="Download" style="font-size:1.1rem;">\u2B07</a></td>`;
@@ -2157,8 +2454,8 @@ async function fullSccFlow() {
       html += `<div style="display:flex;gap:10px;align-items:center;margin-top:10px;flex-wrap:wrap;">`;
       html += `<button class="btn-blob-download" onclick="downloadAllSelectedToPC()">\uD83D\uDCBE Download Selected to PC</button>`;
       html += `<span id="blobDownloadStatus" style="margin-left:4px;font-size:0.88rem;"></span>`;
-      html += `</div>`;
-      html += `</div>`;
+      html += `</div></div>`;
+
       resultDiv.innerHTML = html;
     } catch (e) {
       resultDiv.innerHTML = `<div style="padding:14px;background:#fef2f2;border-radius:8px;border-left:4px solid #ef4444;">Error: ${escapeHtml(e.message)}</div>`;
