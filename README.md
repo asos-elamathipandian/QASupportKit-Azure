@@ -31,6 +31,37 @@ Some actions are intentionally disabled in cloud runtime and shown with a Local 
 
 This is by design to avoid dependencies that require local desktop/runtime components.
 
+### Node.js Security Updates
+
+The build workflow and Windows App Service startup path target Node.js 22.23.4,
+the Node 22 minimum specified by the security team. Keep both configurations
+aligned when applying future Node 22 security updates.
+
+Before deploying, use the App Service Kudu PowerShell console to confirm the
+configured executable is installed:
+
+```powershell
+& 'C:\Program Files (x86)\nodejs\22.23.4\node.exe' --version
+```
+
+If the executable is missing, do not deploy this startup configuration yet.
+Ask the App Service platform team to make a patched Node 22 runtime available,
+then update the startup path and build workflow to that installed version.
+Changing the workflow alone does not upgrade the App Service runtime.
+
+Redeploy and restart the app after the runtime is available. In Kudu PowerShell,
+verify the executable used by the running application process:
+
+```powershell
+Get-CimInstance Win32_Process -Filter "Name = 'node.exe'" |
+	Select-Object ProcessId, ExecutablePath, CommandLine
+```
+
+Identify the process running `src\web-server.js` and run its executable with
+`--version`; do not rely on the console's default `node` version. Confirm
+`/api/health` responds successfully and smoke-test the XML and blob workflows.
+The platform team must separately confirm Azure's underlying OS/platform fixes.
+
 ## Tech Stack
 
 - Node.js runtime for API orchestration and backend processing
